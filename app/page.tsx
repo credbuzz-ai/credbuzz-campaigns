@@ -22,7 +22,7 @@ export default function LandingPage() {
               <Link href="/buzz-board" className="btn-primary inline-flex items-center">
                 Explore Campaigns <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
-              <Link href="/profile/demo-influencer" className="btn-secondary inline-flex items-center">
+              <Link href="/profile/credbuzzai" className="btn-secondary inline-flex items-center">
                 View KOL Profiles
               </Link>
             </div>
