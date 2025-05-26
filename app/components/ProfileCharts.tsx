@@ -11,9 +11,10 @@ interface MetricChartProps {
   isPositive: boolean
   data: ChartDataPoint[]
   color?: string
+  metricType?: "followers" | "smart_followers" | "mindshare"
 }
 
-function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
+function CustomTooltip({ active, payload, metricType }: TooltipProps<number, string> & { metricType?: string }) {
   if (active && payload && payload.length > 0) {
     const data = payload[0].payload as ChartDataPoint
     const date = new Date(data.date)
@@ -26,7 +27,10 @@ function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
     const originalValue = data.originalValue
     let formattedValue: string
 
-    if (originalValue >= 1000000) {
+    if (metricType === "mindshare") {
+      // Show mindshare with 4 decimal places
+      formattedValue = originalValue.toFixed(4)
+    } else if (originalValue >= 1000000) {
       formattedValue = (originalValue / 1000000).toFixed(1) + "M"
     } else if (originalValue >= 1000) {
       formattedValue = (originalValue / 1000).toFixed(1) + "K"
@@ -47,7 +51,7 @@ function CustomTooltip({ active, payload }: TooltipProps<number, string>) {
   return null
 }
 
-function MetricChart({ title, value, change, isPositive, data, color = "#22c55e" }: MetricChartProps) {
+function MetricChart({ title, value, change, isPositive, data, color = "#22c55e", metricType }: MetricChartProps) {
   // Scale the data to make trends more visible
   const values = data.map((d) => d.value)
   const minValue = Math.min(...values)
@@ -86,10 +90,12 @@ function MetricChart({ title, value, change, isPositive, data, color = "#22c55e"
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={scaledData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <Tooltip
-              content={<CustomTooltip />}
+              content={<CustomTooltip metricType={metricType} />}
               cursor={{ stroke: "#e5e7eb", strokeWidth: 1 }}
-              position={{ x: 0, y: 0 }}
-              allowEscapeViewBox={{ x: true, y: true }}
+              position={{ x: undefined, y: undefined }}
+              coordinate={{ x: 0, y: 0 }}
+              isAnimationActive={false}
+              wrapperStyle={{ pointerEvents: "none" }}
             />
             <Line
               type="monotone"
@@ -226,6 +232,7 @@ export function ProfileCharts({
           isPositive={followersChange >= 0}
           data={followersData}
           color="#3b82f6"
+          metricType="followers"
         />
 
         <MetricChart
@@ -235,6 +242,7 @@ export function ProfileCharts({
           isPositive={smartFollowersChange >= 0}
           data={smartFollowersData}
           color="#22c55e"
+          metricType="smart_followers"
         />
 
         <MetricChart
@@ -244,6 +252,7 @@ export function ProfileCharts({
           isPositive={mindshareChange >= 0}
           data={mindshareData}
           color="#f59e0b"
+          metricType="mindshare"
         />
       </div>
 
