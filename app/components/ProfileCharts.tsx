@@ -95,4 +95,4 @@ export function ActivityChart({ activityData }: { activityData: UserProfileRespo
       <ActivityHeatmap activityData={activityData} />
     </div>
   )
-} 
+}

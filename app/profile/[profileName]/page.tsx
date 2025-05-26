@@ -3,8 +3,31 @@ import { Users, Brain } from "lucide-react"
 import type { ProfileData, UserProfileResponse, ChartDataPoint } from "../../types"
 import { GrowthChart, ActivityChart } from "../../components/ProfileCharts"
 
+// Fallback profile data for demo purposes
+const fallbackProfiles: Record<string, ProfileData> = {
+  credbuzzai: {
+    name: "CredBuzz AI",
+    author_handle: "credbuzzai",
+    bio: "AI-powered Web3 influencer marketplace. Connecting brands with authentic KOLs in the decentralized ecosystem.",
+    profile_image_url: "/placeholder.svg?height=200&width=200",
+    followers_count: 15420,
+    smart_followers_count: 8934,
+    mindshare: 8.7,
+  },
+  "demo-influencer": {
+    name: "Alex Chen",
+    author_handle: "demo-influencer",
+    bio: "Web3 educator, DeFi enthusiast, and blockchain advocate. Helping people navigate the decentralized future.",
+    profile_image_url: "/placeholder.svg?height=200&width=200",
+    followers_count: 125000,
+    smart_followers_count: 12500,
+    mindshare: 8.5,
+  },
+}
+
 async function getProfileData(authorHandle: string): Promise<{ profile: ProfileData; chartData: ChartDataPoint[]; activityData: UserProfileResponse['result']['activity_data'] } | null> {
   try {
+    // Try to fetch from API first
     const response = await fetch(`https://api.cred.buzz/user/get-user-profile?handle=${authorHandle}`, {
       headers: {
         Accept: "application/json",
@@ -17,18 +40,15 @@ async function getProfileData(authorHandle: string): Promise<{ profile: ProfileD
     if (response.ok) {
       const contentType = response.headers.get("content-type")
       if (contentType && contentType.includes("application/json")) {
-        const data = await response.json()
+        const data = await response.json() as UserProfileResponse
         if (data.result) {
-          const chartData = data.result.chart_data.map((entry: [string, string, number, number, number]) => {
-            const [date, label, followers, smartFollowers, mindshare] = entry;
-            return {
-              date,
-              label,
-              followers_count: followers,
-              smart_followers_count: smartFollowers,
-              mindshare
-            };
-          })
+          const chartData = data.result.chart_data.map(([date, label, followers, smartFollowers, mindshare]) => ({
+            date,
+            label,
+            followers_count: followers,
+            smart_followers_count: smartFollowers,
+            mindshare
+          }))
 
           return {
             profile: {
@@ -47,7 +67,21 @@ async function getProfileData(authorHandle: string): Promise<{ profile: ProfileD
       }
     }
   } catch (error) {
-    console.error("Error fetching profile data:", error)
+    console.log("API fetch failed, using fallback data:", error)
+  }
+
+  // Return fallback data if API fails or profile exists in fallback
+  const fallbackProfile = fallbackProfiles[authorHandle]
+  if (fallbackProfile) {
+    return {
+      profile: fallbackProfile,
+      chartData: [],
+      activityData: {
+        handle: authorHandle,
+        daily_activity: [],
+        profile_image: fallbackProfile.profile_image_url
+      }
+    }
   }
 
   return null
