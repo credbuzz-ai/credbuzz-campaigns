@@ -108,7 +108,10 @@ function generateRealistic30DayData(baseProfile: ProfileData): ChartDataPoint[] 
   return data
 }
 
-async function fetchUserProfile(authorHandle: string): Promise<UserProfileResponse | null> {
+async function fetchUserProfile(authorHandle: string, attempt = 0): Promise<UserProfileResponse | null> {
+  const MAX_RETRIES = 3
+  const RETRY_DELAY = 1000
+
   try {
     const response = await fetch(`https://api.cred.buzz/user/get-user-profile?handle=${authorHandle}`, {
       headers: {
@@ -125,13 +128,24 @@ async function fetchUserProfile(authorHandle: string): Promise<UserProfileRespon
         return (await response.json()) as UserProfileResponse
       }
     }
+    throw new Error(`HTTP ${response.status}`)
   } catch (error) {
-    console.log("User profile API fetch failed:", error)
+    console.log(`User profile API fetch failed (attempt ${attempt + 1}):`, error)
+
+    // Retry logic
+    if (attempt < MAX_RETRIES) {
+      const delay = RETRY_DELAY * Math.pow(2, attempt)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      return fetchUserProfile(authorHandle, attempt + 1)
+    }
   }
   return null
 }
 
-async function fetchAuthorDetails(authorHandle: string): Promise<AuthorDetailsResponse | null> {
+async function fetchAuthorDetails(authorHandle: string, attempt = 0): Promise<AuthorDetailsResponse | null> {
+  const MAX_RETRIES = 3
+  const RETRY_DELAY = 1000
+
   try {
     const response = await fetch(`https://api.cred.buzz/user/author-handle-details?author_handle=${authorHandle}`, {
       headers: {
@@ -148,8 +162,16 @@ async function fetchAuthorDetails(authorHandle: string): Promise<AuthorDetailsRe
         return (await response.json()) as AuthorDetailsResponse
       }
     }
+    throw new Error(`HTTP ${response.status}`)
   } catch (error) {
-    console.log("Author details API fetch failed:", error)
+    console.log(`Author details API fetch failed (attempt ${attempt + 1}):`, error)
+
+    // Retry logic
+    if (attempt < MAX_RETRIES) {
+      const delay = RETRY_DELAY * Math.pow(2, attempt)
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      return fetchAuthorDetails(authorHandle, attempt + 1)
+    }
   }
   return null
 }

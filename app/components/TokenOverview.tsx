@@ -35,12 +35,15 @@ const narrativeColors: Record<string, string> = {
 }
 
 export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
+  const [retryCount, setRetryCount] = useState(0)
+  const MAX_RETRIES = 3
+  const RETRY_DELAY = 1000 // 1 second base delay
   const [data, setData] = useState<TokenOverviewResponse["result"] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [interval, setInterval] = useState<Interval>("7day")
 
-  const fetchTokenData = async () => {
+  const fetchTokenData = async (attempt = 0) => {
     setLoading(true)
     setError(null)
     try {
@@ -52,6 +55,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
             "Content-Type": "application/json",
           },
           cache: "no-store",
+          signal: AbortSignal.timeout(5000), // 5 second timeout
         },
       )
 
@@ -59,15 +63,31 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         const result = (await response.json()) as TokenOverviewResponse
         if (result.result) {
           setData(result.result)
+          setRetryCount(0) // Reset retry count on success
         } else {
-          setError("Invalid response format")
+          throw new Error("Invalid response format")
         }
       } else {
-        setError(`API Error: ${response.status}`)
+        throw new Error(`API Error: ${response.status}`)
       }
     } catch (error) {
-      console.error("Failed to fetch token data:", error)
+      console.error(`Failed to fetch token data (attempt ${attempt + 1}):`, error)
+
+      // Retry logic
+      if (attempt < MAX_RETRIES) {
+        const delay = RETRY_DELAY * Math.pow(2, attempt) // Exponential backoff
+        setRetryCount(attempt + 1)
+        setError(`Retrying... (${attempt + 1}/${MAX_RETRIES})`)
+
+        setTimeout(() => {
+          fetchTokenData(attempt + 1)
+        }, delay)
+        return
+      }
+
+      // Max retries reached, show error and fallback data
       setError("Failed to fetch token data")
+      setRetryCount(0)
       // Fallback data for demo
       setData({
         unique_token_count: 14,
@@ -181,12 +201,17 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
       <div className="card-pastel !bg-white p-6">
         <div className="text-center">
           <Coins className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500 mb-3">{error || "No token data available"}</p>
+          <p className="text-gray-500 mb-3">{retryCount > 0 ? `${error}` : error || "No token data available"}</p>
           <button
-            onClick={fetchTokenData}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+            onClick={() => fetchTokenData()}
+            disabled={retryCount > 0}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              retryCount > 0
+                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+            }`}
           >
-            Retry
+            {retryCount > 0 ? "Retrying..." : "Retry"}
           </button>
         </div>
       </div>

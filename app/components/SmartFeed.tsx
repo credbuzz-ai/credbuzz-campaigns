@@ -25,13 +25,16 @@ const sortOptions = [
 ]
 
 export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) {
+  const [retryCount, setRetryCount] = useState(0)
+  const MAX_RETRIES = 3
+  const RETRY_DELAY = 1000 // 1 second base delay
   const [tweets, setTweets] = useState<Tweet[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [interval, setInterval] = useState<Interval>("7day")
   const [sortBy, setSortBy] = useState<SortBy>("like_count_desc")
 
-  const fetchTweets = async () => {
+  const fetchTweets = async (attempt = 0) => {
     setLoading(true)
     setError(null)
     try {
@@ -43,6 +46,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
             "Content-Type": "application/json",
           },
           cache: "no-store",
+          signal: AbortSignal.timeout(5000), // 5 second timeout
         },
       )
 
@@ -59,17 +63,31 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
             sentiment: tweet.sentiment,
           }))
           setTweets(sanitizedTweets)
+          setRetryCount(0) // Reset retry count on success
         } else {
-          setError("Invalid response format")
-          setTweets([])
+          throw new Error("Invalid response format")
         }
       } else {
-        setError(`API Error: ${response.status}`)
-        setTweets([])
+        throw new Error(`API Error: ${response.status}`)
       }
     } catch (error) {
-      console.error("Failed to fetch tweets:", error)
+      console.error(`Failed to fetch tweets (attempt ${attempt + 1}):`, error)
+
+      // Retry logic
+      if (attempt < MAX_RETRIES) {
+        const delay = RETRY_DELAY * Math.pow(2, attempt) // Exponential backoff
+        setRetryCount(attempt + 1)
+        setError(`Retrying... (${attempt + 1}/${MAX_RETRIES})`)
+
+        setTimeout(() => {
+          fetchTweets(attempt + 1)
+        }, delay)
+        return
+      }
+
+      // Max retries reached, show error and fallback data
       setError("Failed to fetch tweets")
+      setRetryCount(0)
       // Enhanced fallback data for demo
       setTweets([
         {
@@ -331,12 +349,17 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           ) : error ? (
             <div className="p-6 text-center">
               <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                <p className="text-red-600 text-sm mb-3">{error}</p>
+                <p className="text-red-600 text-sm mb-3">{retryCount > 0 ? `${error}` : error}</p>
                 <button
-                  onClick={fetchTweets}
-                  className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                  onClick={() => fetchTweets()}
+                  disabled={retryCount > 0}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    retryCount > 0
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                      : "bg-red-100 hover:bg-red-200 text-red-700"
+                  }`}
                 >
-                  Retry
+                  {retryCount > 0 ? "Retrying..." : "Retry"}
                 </button>
               </div>
             </div>
