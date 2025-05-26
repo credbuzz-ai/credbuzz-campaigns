@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import type { ProfileData, UserProfileResponse, ChartDataPoint, AuthorDetailsResponse } from "../../types"
 import { ProfileCharts } from "../../components/ProfileCharts"
+import SmartFeed from "../../components/SmartFeed"
 
 // Fallback profile data for demo purposes
 const fallbackProfiles: Record<string, ProfileData> = {
@@ -220,38 +221,44 @@ export default async function ProfilePage({ params }: { params: { profileName: s
   const accountCreatedText = formatAccountCreatedDate(profile.account_created_at)
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Profile Header */}
-        <div className="card-pastel !bg-pastel-beige mb-8">
-          <div className="flex flex-col md:flex-row items-start gap-8">
-            <img
-              src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
-              alt={profile.name}
-              className="w-32 h-32 rounded-2xl object-cover"
-            />
-            <div className="flex-1">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-800 mb-2">{profile.name}</h1>
-                  <div className="flex flex-col gap-1 mb-4">
-                    <p className="text-xl text-gray-600">@{profile.author_handle}</p>
-                    {accountCreatedText && <p className="text-sm text-gray-500">{accountCreatedText}</p>}
+    <div className="min-h-screen flex">
+      {/* Main Content */}
+      <div className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Profile Header */}
+          <div className="card-pastel !bg-pastel-beige mb-8">
+            <div className="flex flex-col md:flex-row items-start gap-8">
+              <img
+                src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
+                alt={profile.name}
+                className="w-32 h-32 rounded-2xl object-cover"
+              />
+              <div className="flex-1">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                  <div>
+                    <h1 className="text-3xl font-bold text-gray-800 mb-2">{profile.name}</h1>
+                    <div className="flex flex-col gap-1 mb-4">
+                      <p className="text-xl text-gray-600">@{profile.author_handle}</p>
+                      {accountCreatedText && <p className="text-sm text-gray-500">{accountCreatedText}</p>}
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button className="btn-primary">Hire for Campaign</button>
+                    <button className="btn-secondary">Message</button>
                   </div>
                 </div>
-                <div className="flex gap-3">
-                  <button className="btn-primary">Hire for Campaign</button>
-                  <button className="btn-secondary">Message</button>
-                </div>
+                {profile.bio && <p className="text-gray-700 mb-6">{profile.bio}</p>}
               </div>
-              {profile.bio && <p className="text-gray-700 mb-6">{profile.bio}</p>}
             </div>
           </div>
-        </div>
 
-        {/* Chart Cards (replacing individual KPI cards) */}
-        <ProfileCharts chartData={chartData} activityData={activityData} />
+          {/* Chart Cards */}
+          <ProfileCharts chartData={chartData} activityData={activityData} />
+        </div>
       </div>
+
+      {/* Smart Feed Sidebar */}
+      <SmartFeed authorHandle={profile.author_handle} />
     </div>
   )
 }

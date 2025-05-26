@@ -51,3 +51,22 @@ export interface AuthorDetailsResponse {
   }
   message: string
 }
+
+export interface Tweet {
+  tweet_id: string
+  author_handle: string
+  body: string
+  tweet_create_time: string
+  view_count: number
+  like_count: number
+  quote_count: number
+  reply_count: number
+  retweet_count: number
+  profile_image_url: string
+  sentiment: number | null
+}
+
+export interface TopTweetsResponse {
+  result: Tweet[]
+  message: string
+}
