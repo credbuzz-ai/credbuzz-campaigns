@@ -6,6 +6,7 @@ import { LineChart, Line, ResponsiveContainer, Tooltip, type TooltipProps } from
 import type { ChartDataPoint, UserProfileResponse } from "../types"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { useState } from "react"
+import TokenOverview from "./TokenOverview"
 
 interface MetricChartProps {
   title: string
@@ -261,9 +262,11 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
 export function ProfileCharts({
   chartData,
   activityData,
+  authorHandle,
 }: {
   chartData: ChartDataPoint[]
   activityData: UserProfileResponse["result"]["activity_data"]
+  authorHandle: string
 }) {
   if (!chartData.length) return null
 
@@ -346,6 +349,9 @@ export function ProfileCharts({
 
       {/* Activity Heatmap */}
       {activityData.daily_activity.length > 0 && <ActivityHeatmap activityData={activityData} />}
+
+      {/* Token Overview */}
+      <TokenOverview authorHandle={authorHandle} />
     </div>
   )
 }

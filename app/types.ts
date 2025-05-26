@@ -70,3 +70,27 @@ export interface TopTweetsResponse {
   result: Tweet[]
   message: string
 }
+
+export interface TokenData {
+  symbol: string
+  total_tweets: number
+  first_tweet_time: string
+  last_tweet_time: string
+  icon: string | null
+  narratives: string[]
+  volume_24hr: number
+}
+
+export interface TokenOverviewResponse {
+  result: {
+    unique_token_count: number
+    total_mentions: number
+    most_mentioned_token: {
+      symbol: string
+      mention_count: number
+    }
+    narrative_breakdown: Record<string, number>
+    tokens: TokenData[]
+  }
+  message: string
+}

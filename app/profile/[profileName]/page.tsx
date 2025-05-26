@@ -35,6 +35,38 @@ const fallbackProfiles: Record<string, ProfileData> = {
     mindshare: 9.2,
     account_created_at: "2018-05-10T14:30:00Z",
   },
+  // Add the correct spelling that you were looking for
+  elix883: {
+    name: "ELIX",
+    author_handle: "elix883",
+    bio: "Crypto Trader & DeFi Enthusiast 🚀 Building wealth in the digital economy. Follow for market insights and trading tips.",
+    profile_image_url: "/placeholder.svg?height=200&width=200",
+    followers_count: 76850,
+    smart_followers_count: 11200,
+    mindshare: 8.9,
+    account_created_at: "2019-02-14T16:20:00Z",
+  },
+  // Add some additional popular profiles for demo
+  cryptowhale: {
+    name: "Crypto Whale",
+    author_handle: "cryptowhale",
+    bio: "Institutional crypto investor. Sharing market analysis and on-chain insights. Not financial advice.",
+    profile_image_url: "/placeholder.svg?height=200&width=200",
+    followers_count: 234500,
+    smart_followers_count: 45600,
+    mindshare: 9.8,
+    account_created_at: "2017-08-12T09:15:00Z",
+  },
+  defimaxi: {
+    name: "DeFi Maxi",
+    author_handle: "defimaxi",
+    bio: "DeFi protocol researcher and yield farmer. Exploring the future of decentralized finance.",
+    profile_image_url: "/placeholder.svg?height=200&width=200",
+    followers_count: 156780,
+    smart_followers_count: 28900,
+    mindshare: 9.1,
+    account_created_at: "2020-06-30T11:45:00Z",
+  },
 }
 
 function generateRealistic30DayData(baseProfile: ProfileData): ChartDataPoint[] {
@@ -168,7 +200,7 @@ async function getProfileData(authorHandle: string): Promise<{
   }
 
   // Return fallback data if API fails or profile exists in fallback
-  const fallbackProfile = fallbackProfiles[authorHandle]
+  const fallbackProfile = fallbackProfiles[authorHandle.toLowerCase()]
   if (fallbackProfile) {
     // Generate realistic 30-day chart data
     const realistic30DayData = generateRealistic30DayData(fallbackProfile)
@@ -264,7 +296,7 @@ export default async function ProfilePage({ params }: { params: { profileName: s
             </div>
 
             {/* Chart Cards */}
-            <ProfileCharts chartData={chartData} activityData={activityData} />
+            <ProfileCharts chartData={chartData} activityData={activityData} authorHandle={profile.author_handle} />
 
             {/* Additional bottom spacing to ensure smart feed extends fully */}
             <div className="h-32"></div>
