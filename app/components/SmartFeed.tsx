@@ -1,17 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import {
-  Sparkles,
-  Heart,
-  MessageCircle,
-  Repeat2,
-  Eye,
-  TrendingUp,
-  TrendingDown,
-  Calendar,
-  BarChart3,
-} from "lucide-react"
+import { Sparkles, Heart, MessageCircle, Repeat2, Eye, TrendingUp, TrendingDown } from "lucide-react"
 import type { Tweet, TopTweetsResponse } from "../types"
 
 interface SmartFeedProps {
@@ -22,16 +12,16 @@ type Interval = "1day" | "7day" | "30day"
 type SortBy = "view_count_desc" | "like_count_desc" | "retweet_count_desc" | "reply_count_desc"
 
 const intervalOptions = [
-  { value: "1day" as Interval, label: "1D", icon: Calendar },
-  { value: "7day" as Interval, label: "7D", icon: Calendar },
-  { value: "30day" as Interval, label: "30D", icon: Calendar },
+  { value: "1day" as Interval, label: "24H" },
+  { value: "7day" as Interval, label: "7D" },
+  { value: "30day" as Interval, label: "30D" },
 ]
 
 const sortOptions = [
-  { value: "like_count_desc" as SortBy, label: "Likes", icon: Heart },
-  { value: "view_count_desc" as SortBy, label: "Views", icon: Eye },
-  { value: "retweet_count_desc" as SortBy, label: "Shares", icon: Repeat2 },
-  { value: "reply_count_desc" as SortBy, label: "Replies", icon: MessageCircle },
+  { value: "like_count_desc" as SortBy, label: "Likes" },
+  { value: "view_count_desc" as SortBy, label: "Views" },
+  { value: "retweet_count_desc" as SortBy, label: "Shares" },
+  { value: "reply_count_desc" as SortBy, label: "Replies" },
 ]
 
 export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) {
@@ -262,11 +252,11 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
   }
 
   return (
-    <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 flex flex-col self-stretch">
-      {/* Smart Feed Container with Beige Frame */}
-      <div className="card-pastel !bg-pastel-beige h-full flex flex-col">
+    <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 flex flex-col">
+      {/* Smart Feed Container with height constraint */}
+      <div className="card-pastel !bg-slate-300 flex flex-col max-h-[calc(100vh-4rem)]">
         {/* Header */}
-        <div className="p-6 border-b border-gray-200/50">
+        <div className="p-6 border-b border-slate-400/50 flex-shrink-0">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-2 bg-white/60 rounded-xl">
               <Sparkles className="w-5 h-5 text-gray-700" />
@@ -274,23 +264,19 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
             <h2 className="text-xl font-bold text-gray-800">Smart Feed</h2>
           </div>
 
-          {/* Modern Controls */}
-          <div className="space-y-5">
-            {/* Interval Selector */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">Time Range</span>
-              </div>
-              <div className="flex bg-white/60 rounded-xl p-1 backdrop-blur-sm">
+          {/* Minimalistic Controls */}
+          <div className="space-y-4">
+            {/* Time Range Selector - Minimalistic */}
+            <div className="flex items-center justify-center">
+              <div className="flex bg-gray-800/20 rounded-lg p-1">
                 {intervalOptions.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => setInterval(option.value)}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
                       interval === option.value
-                        ? "bg-white text-gray-800 shadow-sm"
-                        : "text-gray-600 hover:text-gray-800 hover:bg-white/50"
+                        ? "bg-gray-700 text-white shadow-sm"
+                        : "text-gray-600 hover:text-gray-800 hover:bg-white/30"
                     }`}
                   >
                     {option.label}
@@ -299,37 +285,29 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
               </div>
             </div>
 
-            {/* Sort Selector */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <BarChart3 className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">Sort by</span>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                {sortOptions.map((option) => {
-                  const IconComponent = option.icon
-                  return (
-                    <button
-                      key={option.value}
-                      onClick={() => setSortBy(option.value)}
-                      className={`flex items-center gap-2 px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 ${
-                        sortBy === option.value
-                          ? "bg-white text-gray-800 shadow-sm"
-                          : "bg-white/40 text-gray-600 hover:text-gray-800 hover:bg-white/60"
-                      }`}
-                    >
-                      <IconComponent className="w-3.5 h-3.5" />
-                      <span>{option.label}</span>
-                    </button>
-                  )
-                })}
+            {/* Sort Selector - Minimalistic */}
+            <div className="flex items-center justify-center">
+              <div className="flex flex-wrap gap-2 justify-center">
+                {sortOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setSortBy(option.value)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${
+                      sortBy === option.value
+                        ? "bg-gray-700 text-white"
+                        : "bg-white/40 text-gray-600 hover:bg-white/60 hover:text-gray-800"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Feed Content */}
-        <div className="flex-1 overflow-y-auto bg-white/30 backdrop-blur-sm">
+        {/* Feed Content with constrained height */}
+        <div className="flex-1 overflow-y-auto bg-white/30 backdrop-blur-sm min-h-0">
           {loading ? (
             <div className="p-6">
               <div className="space-y-4">
@@ -436,9 +414,6 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                   </div>
                 </div>
               ))}
-
-              {/* Bottom spacing */}
-              <div className="h-6"></div>
             </div>
           )}
         </div>

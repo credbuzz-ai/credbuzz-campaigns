@@ -232,12 +232,12 @@ export default async function ProfilePage({ params }: { params: { profileName: s
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex min-h-screen">
+      <div className="flex min-h-screen gap-8">
         {/* Main Content */}
         <div className="flex-1 py-8 pl-8 lg:pl-12">
           <div className="max-w-4xl mx-auto">
             {/* Profile Header */}
-            <div className="card-pastel !bg-pastel-beige mb-8">
+            <div className="card-pastel !bg-slate-300 mb-8">
               <div className="flex flex-col md:flex-row items-start gap-8">
                 <img
                   src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
