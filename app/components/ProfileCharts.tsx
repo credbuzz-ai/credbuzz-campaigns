@@ -1,8 +1,11 @@
 "use client"
 
+import type React from "react"
+
 import { LineChart, Line, ResponsiveContainer, Tooltip, type TooltipProps } from "recharts"
 import type { ChartDataPoint, UserProfileResponse } from "../types"
 import { TrendingUp, TrendingDown } from "lucide-react"
+import { useState } from "react"
 
 interface MetricChartProps {
   title: string
@@ -12,6 +15,30 @@ interface MetricChartProps {
   data: ChartDataPoint[]
   color?: string
   metricType?: "followers" | "smart_followers" | "mindshare"
+}
+
+interface HoverTooltipProps {
+  x: number
+  y: number
+  content: string
+  visible: boolean
+}
+
+function HoverTooltip({ x, y, content, visible }: HoverTooltipProps) {
+  if (!visible) return null
+
+  return (
+    <div
+      className="fixed bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-xs z-50 pointer-events-none"
+      style={{
+        left: x + 10,
+        top: y - 10,
+        transform: "translateY(-100%)",
+      }}
+    >
+      {content}
+    </div>
+  )
 }
 
 function CustomTooltip({ active, payload, metricType }: TooltipProps<number, string> & { metricType?: string }) {
@@ -118,8 +145,15 @@ function MetricChart({ title, value, change, isPositive, data, color = "#22c55e"
 }
 
 function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["result"]["activity_data"] }) {
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-  const hours = Array.from({ length: 24 }, (_, i) => i)
+  const [tooltip, setTooltip] = useState<HoverTooltipProps>({
+    x: 0,
+    y: 0,
+    content: "",
+    visible: false,
+  })
+
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+  const hours = Array.from({ length: 24 }, (_, i) => i) // 0 to 23
 
   const getActivityColor = (tweets: number) => {
     if (tweets === 0) return "bg-gray-100"
@@ -129,34 +163,54 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
     return "bg-green-400"
   }
 
+  const handleMouseEnter = (event: React.MouseEvent, day: string, hour: number, tweets: number) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    setTooltip({
+      x: rect.left + rect.width / 2,
+      y: rect.top,
+      content: `${day} ${hour}:00 UTC - ${tweets} tweets`,
+      visible: true,
+    })
+  }
+
+  const handleMouseLeave = () => {
+    setTooltip((prev) => ({ ...prev, visible: false }))
+  }
+
   return (
     <div className="card-pastel !bg-white p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Heatmap</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Activity Heatmap</h3>
+        <p className="text-xs text-gray-500">All times in UTC</p>
+      </div>
       <div className="overflow-x-auto">
-        <div className="min-w-[600px]">
+        <div className="min-w-[800px]">
+          {/* Hour headers */}
           <div className="flex mb-2">
-            <div className="w-12"></div>
-            {hours
-              .filter((_, i) => i % 4 === 0)
-              .map((hour) => (
-                <div key={hour} className="flex-1 text-center text-xs text-gray-500">
-                  {hour}
-                </div>
-              ))}
+            <div className="w-20"></div>
+            {hours.map((hour) => (
+              <div key={hour} className="flex-1 text-center text-xs text-gray-500 min-w-[24px]">
+                {hour}
+              </div>
+            ))}
           </div>
+
+          {/* Activity grid */}
           {days.map((day) => {
-            const dayData = activityData.daily_activity.find((d) => d.day.startsWith(day))
+            const dayData = activityData.daily_activity.find((d) => d.day === day)
             return (
-              <div key={day} className="flex items-center mb-1">
-                <div className="w-12 text-xs text-gray-600">{day}</div>
-                <div className="flex-1 flex">
+              <div key={day} className="flex items-center mb-2">
+                <div className="w-20 text-sm text-gray-600 pr-2">{day.slice(0, 3)}</div>
+                <div className="flex-1 flex gap-1">
                   {hours.map((hour) => {
                     const hourData = dayData?.activity.find((a) => a.hour === hour)
+                    const tweets = hourData?.avg_tweets || 0
                     return (
                       <div
                         key={hour}
-                        className={`flex-1 aspect-square m-0.5 rounded-sm ${getActivityColor(hourData?.avg_tweets || 0)}`}
-                        title={`${day} ${hour}:00 - ${hourData?.avg_tweets || 0} tweets`}
+                        className={`w-6 h-6 rounded-full cursor-pointer transition-all duration-200 hover:scale-110 ${getActivityColor(tweets)}`}
+                        onMouseEnter={(e) => handleMouseEnter(e, day, hour, tweets)}
+                        onMouseLeave={handleMouseLeave}
                       />
                     )
                   })}
@@ -164,8 +218,23 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
               </div>
             )
           })}
+
+          {/* Legend */}
+          <div className="flex items-center justify-center mt-4 gap-4">
+            <span className="text-xs text-gray-500">Less</span>
+            <div className="flex gap-1">
+              <div className="w-3 h-3 rounded-full bg-gray-100"></div>
+              <div className="w-3 h-3 rounded-full bg-green-100"></div>
+              <div className="w-3 h-3 rounded-full bg-green-200"></div>
+              <div className="w-3 h-3 rounded-full bg-green-300"></div>
+              <div className="w-3 h-3 rounded-full bg-green-400"></div>
+            </div>
+            <span className="text-xs text-gray-500">More</span>
+          </div>
         </div>
       </div>
+
+      <HoverTooltip {...tooltip} />
     </div>
   )
 }
