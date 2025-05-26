@@ -231,44 +231,49 @@ export default async function ProfilePage({ params }: { params: { profileName: s
   const accountCreatedText = formatAccountCreatedDate(profile.account_created_at)
 
   return (
-    <div className="min-h-screen flex bg-gray-50">
-      {/* Main Content */}
-      <div className="flex-1 py-8 px-8 lg:px-12">
-        <div className="max-w-5xl mx-auto">
-          {/* Profile Header */}
-          <div className="card-pastel !bg-pastel-beige mb-8">
-            <div className="flex flex-col md:flex-row items-start gap-8">
-              <img
-                src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
-                alt={profile.name}
-                className="w-32 h-32 rounded-2xl object-cover"
-              />
-              <div className="flex-1">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-800 mb-2">{profile.name}</h1>
-                    <div className="flex flex-col gap-1 mb-4">
-                      <p className="text-xl text-gray-600">@{profile.author_handle}</p>
-                      {accountCreatedText && <p className="text-sm text-gray-500">{accountCreatedText}</p>}
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex min-h-screen">
+        {/* Main Content */}
+        <div className="flex-1 py-8 px-8 lg:px-12">
+          <div className="max-w-4xl mx-auto">
+            {/* Profile Header */}
+            <div className="card-pastel !bg-pastel-beige mb-8">
+              <div className="flex flex-col md:flex-row items-start gap-8">
+                <img
+                  src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
+                  alt={profile.name}
+                  className="w-32 h-32 rounded-2xl object-cover"
+                />
+                <div className="flex-1">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                    <div>
+                      <h1 className="text-3xl font-bold text-gray-800 mb-2">{profile.name}</h1>
+                      <div className="flex flex-col gap-1 mb-4">
+                        <p className="text-xl text-gray-600">@{profile.author_handle}</p>
+                        {accountCreatedText && <p className="text-sm text-gray-500">{accountCreatedText}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <button className="btn-primary">Hire for Campaign</button>
+                      <button className="btn-secondary">Message</button>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <button className="btn-primary">Hire for Campaign</button>
-                    <button className="btn-secondary">Message</button>
-                  </div>
+                  {profile.bio && <p className="text-gray-700 mb-6">{profile.bio}</p>}
                 </div>
-                {profile.bio && <p className="text-gray-700 mb-6">{profile.bio}</p>}
               </div>
             </div>
+
+            {/* Chart Cards */}
+            <ProfileCharts chartData={chartData} activityData={activityData} />
+
+            {/* Additional bottom spacing to ensure smart feed extends fully */}
+            <div className="h-32"></div>
           </div>
-
-          {/* Chart Cards */}
-          <ProfileCharts chartData={chartData} activityData={activityData} />
         </div>
-      </div>
 
-      {/* Smart Feed Sidebar */}
-      <SmartFeed authorHandle={profile.author_handle} />
+        {/* Smart Feed Sidebar - Full Height */}
+        <SmartFeed authorHandle={profile.author_handle} />
+      </div>
     </div>
   )
 }

@@ -125,6 +125,45 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: null,
         },
+        {
+          tweet_id: "6",
+          author_handle: authorHandle,
+          body: "Market volatility is creating some interesting opportunities. Remember to always manage your risk and never invest more than you can afford to lose.",
+          tweet_create_time: "2025-04-14T12:15:30Z",
+          view_count: 28450,
+          like_count: 287,
+          quote_count: 5,
+          reply_count: 76,
+          retweet_count: 23,
+          profile_image_url: "/placeholder.svg?height=40&width=40",
+          sentiment: 0.1,
+        },
+        {
+          tweet_id: "7",
+          author_handle: authorHandle,
+          body: "$BTC consolidation phase continues. Patience is key in this market. The next move could be significant.",
+          tweet_create_time: "2025-04-13T16:42:18Z",
+          view_count: 42180,
+          like_count: 398,
+          quote_count: 8,
+          reply_count: 95,
+          retweet_count: 67,
+          profile_image_url: "/placeholder.svg?height=40&width=40",
+          sentiment: 0.4,
+        },
+        {
+          tweet_id: "8",
+          author_handle: authorHandle,
+          body: "DeFi protocols are evolving rapidly. The innovation in this space continues to amaze me. We're still early!",
+          tweet_create_time: "2025-04-12T09:28:45Z",
+          view_count: 35670,
+          like_count: 456,
+          quote_count: 15,
+          reply_count: 89,
+          retweet_count: 78,
+          profile_image_url: "/placeholder.svg?height=40&width=40",
+          sentiment: 0.7,
+        },
       ])
     } finally {
       setLoading(false)
@@ -202,9 +241,9 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
   }
 
   return (
-    <div className="w-96 bg-white border-l border-gray-200 min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+    <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 bg-white border-l border-gray-200 pr-6 lg:pr-8 flex flex-col self-stretch">
+      {/* Header - Sticky */}
+      <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200">
         <div className="flex items-center gap-2 mb-6">
           <Sparkles className="w-5 h-5 text-gray-700" />
           <h2 className="text-lg font-semibold text-gray-900">Smart Feed</h2>
@@ -217,7 +256,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
             <select
               value={interval}
               onChange={(e) => setInterval(e.target.value as Interval)}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="1day">1 Day</option>
               <option value="7day">7 Days</option>
@@ -229,7 +268,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortBy)}
-              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="like_count_desc">Likes</option>
               <option value="view_count_desc">Views</option>
@@ -240,10 +279,30 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
         </div>
       </div>
 
-      {/* Feed */}
+      {/* Feed - Scrollable */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="p-6 text-center text-gray-500">Loading tweets...</div>
+          <div className="p-6 text-center text-gray-500">
+            <div className="animate-pulse">
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="border-b border-gray-100 pb-4">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         ) : error ? (
           <div className="p-6 text-center text-red-500 text-sm">
             <p>{error}</p>
@@ -254,7 +313,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
         ) : tweets.length === 0 ? (
           <div className="p-6 text-center text-gray-500">No tweets found</div>
         ) : (
-          <div className="space-y-6 p-6">
+          <div className="space-y-6 p-6 pb-12">
             {tweets.map((tweet) => (
               <div key={tweet.tweet_id} className="border-b border-gray-100 pb-6 last:border-b-0">
                 {/* Tweet Header */}
@@ -288,25 +347,28 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
 
                 {/* Engagement Metrics */}
                 <div className="flex items-center gap-6 text-xs text-gray-500">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 hover:text-gray-700 transition-colors">
                     <Eye className="w-3.5 h-3.5" />
                     <span>{formatNumber(tweet.view_count)}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 hover:text-red-500 transition-colors">
                     <Heart className="w-3.5 h-3.5" />
                     <span>{formatNumber(tweet.like_count)}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 hover:text-blue-500 transition-colors">
                     <MessageCircle className="w-3.5 h-3.5" />
                     <span>{formatNumber(tweet.reply_count)}</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 hover:text-green-500 transition-colors">
                     <Repeat2 className="w-3.5 h-3.5" />
                     <span>{formatNumber(tweet.retweet_count)}</span>
                   </div>
                 </div>
               </div>
             ))}
+
+            {/* Bottom spacing for better scroll experience */}
+            <div className="h-8"></div>
           </div>
         )}
       </div>
