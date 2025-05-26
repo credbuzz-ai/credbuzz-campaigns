@@ -1,112 +1,7 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import type { ProfileData, UserProfileResponse, ChartDataPoint, AuthorDetailsResponse } from "../../types"
 import { ProfileCharts } from "../../components/ProfileCharts"
 import SmartFeed from "../../components/SmartFeed"
-
-// Fallback profile data for demo purposes
-const fallbackProfiles: Record<string, ProfileData> = {
-  credbuzzai: {
-    name: "CredBuzz AI",
-    author_handle: "credbuzzai",
-    bio: "AI-powered Web3 influencer marketplace. Connecting brands with authentic KOLs in the decentralized ecosystem.",
-    profile_image_url: "/placeholder.svg?height=200&width=200",
-    followers_count: 15420,
-    smart_followers_count: 8934,
-    mindshare: 8.7,
-    account_created_at: "2023-01-15T10:30:00Z",
-  },
-  "demo-influencer": {
-    name: "Alex Chen",
-    author_handle: "demo-influencer",
-    bio: "Web3 educator, DeFi enthusiast, and blockchain advocate. Helping people navigate the decentralized future.",
-    profile_image_url: "/placeholder.svg?height=200&width=200",
-    followers_count: 125000,
-    smart_followers_count: 12500,
-    mindshare: 8.5,
-    account_created_at: "2022-03-20T14:45:00Z",
-  },
-  eliz883: {
-    name: "ELIZ",
-    author_handle: "eliz883",
-    bio: "Italian Crypto Trader & Investor 💰 Contact / Assistant: @CryptoTyborg Discord: @WealthGroup",
-    profile_image_url: "/placeholder.svg?height=200&width=200",
-    followers_count: 89420,
-    smart_followers_count: 12340,
-    mindshare: 9.2,
-    account_created_at: "2018-05-10T14:30:00Z",
-  },
-  // Add the correct spelling that you were looking for
-  elix883: {
-    name: "ELIX",
-    author_handle: "elix883",
-    bio: "Crypto Trader & DeFi Enthusiast 🚀 Building wealth in the digital economy. Follow for market insights and trading tips.",
-    profile_image_url: "/placeholder.svg?height=200&width=200",
-    followers_count: 76850,
-    smart_followers_count: 11200,
-    mindshare: 8.9,
-    account_created_at: "2019-02-14T16:20:00Z",
-  },
-  // Add some additional popular profiles for demo
-  cryptowhale: {
-    name: "Crypto Whale",
-    author_handle: "cryptowhale",
-    bio: "Institutional crypto investor. Sharing market analysis and on-chain insights. Not financial advice.",
-    profile_image_url: "/placeholder.svg?height=200&width=200",
-    followers_count: 234500,
-    smart_followers_count: 45600,
-    mindshare: 9.8,
-    account_created_at: "2017-08-12T09:15:00Z",
-  },
-  defimaxi: {
-    name: "DeFi Maxi",
-    author_handle: "defimaxi",
-    bio: "DeFi protocol researcher and yield farmer. Exploring the future of decentralized finance.",
-    profile_image_url: "/placeholder.svg?height=200&width=200",
-    followers_count: 156780,
-    smart_followers_count: 28900,
-    mindshare: 9.1,
-    account_created_at: "2020-06-30T11:45:00Z",
-  },
-}
-
-function generateRealistic30DayData(baseProfile: ProfileData): ChartDataPoint[] {
-  const data: ChartDataPoint[] = []
-  const today = new Date()
-
-  // Generate 30 days of data with realistic trends
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(today)
-    date.setDate(date.getDate() - i)
-
-    // Create realistic growth patterns with some volatility
-    const dayProgress = (29 - i) / 29 // 0 to 1 over 30 days
-
-    // Followers: gradual growth with some daily variation
-    const followersGrowthRate = 0.15 // 15% growth over 30 days
-    const followersVariation = (Math.random() - 0.5) * 0.02 // ±1% daily variation
-    const followersMultiplier = 1 + followersGrowthRate * dayProgress + followersVariation
-
-    // Smart followers: slightly different pattern
-    const smartFollowersGrowthRate = 0.12 // 12% growth over 30 days
-    const smartFollowersVariation = (Math.random() - 0.5) * 0.025 // ±1.25% daily variation
-    const smartFollowersMultiplier = 1 + smartFollowersGrowthRate * dayProgress + smartFollowersVariation
-
-    // Mindshare: more volatile, can go up or down
-    const mindshareBaseChange = Math.sin(dayProgress * Math.PI * 2) * 0.1 // Cyclical pattern
-    const mindshareVariation = (Math.random() - 0.5) * 0.05 // ±2.5% daily variation
-    const mindshareMultiplier = 1 + mindshareBaseChange + mindshareVariation
-
-    data.push({
-      date: date.toISOString().split("T")[0],
-      label: `Day ${30 - i}`,
-      followers_count: Math.round(baseProfile.followers_count * followersMultiplier),
-      smart_followers_count: Math.round(baseProfile.smart_followers_count * smartFollowersMultiplier),
-      mindshare: Math.max(0, baseProfile.mindshare * mindshareMultiplier),
-    })
-  }
-
-  return data
-}
 
 async function fetchUserProfile(authorHandle: string, attempt = 0): Promise<UserProfileResponse | null> {
   const MAX_RETRIES = 3
@@ -218,33 +113,7 @@ async function getProfileData(authorHandle: string): Promise<{
       }
     }
   } catch (error) {
-    console.log("API fetch failed, using fallback data:", error)
-  }
-
-  // Return fallback data if API fails or profile exists in fallback
-  const fallbackProfile = fallbackProfiles[authorHandle.toLowerCase()]
-  if (fallbackProfile) {
-    // Generate realistic 30-day chart data
-    const realistic30DayData = generateRealistic30DayData(fallbackProfile)
-
-    // Update profile with current (latest) data
-    const latestData = realistic30DayData[realistic30DayData.length - 1]
-    const updatedProfile = {
-      ...fallbackProfile,
-      followers_count: latestData.followers_count,
-      smart_followers_count: latestData.smart_followers_count,
-      mindshare: latestData.mindshare,
-    }
-
-    return {
-      profile: updatedProfile,
-      chartData: realistic30DayData,
-      activityData: {
-        handle: authorHandle,
-        daily_activity: [],
-        profile_image: fallbackProfile.profile_image_url,
-      },
-    }
+    console.log("API fetch failed for profile:", authorHandle, error)
   }
 
   return null
@@ -274,7 +143,12 @@ function formatAccountCreatedDate(dateString?: string): string {
 }
 
 export default async function ProfilePage({ params }: { params: { profileName: string } }) {
-  const { profileName } = await params
+  const profileName = params.profileName;
+
+  if (!profileName) {
+    redirect('/profile/eliz883');
+  }
+
   const data = await getProfileData(profileName)
 
   if (!data) {
@@ -291,28 +165,18 @@ export default async function ProfilePage({ params }: { params: { profileName: s
         <div className="flex-1 py-8 pl-8 lg:pl-12">
           <div className="max-w-4xl mx-auto">
             {/* Profile Header */}
-            <div className="card-pastel !bg-slate-300 mb-8">
-              <div className="flex flex-col md:flex-row items-start gap-8">
+            <div className="card-pastel !bg-slate-300 mb-8 p-6 rounded-xl">
+              <div className="flex flex-col sm:flex-row items-start gap-6">
                 <img
                   src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
                   alt={profile.name}
-                  className="w-32 h-32 rounded-2xl object-cover"
+                  className="w-24 h-24 rounded-2xl object-cover"
                 />
                 <div className="flex-1">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
-                    <div>
-                      <h1 className="text-3xl font-bold text-gray-800 mb-2">{profile.name}</h1>
-                      <div className="flex flex-col gap-1 mb-4">
-                        <p className="text-xl text-gray-600">@{profile.author_handle}</p>
-                        {accountCreatedText && <p className="text-sm text-gray-500">{accountCreatedText}</p>}
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <button className="btn-primary">Hire for Campaign</button>
-                      <button className="btn-secondary">Message</button>
-                    </div>
-                  </div>
-                  {profile.bio && <p className="text-gray-700 mb-6">{profile.bio}</p>}
+                  <h1 className="text-2xl font-bold text-gray-800 mb-1">{profile.name}</h1>
+                  <p className="text-lg text-gray-600 mb-1">@{profile.author_handle}</p>
+                  {accountCreatedText && <p className="text-xs text-gray-500 mb-3">{accountCreatedText}</p>}
+                  {profile.bio && <p className="text-sm text-gray-700 leading-snug">{profile.bio}</p>}
                 </div>
               </div>
             </div>

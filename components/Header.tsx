@@ -34,7 +34,7 @@ export default function Header() {
               Buzz Board
             </Link>
             <Link
-              href="/profile/credbuzzai"
+              href="/profile/"
               className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
             >
               Profiles
@@ -67,7 +67,7 @@ export default function Header() {
               <Link href="/buzz-board" className="text-gray-700 dark:text-gray-300">
                 Buzz Board
               </Link>
-              <Link href="/profile/credbuzzai" className="text-gray-700 dark:text-gray-300">
+              <Link href="/profile/" className="text-gray-700 dark:text-gray-300">
                 Profiles
               </Link>
               <div className="flex items-center justify-between">

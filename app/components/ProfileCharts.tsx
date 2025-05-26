@@ -52,7 +52,7 @@ function CustomTooltip({ active, payload, metricType }: TooltipProps<number, str
     })
 
     // Format the original value appropriately
-    const originalValue = data.originalValue
+    const originalValue = data.originalValue ?? 0; // Default to 0 if undefined
     let formattedValue: string
 
     if (metricType === "mindshare") {
@@ -81,7 +81,7 @@ function CustomTooltip({ active, payload, metricType }: TooltipProps<number, str
 
 function MetricChart({ title, value, change, isPositive, data, color = "#22c55e", metricType }: MetricChartProps) {
   // Scale the data to make trends more visible
-  const values = data.map((d) => d.value)
+  const values = data.map((d) => d.value ?? 0); // Default to 0 if undefined
   const minValue = Math.min(...values)
   const maxValue = Math.max(...values)
   const range = maxValue - minValue
@@ -90,33 +90,33 @@ function MetricChart({ title, value, change, isPositive, data, color = "#22c55e"
   const scaledData: ChartDataPoint[] =
     range === 0
       ? data.map((d, i) => ({
+          ...d, // Spread existing properties
           value: 50 + Math.sin(i * 0.5) * 20, // Create some variation if data is flat
-          originalValue: d.originalValue,
-          date: d.date,
+          originalValue: d.originalValue ?? 0,
         }))
       : data.map((d) => ({
-          value: ((d.value - minValue) / range) * 100, // Scale to 0-100 for better visibility
-          originalValue: d.originalValue,
-          date: d.date,
+          ...d, // Spread existing properties
+          value: range === 0 ? 50 : (((d.value ?? 0) - minValue) / range) * 100,
+          originalValue: d.originalValue ?? 0,
         }))
 
   return (
-    <div className="card-pastel !bg-white p-6">
-      <div className="mb-4">
-        <h3 className="text-sm font-medium text-gray-500 mb-2">{title}</h3>
-        <div className="flex items-end gap-3">
-          <span className="text-3xl font-bold text-gray-900">{value}</span>
+    <div className="card-pastel !bg-white p-4 rounded-lg shadow-sm">
+      <div className="mb-3">
+        <h3 className="text-sm font-medium text-gray-500 mb-1">{title}</h3>
+        <div className="flex items-end gap-2">
+          <span className="text-2xl font-bold text-gray-900">{value}</span>
           <div
-            className={`flex items-center gap-1 text-sm font-medium ${isPositive ? "text-green-600" : "text-red-600"}`}
+            className={`flex items-center gap-1 text-xs font-medium ${isPositive ? "text-green-600" : "text-red-600"}`}
           >
-            {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+            {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             {change}
           </div>
         </div>
       </div>
-      <div className="h-16 relative">
+      <div className="h-12 relative">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={scaledData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <LineChart data={scaledData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
             <Tooltip
               content={<CustomTooltip metricType={metricType} />}
               cursor={{ stroke: "#e5e7eb", strokeWidth: 1 }}
@@ -275,19 +275,19 @@ export function ProfileCharts({
 
   // Generate chart data for each metric with original values and dates
   const followersData: ChartDataPoint[] = last30Days.map((point) => ({
+    ...point, // Spread existing properties
     value: point.followers_count,
     originalValue: point.followers_count,
-    date: point.date,
   }))
   const smartFollowersData: ChartDataPoint[] = last30Days.map((point) => ({
+    ...point, // Spread existing properties
     value: point.smart_followers_count,
     originalValue: point.smart_followers_count,
-    date: point.date,
   }))
   const mindshareData: ChartDataPoint[] = last30Days.map((point) => ({
+    ...point, // Spread existing properties
     value: point.mindshare,
     originalValue: point.mindshare,
-    date: point.date,
   }))
 
   // Calculate 30-day changes (using last vs 30 days ago)
