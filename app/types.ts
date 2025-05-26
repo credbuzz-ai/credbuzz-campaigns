@@ -6,14 +6,17 @@ export interface ProfileData {
   followers_count: number
   smart_followers_count: number
   mindshare: number
+  account_created_at?: string
 }
 
 export interface ChartDataPoint {
   date: string
-  label: string
+  label?: string
   followers_count: number
   smart_followers_count: number
   mindshare: number
+  value?: number
+  originalValue?: number
 }
 
 export interface ActivityData {
@@ -35,6 +38,16 @@ export interface UserProfileResponse {
       profile_image: string
     }
     cred_score: number
+  }
+  message: string
+}
+
+export interface AuthorDetailsResponse {
+  result: {
+    name: string
+    account_created_at: string
+    bio: string
+    author_handle: string
   }
   message: string
 }
