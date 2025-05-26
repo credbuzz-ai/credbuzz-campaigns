@@ -262,7 +262,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
   }
 
   return (
-    <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 pr-6 lg:pr-8 flex flex-col self-stretch">
+    <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 flex flex-col self-stretch">
       {/* Smart Feed Container with Beige Frame */}
       <div className="card-pastel !bg-pastel-beige h-full flex flex-col">
         {/* Header */}

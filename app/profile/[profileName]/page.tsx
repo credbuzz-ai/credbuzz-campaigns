@@ -26,14 +26,14 @@ const fallbackProfiles: Record<string, ProfileData> = {
     account_created_at: "2022-03-20T14:45:00Z",
   },
   eliz883: {
-    name: "Eliz",
+    name: "ELIZ",
     author_handle: "eliz883",
-    bio: "Crypto trader and analyst. Sharing insights about DeFi, altcoins, and market trends.",
+    bio: "Italian Crypto Trader & Investor 💰 Contact / Assistant: @CryptoTyborg Discord: @WealthGroup",
     profile_image_url: "/placeholder.svg?height=200&width=200",
     followers_count: 89420,
     smart_followers_count: 12340,
     mindshare: 9.2,
-    account_created_at: "2022-08-10T14:30:00Z",
+    account_created_at: "2018-05-10T14:30:00Z",
   },
 }
 
@@ -234,7 +234,7 @@ export default async function ProfilePage({ params }: { params: { profileName: s
     <div className="min-h-screen bg-gray-50">
       <div className="flex min-h-screen">
         {/* Main Content */}
-        <div className="flex-1 py-8 px-8 lg:px-12">
+        <div className="flex-1 py-8 pl-8 lg:pl-12">
           <div className="max-w-4xl mx-auto">
             {/* Profile Header */}
             <div className="card-pastel !bg-pastel-beige mb-8">
@@ -271,8 +271,10 @@ export default async function ProfilePage({ params }: { params: { profileName: s
           </div>
         </div>
 
-        {/* Smart Feed Sidebar - Full Height */}
-        <SmartFeed authorHandle={profile.author_handle} />
+        {/* Smart Feed Sidebar - Full Height with matching padding */}
+        <div className="py-8 pr-8 lg:pr-12">
+          <SmartFeed authorHandle={profile.author_handle} />
+        </div>
       </div>
     </div>
   )
