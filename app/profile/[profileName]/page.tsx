@@ -220,7 +220,7 @@ function formatAccountCreatedDate(dateString?: string): string {
 }
 
 export default async function ProfilePage({ params }: { params: { profileName: string } }) {
-  const profileName = await Promise.resolve(params.profileName)
+  const { profileName } = await params
   const data = await getProfileData(profileName)
 
   if (!data) {
