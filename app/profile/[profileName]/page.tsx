@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation"
 import type { ProfileData, UserProfileResponse, ChartDataPoint, AuthorDetailsResponse } from "../../types"
 import { ProfileCharts } from "../../components/ProfileCharts"
 import SmartFeed from "../../components/SmartFeed"
+import Link from "next/link"
 
 async function fetchUserProfile(authorHandle: string, attempt = 0): Promise<UserProfileResponse | null> {
   const MAX_RETRIES = 3
@@ -167,11 +168,18 @@ export default async function ProfilePage({ params }: { params: { profileName: s
             {/* Profile Header */}
             <div className="card-pastel !bg-slate-300 mb-8 p-6 rounded-xl">
               <div className="flex flex-col sm:flex-row items-start gap-6">
-                <img
-                  src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
-                  alt={profile.name}
-                  className="w-24 h-24 rounded-2xl object-cover"
-                />
+                <Link 
+                  href={`https://twitter.com/${profile.author_handle}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                >
+                  <img
+                    src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
+                    alt={profile.name}
+                    className="w-24 h-24 rounded-2xl object-cover"
+                  />
+                </Link>
                 <div className="flex-1">
                   <h1 className="text-2xl font-bold text-gray-800 mb-1">{profile.name}</h1>
                   <p className="text-lg text-gray-600 mb-1">@{profile.author_handle}</p>

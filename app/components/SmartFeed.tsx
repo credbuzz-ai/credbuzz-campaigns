@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Sparkles, Heart, MessageCircle, Repeat2, Eye, TrendingUp, TrendingDown } from "lucide-react"
 import type { Tweet, TopTweetsResponse } from "../types"
+import Link from "next/link"
 
 interface SmartFeedProps {
   authorHandle?: string
@@ -61,6 +62,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
             reply_count: tweet.reply_count || 0,
             retweet_count: tweet.retweet_count || 0,
             sentiment: tweet.sentiment,
+            tweet_category: tweet.tweet_category || null
           }))
           setTweets(sanitizedTweets)
           setRetryCount(0) // Reset retry count on success
@@ -102,6 +104,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 97,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.2,
+          tweet_category: "market-analysis"
         },
         {
           tweet_id: "2",
@@ -115,6 +118,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 234,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.6,
+          tweet_category: "price-action"
         },
         {
           tweet_id: "3",
@@ -128,6 +132,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 13,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: null,
+          tweet_category: "community"
         },
         {
           tweet_id: "4",
@@ -141,6 +146,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 48,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.3,
+          tweet_category: "trading-strategy"
         },
         {
           tweet_id: "5",
@@ -154,6 +160,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 5,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: null,
+          tweet_category: "trading-strategy"
         },
         {
           tweet_id: "6",
@@ -167,6 +174,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 23,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.1,
+          tweet_category: "market-analysis"
         },
         {
           tweet_id: "7",
@@ -180,6 +188,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 67,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.4,
+          tweet_category: "price-action"
         },
         {
           tweet_id: "8",
@@ -193,6 +202,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 78,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.7,
+          tweet_category: "ecosystem-news"
         },
       ])
     } finally {
@@ -373,69 +383,79 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           ) : (
             <div className="p-6 space-y-4">
               {tweets.map((tweet, index) => (
-                <div
+                <Link
                   key={tweet.tweet_id}
-                  className="bg-white/70 backdrop-blur-sm rounded-xl p-5 border border-white/50 hover:bg-white/80 transition-all duration-200 hover:shadow-sm"
+                  href={`https://twitter.com/${tweet.author_handle}/status/${tweet.tweet_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
                 >
-                  {/* Tweet Header */}
-                  <div className="flex items-start gap-3 mb-4">
-                    <img
-                      src={tweet.profile_image_url || "/placeholder.svg?height=40&width=40"}
-                      alt={getDisplayHandle(tweet.author_handle)}
-                      className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-white/50"
-                      onError={(e) => {
-                        e.currentTarget.src = "/placeholder.svg?height=40&width=40"
-                      }}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-semibold text-gray-900 text-sm">
-                          {getDisplayHandle(tweet.author_handle)}
-                        </span>
-                        <span className="text-gray-500 text-xs">@{getDisplayHandle(tweet.author_handle)}</span>
-                        <span className="text-gray-400 text-xs">·</span>
-                        <span className="text-gray-500 text-xs">{formatDate(tweet.tweet_create_time)}</span>
-                        {getSentimentIcon(tweet.sentiment)}
+                  <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 border border-white/50 hover:bg-white/80 transition-all duration-200 hover:shadow-sm">
+                    {/* Tweet Header */}
+                    <div className="flex items-start gap-3 mb-4">
+                      <img
+                        src={tweet.profile_image_url || "/placeholder.svg?height=40&width=40"}
+                        alt={getDisplayHandle(tweet.author_handle)}
+                        className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-white/50"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder.svg?height=40&width=40"
+                        }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-gray-900 text-sm">
+                            {getDisplayHandle(tweet.author_handle)}
+                          </span>
+                          <span className="text-gray-500 text-xs">@{getDisplayHandle(tweet.author_handle)}</span>
+                          <span className="text-gray-400 text-xs">·</span>
+                          <span className="text-gray-500 text-xs">{formatDate(tweet.tweet_create_time)}</span>
+                          {getSentimentIcon(tweet.sentiment)}
+                          {tweet.tweet_category && (
+                            <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-800">
+                              {tweet.tweet_category}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Tweet Content */}
-                  <div className="mb-4">
-                    <p
-                      className="text-gray-800 text-sm leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: highlightTokens(tweet.body || "") }}
-                    />
-                  </div>
+                    {/* Tweet Content */}
+                    <div className="mb-4">
+                      <p
+                        className="text-gray-800 text-sm leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: highlightTokens(tweet.body || "") }}
+                      />
+                    </div>
 
-                  {/* Engagement Metrics */}
-                  <div className="flex items-center gap-4 text-xs">
-                    <div className="flex items-center gap-1.5 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer">
-                      <div className="p-1.5 rounded-lg hover:bg-gray-100/50 transition-colors">
-                        <Eye className="w-3.5 h-3.5" />
+                    {/* Engagement Metrics */}
+                    <div className="flex items-center gap-4 text-xs">
+                      <div className="flex items-center gap-1.5 text-gray-500 group">
+                        <div className="p-1.5 rounded-lg group-hover:bg-gray-100/50 transition-colors">
+                          <Eye className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-medium">{formatNumber(tweet.view_count)}</span>
                       </div>
-                      <span className="font-medium">{formatNumber(tweet.view_count)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-500 hover:text-red-500 transition-colors cursor-pointer">
-                      <div className="p-1.5 rounded-lg hover:bg-red-50 transition-colors">
-                        <Heart className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-1.5 text-gray-500 group">
+                        <div className="p-1.5 rounded-lg group-hover:bg-red-50 transition-colors">
+                          <Heart className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-medium">{formatNumber(tweet.like_count)}</span>
                       </div>
-                      <span className="font-medium">{formatNumber(tweet.like_count)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-500 hover:text-blue-500 transition-colors cursor-pointer">
-                      <div className="p-1.5 rounded-lg hover:bg-blue-50 transition-colors">
-                        <MessageCircle className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-1.5 text-gray-500 group">
+                        <div className="p-1.5 rounded-lg group-hover:bg-blue-50 transition-colors">
+                          <MessageCircle className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-medium">{formatNumber(tweet.reply_count)}</span>
                       </div>
-                      <span className="font-medium">{formatNumber(tweet.reply_count)}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-gray-500 hover:text-green-500 transition-colors cursor-pointer">
-                      <div className="p-1.5 rounded-lg hover:bg-green-50 transition-colors">
-                        <Repeat2 className="w-3.5 h-3.5" />
+                      <div className="flex items-center gap-1.5 text-gray-500 group">
+                        <div className="p-1.5 rounded-lg group-hover:bg-green-50 transition-colors">
+                          <Repeat2 className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="font-medium">{formatNumber(tweet.retweet_count)}</span>
                       </div>
-                      <span className="font-medium">{formatNumber(tweet.retweet_count)}</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

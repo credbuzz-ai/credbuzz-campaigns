@@ -64,6 +64,7 @@ export interface Tweet {
   retweet_count: number
   profile_image_url: string
   sentiment: number | null
+  tweet_category?: string | null
 }
 
 export interface TopTweetsResponse {
