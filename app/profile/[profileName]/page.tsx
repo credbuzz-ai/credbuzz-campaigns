@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation"
-import { Users, Brain } from "lucide-react"
 import type { ProfileData, UserProfileResponse, ChartDataPoint } from "../../types"
-import { GrowthChart, ActivityChart } from "../../components/ProfileCharts"
+import { ProfileCharts } from "../../components/ProfileCharts"
 
 // Fallback profile data for demo purposes
 const fallbackProfiles: Record<string, ProfileData> = {
@@ -25,7 +24,50 @@ const fallbackProfiles: Record<string, ProfileData> = {
   },
 }
 
-async function getProfileData(authorHandle: string): Promise<{ profile: ProfileData; chartData: ChartDataPoint[]; activityData: UserProfileResponse['result']['activity_data'] } | null> {
+function generateRealistic30DayData(baseProfile: ProfileData): ChartDataPoint[] {
+  const data: ChartDataPoint[] = []
+  const today = new Date()
+
+  // Generate 30 days of data with realistic trends
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(today)
+    date.setDate(date.getDate() - i)
+
+    // Create realistic growth patterns with some volatility
+    const dayProgress = (29 - i) / 29 // 0 to 1 over 30 days
+
+    // Followers: gradual growth with some daily variation
+    const followersGrowthRate = 0.15 // 15% growth over 30 days
+    const followersVariation = (Math.random() - 0.5) * 0.02 // ±1% daily variation
+    const followersMultiplier = 1 + followersGrowthRate * dayProgress + followersVariation
+
+    // Smart followers: slightly different pattern
+    const smartFollowersGrowthRate = 0.12 // 12% growth over 30 days
+    const smartFollowersVariation = (Math.random() - 0.5) * 0.025 // ±1.25% daily variation
+    const smartFollowersMultiplier = 1 + smartFollowersGrowthRate * dayProgress + smartFollowersVariation
+
+    // Mindshare: more volatile, can go up or down
+    const mindshareBaseChange = Math.sin(dayProgress * Math.PI * 2) * 0.1 // Cyclical pattern
+    const mindshareVariation = (Math.random() - 0.5) * 0.05 // ±2.5% daily variation
+    const mindshareMultiplier = 1 + mindshareBaseChange + mindshareVariation
+
+    data.push({
+      date: date.toISOString().split("T")[0],
+      label: `Day ${30 - i}`,
+      followers_count: Math.round(baseProfile.followers_count * followersMultiplier),
+      smart_followers_count: Math.round(baseProfile.smart_followers_count * smartFollowersMultiplier),
+      mindshare: Math.max(0, baseProfile.mindshare * mindshareMultiplier),
+    })
+  }
+
+  return data
+}
+
+async function getProfileData(authorHandle: string): Promise<{
+  profile: ProfileData
+  chartData: ChartDataPoint[]
+  activityData: UserProfileResponse["result"]["activity_data"]
+} | null> {
   try {
     // Try to fetch from API first
     const response = await fetch(`https://api.cred.buzz/user/get-user-profile?handle=${authorHandle}`, {
@@ -40,14 +82,14 @@ async function getProfileData(authorHandle: string): Promise<{ profile: ProfileD
     if (response.ok) {
       const contentType = response.headers.get("content-type")
       if (contentType && contentType.includes("application/json")) {
-        const data = await response.json() as UserProfileResponse
+        const data = (await response.json()) as UserProfileResponse
         if (data.result) {
           const chartData = data.result.chart_data.map(([date, label, followers, smartFollowers, mindshare]) => ({
             date,
             label,
             followers_count: followers,
             smart_followers_count: smartFollowers,
-            mindshare
+            mindshare,
           }))
 
           return {
@@ -58,10 +100,10 @@ async function getProfileData(authorHandle: string): Promise<{ profile: ProfileD
               profile_image_url: data.result.activity_data.profile_image,
               followers_count: chartData[chartData.length - 1].followers_count,
               smart_followers_count: chartData[chartData.length - 1].smart_followers_count,
-              mindshare: chartData[chartData.length - 1].mindshare
+              mindshare: chartData[chartData.length - 1].mindshare,
             },
             chartData,
-            activityData: data.result.activity_data
+            activityData: data.result.activity_data,
           }
         }
       }
@@ -73,14 +115,26 @@ async function getProfileData(authorHandle: string): Promise<{ profile: ProfileD
   // Return fallback data if API fails or profile exists in fallback
   const fallbackProfile = fallbackProfiles[authorHandle]
   if (fallbackProfile) {
+    // Generate realistic 30-day chart data
+    const realistic30DayData = generateRealistic30DayData(fallbackProfile)
+
+    // Update profile with current (latest) data
+    const latestData = realistic30DayData[realistic30DayData.length - 1]
+    const updatedProfile = {
+      ...fallbackProfile,
+      followers_count: latestData.followers_count,
+      smart_followers_count: latestData.smart_followers_count,
+      mindshare: latestData.mindshare,
+    }
+
     return {
-      profile: fallbackProfile,
-      chartData: [],
+      profile: updatedProfile,
+      chartData: realistic30DayData,
       activityData: {
         handle: authorHandle,
         daily_activity: [],
-        profile_image: fallbackProfile.profile_image_url
-      }
+        profile_image: fallbackProfile.profile_image_url,
+      },
     }
   }
 
@@ -96,9 +150,6 @@ export default async function ProfilePage({ params }: { params: { profileName: s
   }
 
   const { profile, chartData, activityData } = data
-  const formattedMindshare = typeof profile.mindshare === 'number' 
-    ? profile.mindshare.toFixed(1)
-    : '0.0'
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
@@ -127,43 +178,8 @@ export default async function ProfilePage({ params }: { params: { profileName: s
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="card-pastel !bg-pastel-mint text-center">
-            <Users className="w-8 h-8 text-gray-800 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">
-              {profile.followers_count.toLocaleString()}
-            </div>
-            <div className="text-sm text-gray-600">Total Followers</div>
-          </div>
-          <div className="card-pastel !bg-pastel-lavender text-center">
-            <Users className="w-8 h-8 text-gray-800 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">
-              {profile.smart_followers_count.toLocaleString()}
-            </div>
-            <div className="text-sm text-gray-600">Smart Followers</div>
-          </div>
-          <div className="card-pastel !bg-pastel-peach text-center">
-            <Brain className="w-8 h-8 text-gray-800 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-gray-800">
-              {formattedMindshare}
-            </div>
-            <div className="text-sm text-gray-600">Mindshare Score</div>
-          </div>
-        </div>
-
-        {/* Charts */}
-        {chartData.length > 0 && (
-          <div className="card-pastel !bg-white mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Growth Trends</h2>
-            <GrowthChart data={chartData} />
-          </div>
-        )}
-
-        {/* Activity Heatmap */}
-        {activityData.daily_activity.length > 0 && (
-          <ActivityChart activityData={activityData} />
-        )}
+        {/* Chart Cards (replacing individual KPI cards) */}
+        <ProfileCharts chartData={chartData} activityData={activityData} />
       </div>
     </div>
   )
