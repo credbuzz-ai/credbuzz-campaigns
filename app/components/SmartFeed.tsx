@@ -411,7 +411,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                           <span className="text-gray-500 text-xs">{formatDate(tweet.tweet_create_time)}</span>
                           {getSentimentIcon(tweet.sentiment)}
                           {tweet.tweet_category && (
-                            <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-800">
+                            <span className="px-2 py-0.5 rounded-full text-xs bg-gray-700 text-white">
                               {tweet.tweet_category}
                             </span>
                           )}
