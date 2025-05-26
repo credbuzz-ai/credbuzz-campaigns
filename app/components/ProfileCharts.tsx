@@ -168,7 +168,7 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
     setTooltip({
       x: rect.left + rect.width / 2,
       y: rect.top,
-      content: `${day} ${hour}:00 UTC - ${tweets} tweets`,
+      content: `${day} ${hour.toString().padStart(2, "0")}:00 UTC - ${tweets} tweets`,
       visible: true,
     })
   }
@@ -184,12 +184,12 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
         <p className="text-xs text-gray-500">All times in UTC</p>
       </div>
       <div className="overflow-x-auto">
-        <div className="min-w-[800px]">
+        <div className="min-w-[900px]">
           {/* Hour headers */}
-          <div className="flex mb-2">
-            <div className="w-20"></div>
+          <div className="grid grid-cols-[80px_repeat(24,1fr)] gap-1 mb-2">
+            <div></div>
             {hours.map((hour) => (
-              <div key={hour} className="flex-1 text-center text-xs text-gray-500 min-w-[24px]">
+              <div key={hour} className="text-center text-xs text-gray-500 flex items-center justify-center h-6">
                 {hour}
               </div>
             ))}
@@ -199,28 +199,27 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
           {days.map((day) => {
             const dayData = activityData.daily_activity.find((d) => d.day === day)
             return (
-              <div key={day} className="flex items-center mb-2">
-                <div className="w-20 text-sm text-gray-600 pr-2">{day.slice(0, 3)}</div>
-                <div className="flex-1 flex gap-1">
-                  {hours.map((hour) => {
-                    const hourData = dayData?.activity.find((a) => a.hour === hour)
-                    const tweets = hourData?.avg_tweets || 0
-                    return (
+              <div key={day} className="grid grid-cols-[80px_repeat(24,1fr)] gap-1 mb-2">
+                <div className="text-sm text-gray-600 flex items-center">{day.slice(0, 3)}</div>
+                {hours.map((hour) => {
+                  const hourData = dayData?.activity.find((a) => a.hour === hour)
+                  const tweets = hourData?.avg_tweets || 0
+                  return (
+                    <div key={hour} className="flex items-center justify-center">
                       <div
-                        key={hour}
                         className={`w-6 h-6 rounded-full cursor-pointer transition-all duration-200 hover:scale-110 ${getActivityColor(tweets)}`}
                         onMouseEnter={(e) => handleMouseEnter(e, day, hour, tweets)}
                         onMouseLeave={handleMouseLeave}
                       />
-                    )
-                  })}
-                </div>
+                    </div>
+                  )
+                })}
               </div>
             )
           })}
 
           {/* Legend */}
-          <div className="flex items-center justify-center mt-4 gap-4">
+          <div className="flex items-center justify-center mt-6 gap-4">
             <span className="text-xs text-gray-500">Less</span>
             <div className="flex gap-1">
               <div className="w-3 h-3 rounded-full bg-gray-100"></div>
