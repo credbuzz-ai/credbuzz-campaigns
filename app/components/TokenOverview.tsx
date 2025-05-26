@@ -173,12 +173,12 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
   }
 
   const sortedNarratives = data
-    ? Object.entries(data.narrative_breakdown)
+    ? Object.entries(data.narrative_breakdown || {})
         .sort(([, a], [, b]) => b - a)
         .slice(0, 8) // Show top 8 narratives
     : []
 
-  const sortedTokens = data ? data.tokens.sort((a, b) => b.total_tweets - a.total_tweets).slice(0, 12) : []
+  const sortedTokens = data ? (data.tokens || []).sort((a, b) => b.total_tweets - a.total_tweets).slice(0, 12) : []
 
   if (loading) {
     return (
@@ -194,6 +194,11 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         </div>
       </div>
     )
+  }
+
+  // If data is successfully fetched but the result is an empty object (signifying no tokens as per API), render nothing.
+  if (!error && data && Object.keys(data).length === 0) {
+    return null;
   }
 
   if (error || !data) {
@@ -259,8 +264,12 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         </div>
         <div className="text-center p-4 bg-orange-50 rounded-xl">
           <Coins className="w-5 h-5 text-orange-600 mx-auto mb-2" />
-          <div className="text-lg font-bold text-gray-900 uppercase">${data.most_mentioned_token.symbol}</div>
-          <div className="text-sm text-gray-600">{data.most_mentioned_token.mention_count} mentions</div>
+          <div className="text-lg font-bold text-gray-900 uppercase">
+            {data.most_mentioned_token ? `$${data.most_mentioned_token.symbol}` : "N/A"}
+          </div>
+          <div className="text-sm text-gray-600">
+            {data.most_mentioned_token ? `${data.most_mentioned_token.mention_count} mentions` : "-"}
+          </div>
         </div>
       </div>
 
@@ -294,8 +303,12 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
                     alt={token.symbol}
                     className="w-8 h-8 object-cover"
                     onError={(e) => {
-                      e.currentTarget.style.display = "none"
-                      e.currentTarget.nextElementSibling!.style.display = "flex"
+                      const target = e.currentTarget as HTMLImageElement;
+                      target.style.display = "none";
+                      const nextSibling = target.nextElementSibling as HTMLElement;
+                      if (nextSibling) {
+                        nextSibling.style.display = "flex";
+                      }
                     }}
                   />
                 ) : null}
