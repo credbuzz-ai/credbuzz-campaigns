@@ -86,6 +86,45 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.6,
         },
+        {
+          tweet_id: "3",
+          author_handle: authorHandle,
+          body: "gm leggende !!!! spending this weekend relaxing away from the charts! you know I avoid operating on the weekend! I wish you and your wonderful families a peaceful Sunday",
+          tweet_create_time: "2025-04-17T08:53:46Z",
+          view_count: 51978,
+          like_count: 463,
+          quote_count: 0,
+          reply_count: 112,
+          retweet_count: 13,
+          profile_image_url: "/placeholder.svg?height=40&width=40",
+          sentiment: null,
+        },
+        {
+          tweet_id: "4",
+          author_handle: authorHandle,
+          body: "$ENA the dumps can be good opportunities to build a spot position. Always DYOR and manage your risk properly.",
+          tweet_create_time: "2025-04-16T19:03:29Z",
+          view_count: 34685,
+          like_count: 444,
+          quote_count: 0,
+          reply_count: 83,
+          retweet_count: 48,
+          profile_image_url: "/placeholder.svg?height=40&width=40",
+          sentiment: 0.3,
+        },
+        {
+          tweet_id: "5",
+          author_handle: authorHandle,
+          body: "as usual enjoying the weekend was the best trader! Sometimes the best trade is no trade at all.",
+          tweet_create_time: "2025-04-15T17:37:19Z",
+          view_count: 31020,
+          like_count: 315,
+          quote_count: 0,
+          reply_count: 91,
+          retweet_count: 5,
+          profile_image_url: "/placeholder.svg?height=40&width=40",
+          sentiment: null,
+        },
       ])
     } finally {
       setLoading(false)
@@ -163,22 +202,22 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
   }
 
   return (
-    <div className="w-80 bg-white border-l border-gray-200 h-screen overflow-hidden flex flex-col">
+    <div className="w-96 bg-white border-l border-gray-200 min-h-screen flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center gap-2 mb-6">
           <Sparkles className="w-5 h-5 text-gray-700" />
           <h2 className="text-lg font-semibold text-gray-900">Smart Feed</h2>
         </div>
 
         {/* Controls */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Interval</label>
+            <label className="text-xs text-gray-500 mb-2 block font-medium">Interval</label>
             <select
               value={interval}
               onChange={(e) => setInterval(e.target.value as Interval)}
-              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="1day">1 Day</option>
               <option value="7day">7 Days</option>
@@ -186,11 +225,11 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500 mb-1 block">Sort by</label>
+            <label className="text-xs text-gray-500 mb-2 block font-medium">Sort by</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortBy)}
-              className="w-full text-xs border border-gray-200 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="like_count_desc">Likes</option>
               <option value="view_count_desc">Views</option>
@@ -204,35 +243,33 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
       {/* Feed */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="p-4 text-center text-gray-500">Loading tweets...</div>
+          <div className="p-6 text-center text-gray-500">Loading tweets...</div>
         ) : error ? (
-          <div className="p-4 text-center text-red-500 text-sm">
+          <div className="p-6 text-center text-red-500 text-sm">
             <p>{error}</p>
-            <button onClick={fetchTweets} className="mt-2 text-blue-600 hover:text-blue-800 underline">
+            <button onClick={fetchTweets} className="mt-3 text-blue-600 hover:text-blue-800 underline">
               Retry
             </button>
           </div>
         ) : tweets.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">No tweets found</div>
+          <div className="p-6 text-center text-gray-500">No tweets found</div>
         ) : (
-          <div className="space-y-4 p-4">
+          <div className="space-y-6 p-6">
             {tweets.map((tweet) => (
-              <div key={tweet.tweet_id} className="border-b border-gray-100 pb-4 last:border-b-0">
+              <div key={tweet.tweet_id} className="border-b border-gray-100 pb-6 last:border-b-0">
                 {/* Tweet Header */}
-                <div className="flex items-start gap-3 mb-2">
+                <div className="flex items-start gap-3 mb-3">
                   <img
-                    src={tweet.profile_image_url || "/placeholder.svg?height=32&width=32"}
+                    src={tweet.profile_image_url || "/placeholder.svg?height=40&width=40"}
                     alt={getDisplayHandle(tweet.author_handle)}
-                    className="w-8 h-8 rounded-full"
+                    className="w-10 h-10 rounded-full flex-shrink-0"
                     onError={(e) => {
-                      e.currentTarget.src = "/placeholder.svg?height=32&width=32"
+                      e.currentTarget.src = "/placeholder.svg?height=40&width=40"
                     }}
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900 text-sm truncate">
-                        {getDisplayHandle(tweet.author_handle)}
-                      </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-gray-900 text-sm">{getDisplayHandle(tweet.author_handle)}</span>
                       <span className="text-gray-500 text-xs">@{getDisplayHandle(tweet.author_handle)}</span>
                       <span className="text-gray-400 text-xs">·</span>
                       <span className="text-gray-500 text-xs">{formatDate(tweet.tweet_create_time)}</span>
@@ -242,7 +279,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                 </div>
 
                 {/* Tweet Content */}
-                <div className="mb-3">
+                <div className="mb-4">
                   <p
                     className="text-gray-800 text-sm leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: highlightTokens(tweet.body || "") }}
@@ -250,21 +287,21 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                 </div>
 
                 {/* Engagement Metrics */}
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Eye className="w-3 h-3" />
+                <div className="flex items-center gap-6 text-xs text-gray-500">
+                  <div className="flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5" />
                     <span>{formatNumber(tweet.view_count)}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Heart className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5">
+                    <Heart className="w-3.5 h-3.5" />
                     <span>{formatNumber(tweet.like_count)}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <MessageCircle className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5">
+                    <MessageCircle className="w-3.5 h-3.5" />
                     <span>{formatNumber(tweet.reply_count)}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Repeat2 className="w-3 h-3" />
+                  <div className="flex items-center gap-1.5">
+                    <Repeat2 className="w-3.5 h-3.5" />
                     <span>{formatNumber(tweet.retweet_count)}</span>
                   </div>
                 </div>

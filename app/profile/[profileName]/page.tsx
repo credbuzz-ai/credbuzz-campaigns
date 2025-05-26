@@ -25,6 +25,16 @@ const fallbackProfiles: Record<string, ProfileData> = {
     mindshare: 8.5,
     account_created_at: "2022-03-20T14:45:00Z",
   },
+  eliz883: {
+    name: "Eliz",
+    author_handle: "eliz883",
+    bio: "Crypto trader and analyst. Sharing insights about DeFi, altcoins, and market trends.",
+    profile_image_url: "/placeholder.svg?height=200&width=200",
+    followers_count: 89420,
+    smart_followers_count: 12340,
+    mindshare: 9.2,
+    account_created_at: "2022-08-10T14:30:00Z",
+  },
 }
 
 function generateRealistic30DayData(baseProfile: ProfileData): ChartDataPoint[] {
@@ -221,10 +231,10 @@ export default async function ProfilePage({ params }: { params: { profileName: s
   const accountCreatedText = formatAccountCreatedDate(profile.account_created_at)
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex bg-gray-50">
       {/* Main Content */}
-      <div className="flex-1 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+      <div className="flex-1 py-8 px-8 lg:px-12">
+        <div className="max-w-5xl mx-auto">
           {/* Profile Header */}
           <div className="card-pastel !bg-pastel-beige mb-8">
             <div className="flex flex-col md:flex-row items-start gap-8">
