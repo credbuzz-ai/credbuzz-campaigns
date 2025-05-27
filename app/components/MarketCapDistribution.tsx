@@ -75,8 +75,54 @@ const normalizeAngle = (angle: number) => {
   return normalized < 0 ? normalized + 360 : normalized
 }
 
-const getBubbleSize = (marketcap: number) => {
-  return Math.max(20, Math.min(45, Math.log10(marketcap) * 4))
+const getBubbleSize = (marketcap: number, sectorInfo?: {
+  sectorWidth: number, 
+  sectorArea: number, 
+  totalBubbles: number, 
+  bubbleIndex: number,
+  isLargestInSector: boolean,
+  distributionTier: number // 0 = largest tier, 1 = medium, 2 = small
+}) => {
+  // Base size from market cap
+  const marketCapSize = Math.max(12, Math.min(50, Math.log10(marketcap) * 4))
+  
+  if (!sectorInfo) return marketCapSize
+  
+  const { sectorWidth, sectorArea, totalBubbles, bubbleIndex, isLargestInSector, distributionTier } = sectorInfo
+  
+  // Calculate space-filling size more aggressively
+  // Use higher fill factor to ensure better coverage
+  const totalBubbleArea = sectorArea * 0.7 // Target 70% area coverage
+  const averageBubbleArea = totalBubbleArea / totalBubbles
+  const baseRadius = Math.sqrt(averageBubbleArea / Math.PI)
+  
+  // Tier-based size distribution for better space filling
+  let tierMultiplier = 1.0
+  if (distributionTier === 0) { // Large bubbles (top 30%)
+    tierMultiplier = 1.4
+  } else if (distributionTier === 1) { // Medium bubbles (next 40%)
+    tierMultiplier = 1.0
+  } else { // Small bubbles (remaining 30%)
+    tierMultiplier = 0.7
+  }
+  
+  // Market cap ranking within tier
+  const tierPosition = bubbleIndex % Math.ceil(totalBubbles / 3)
+  const tierSize = Math.ceil(totalBubbles / 3)
+  const positionMultiplier = 1 + (1 - tierPosition / Math.max(tierSize - 1, 1)) * 0.3
+  
+  // Extra bonus for the absolute largest
+  const largestBonus = isLargestInSector ? 1.2 : 1.0
+  
+  // Calculate final size prioritizing space filling
+  const spaceFillSize = baseRadius * 2 * tierMultiplier * positionMultiplier * largestBonus
+  const hybridSize = (marketCapSize * 0.2) + (spaceFillSize * 0.8) // 20% market cap, 80% space filling
+  
+  // More generous constraints for better space filling
+  const maxSizeForWidth = sectorWidth * 0.5 // Max 50% of sector width
+  const finalSize = Math.max(10, Math.min(maxSizeForWidth, hybridSize, 65))
+  
+  return finalSize
 }
 
 // Shared angle calculation function to ensure consistency
@@ -293,48 +339,117 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       render: { visible: false }
     }))
 
-    // Create radial walls between sectors
+    // Create radial walls between sectors using robust intersection calculation
     sectors.forEach((sector, index) => {
       const startAngleRad = (sector.startAngle * Math.PI) / 180
       
-      // Calculate line intersection with container boundaries for wall length
-      const cos = Math.cos(startAngleRad)
-      const sin = Math.sin(startAngleRad)
-      
-      let endX, endY
-      if (Math.abs(cos) > Math.abs(sin)) {
-        if (cos > 0) {
-          endX = CONTAINER_WIDTH
-          endY = centerY + (CONTAINER_WIDTH - centerX) * Math.tan(startAngleRad)
-        } else {
-          endX = 0
-          endY = centerY + (0 - centerX) * Math.tan(startAngleRad)
+      // Use the same robust intersection calculation as the visual lines
+      const calculateWallEnd = (angleRad: number) => {
+        const normalizedAngle = ((angleRad % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
+        const cos = Math.cos(normalizedAngle)
+        const sin = Math.sin(normalizedAngle)
+        
+        const epsilon = 1e-10
+        const intersections = []
+        
+        // Calculate intersections with all four walls
+        if (Math.abs(cos) > epsilon) {
+          const t1 = (CONTAINER_WIDTH - centerX) / cos
+          if (t1 > 0) {
+            const y = centerY + t1 * sin
+            if (y >= 0 && y <= CONTAINER_HEIGHT) {
+              intersections.push({ x: CONTAINER_WIDTH, y, distance: t1 })
+            }
+          }
+          
+          const t2 = (0 - centerX) / cos
+          if (t2 > 0) {
+            const y = centerY + t2 * sin
+            if (y >= 0 && y <= CONTAINER_HEIGHT) {
+              intersections.push({ x: 0, y, distance: t2 })
+            }
+          }
         }
-      } else {
-        if (sin > 0) {
-          endY = CONTAINER_HEIGHT
-          endX = centerX + (CONTAINER_HEIGHT - centerY) / Math.tan(startAngleRad)
-        } else {
-          endY = 0
-          endX = centerX + (0 - centerY) / Math.tan(startAngleRad)
+        
+        if (Math.abs(sin) > epsilon) {
+          const t3 = (CONTAINER_HEIGHT - centerY) / sin
+          if (t3 > 0) {
+            const x = centerX + t3 * cos
+            if (x >= 0 && x <= CONTAINER_WIDTH) {
+              intersections.push({ x, y: CONTAINER_HEIGHT, distance: t3 })
+            }
+          }
+          
+          const t4 = (0 - centerY) / sin
+          if (t4 > 0) {
+            const x = centerX + t4 * cos
+            if (x >= 0 && x <= CONTAINER_WIDTH) {
+              intersections.push({ x, y: 0, distance: t4 })
+            }
+          }
+        }
+        
+        if (intersections.length > 0) {
+          const closest = intersections.reduce((min, curr) => 
+            curr.distance < min.distance ? curr : min
+          )
+          return { x: closest.x, y: closest.y, cos, sin }
+        }
+        
+        // Fallback
+        return { 
+          x: centerX + Math.max(CONTAINER_WIDTH, CONTAINER_HEIGHT) * cos, 
+          y: centerY + Math.max(CONTAINER_WIDTH, CONTAINER_HEIGHT) * sin, 
+          cos, sin 
         }
       }
       
-      // Clamp to container bounds
-      endX = Math.max(0, Math.min(CONTAINER_WIDTH, endX))
-      endY = Math.max(0, Math.min(CONTAINER_HEIGHT, endY))
+      const wallEnd = calculateWallEnd(startAngleRad)
       
-      // Calculate wall position and length
-      const wallLength = Math.sqrt((endX - centerX) ** 2 + (endY - centerY) ** 2) - innerRadius
-      const wallCenterX = centerX + (innerRadius + wallLength / 2) * cos
-      const wallCenterY = centerY + (innerRadius + wallLength / 2) * sin
+      // Create dense wall segments for impenetrable boundaries
+      const totalLength = Math.sqrt((wallEnd.x - centerX) ** 2 + (wallEnd.y - centerY) ** 2) - innerRadius
+      const numSegments = Math.max(12, Math.ceil(totalLength / 8)) // At least 12 segments, or one every 8px
+      const segmentSize = totalLength / numSegments
       
-      const wall = Matter.Bodies.rectangle(wallCenterX, wallCenterY, 4, wallLength, {
-        isStatic: true,
-        angle: startAngleRad,
-        render: { visible: false }
-      })
-      walls.push(wall)
+      for (let i = 0; i < numSegments; i++) {
+        const segmentStart = innerRadius + (i * segmentSize)
+        const segmentCenter = segmentStart + (segmentSize / 2)
+        
+        const wallCenterX = centerX + segmentCenter * wallEnd.cos
+        const wallCenterY = centerY + segmentCenter * wallEnd.sin
+        
+        // Create wider walls with overlapping segments for impenetrable barriers
+        const wall = Matter.Bodies.rectangle(wallCenterX, wallCenterY, 12, segmentSize + 2, {
+          isStatic: true,
+          angle: startAngleRad,
+          render: { visible: false },
+          frictionStatic: 1.0,
+          friction: 1.0
+        })
+        walls.push(wall)
+      }
+      
+      // Add extra corner reinforcement walls at critical angles
+      if (Math.abs(wallEnd.cos) > 0.9 || Math.abs(wallEnd.sin) > 0.9) {
+        // Near horizontal or vertical lines need extra reinforcement
+        for (let i = 0; i < numSegments; i += 2) {
+          const segmentStart = innerRadius + (i * segmentSize)
+          const segmentCenter = segmentStart + (segmentSize / 2)
+          
+          const wallCenterX = centerX + segmentCenter * wallEnd.cos
+          const wallCenterY = centerY + segmentCenter * wallEnd.sin
+          
+          // Perpendicular reinforcement wall
+          const perpWall = Matter.Bodies.rectangle(wallCenterX, wallCenterY, 8, 16, {
+            isStatic: true,
+            angle: startAngleRad + Math.PI / 2,
+            render: { visible: false },
+            frictionStatic: 1.0,
+            friction: 1.0
+          })
+          walls.push(perpWall)
+        }
+      }
     })
 
     // Create inner circular boundary (around the pie chart)
@@ -376,52 +491,135 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         .sort((a, b) => b.marketcap - a.marketcap) // Sort by market cap descending
         .slice(0, maxBubbles)
 
+      // Calculate sector dimensions for dynamic bubble sizing
+      const sectorStartAngle = (sector.startAngle * Math.PI) / 180
+      const sectorEndAngle = (sector.endAngle * Math.PI) / 180
+      const sectorSpan = sectorEndAngle - sectorStartAngle
+      
+      // Calculate sector area and width for space-filling
+      const minDistance = PIE_OUTER_RADIUS + 20
+      const maxDistance = Math.min(CONTAINER_WIDTH, CONTAINER_HEIGHT) / 2 - 30
+      const avgDistance = (minDistance + maxDistance) / 2
+      const sectorWidthAtMiddle = avgDistance * sectorSpan
+      const sectorArea = (sectorSpan / 2) * (maxDistance * maxDistance - minDistance * minDistance)
+      
+      // Find the largest market cap in this sector for bonus sizing
+      const largestMarketCap = Math.max(...sortedTokens.map(t => t.marketcap))
+
       sortedTokens.forEach((token, index) => {
-        const size = getBubbleSize(token.marketcap)
+        const isLargestInSector = token.marketcap === largestMarketCap
+        
+        // Calculate distribution tier for better size variety
+        const distributionTier = Math.floor(index / Math.ceil(maxBubbles / 3))
+        
+        const size = getBubbleSize(token.marketcap, {
+          sectorWidth: sectorWidthAtMiddle,
+          sectorArea: sectorArea,
+          totalBubbles: maxBubbles,
+          bubbleIndex: index,
+          isLargestInSector: isLargestInSector,
+          distributionTier: Math.min(distributionTier, 2) // Cap at 2
+        })
         const radius = size / 2
 
-        // Calculate sector boundaries
-        const sectorStartAngle = (sector.startAngle * Math.PI) / 180
-        const sectorEndAngle = (sector.endAngle * Math.PI) / 180
-        const sectorSpan = sectorEndAngle - sectorStartAngle
+        // Calculate safe boundaries with strict margins to prevent boundary crossing
+        const radiusMargin = radius / avgDistance // Angular margin based on bubble size
+        const angleMargin = Math.max(radiusMargin * 1.5, sectorSpan * 0.08, 0.08) // Larger margin based on bubble size
+        const safeStartAngle = sectorStartAngle + angleMargin
+        const safeEndAngle = sectorEndAngle - angleMargin
+        const safeSpan = Math.max(0, safeEndAngle - safeStartAngle) // Ensure positive span
 
-        // Distribute bubbles in a grid-like pattern within the sector
-        const bubblesPerRow = Math.ceil(Math.sqrt(maxBubbles))
-        const row = Math.floor(index / bubblesPerRow)
-        const col = index % bubblesPerRow
-        const totalRows = Math.ceil(maxBubbles / bubblesPerRow)
+        // Use hexagonal packing pattern for better space utilization
+        const packingEfficiency = 0.9 // 90% of theoretical max
+        const idealBubblesPerRow = Math.ceil(Math.sqrt(maxBubbles * packingEfficiency))
+        
+        // Stagger alternate rows for hexagonal packing
+        const row = Math.floor(index / idealBubblesPerRow)
+        const col = index % idealBubblesPerRow
+        const totalRows = Math.ceil(maxBubbles / idealBubblesPerRow)
+        const isStaggeredRow = row % 2 === 1
+        
+        // Adjust column position for staggered rows
+        const adjustedCol = isStaggeredRow ? col + 0.5 : col
+        const adjustedBubblesPerRow = isStaggeredRow ? idealBubblesPerRow + 1 : idealBubblesPerRow
 
-        // Calculate position with better distribution
-        const angleProgress = (col + 0.5) / bubblesPerRow
-        const angle = sectorStartAngle + sectorSpan * angleProgress
+        // Calculate position with hexagonal distribution for better coverage
+        const angleProgress = safeSpan > 0 ? adjustedCol / Math.max(adjustedBubblesPerRow, 1) : 0.5
+        const angle = safeStartAngle + safeSpan * angleProgress
 
-        // Distance from center - create layers
-        const minDistance = PIE_OUTER_RADIUS + 15
-        const maxDistance = Math.min(
-          CONTAINER_WIDTH / 2 - 30,  // Stay away from container edges
-          CONTAINER_HEIGHT / 2 - 30
-        )
-        const distanceProgress = (row + 0.5) / Math.max(totalRows, 1)
-        const distance = minDistance + (maxDistance - minDistance) * distanceProgress
+        // Create strict distance constraints to prevent boundary violations
+        const safetyBuffer = radius + 8 // Extra buffer beyond bubble radius
+        const minDistance = PIE_OUTER_RADIUS + 20 + safetyBuffer
+        
+        // Calculate maximum safe distance considering bubble radius and safety buffer
+        const maxDistanceX = Math.abs(Math.cos(angle)) > 0.1 ? 
+          Math.abs((CONTAINER_WIDTH / 2 - safetyBuffer) / Math.cos(angle)) : 
+          CONTAINER_WIDTH
+        const maxDistanceY = Math.abs(Math.sin(angle)) > 0.1 ? 
+          Math.abs((CONTAINER_HEIGHT / 2 - safetyBuffer) / Math.sin(angle)) : 
+          CONTAINER_HEIGHT
+        const maxDistance = Math.min(maxDistanceX, maxDistanceY, 
+          Math.min(CONTAINER_WIDTH, CONTAINER_HEIGHT) / 2 - safetyBuffer)
 
-        // Add some randomness to avoid perfect grid
-        const angleJitter = (Math.random() - 0.5) * (sectorSpan * 0.1)
-        const distanceJitter = (Math.random() - 0.5) * 20
+        // Distribute more evenly across the radial space
+        const numDistanceLayers = Math.max(3, Math.ceil(totalRows * 1.2))
+        const distanceLayer = row % numDistanceLayers
+        const distanceProgress = (distanceLayer + 0.5) / numDistanceLayers
+        const distance = minDistance + (Math.max(0, maxDistance - minDistance)) * distanceProgress
 
-        const finalAngle = angle + angleJitter
-        const finalDistance = Math.max(minDistance, distance + distanceJitter)
+        // Add controlled randomness but ensure it doesn't violate boundaries
+        const maxSafeAngleJitter = Math.min(safeSpan * 0.03, 0.03) // Reduced jitter to stay within bounds
+        const angleJitter = (Math.random() - 0.5) * maxSafeAngleJitter
+        const maxSafeDistanceJitter = Math.min(10, (maxDistance - minDistance) * 0.08) // Reduced distance jitter
+        const distanceJitter = (Math.random() - 0.5) * maxSafeDistanceJitter
+
+        // Ensure final angle stays within safe boundaries
+        const tentativeAngle = angle + angleJitter
+        const finalAngle = Math.max(safeStartAngle, Math.min(safeEndAngle, tentativeAngle))
+        const finalDistance = Math.max(minDistance, Math.min(maxDistance, distance + distanceJitter))
 
         const x = centerX + finalDistance * Math.cos(finalAngle)
         const y = centerY + finalDistance * Math.sin(finalAngle)
 
-        // Ensure bubbles stay within container bounds
-        const constrainedX = Math.max(radius + 5, Math.min(CONTAINER_WIDTH - radius - 5, x))
-        const constrainedY = Math.max(radius + 5, Math.min(CONTAINER_HEIGHT - radius - 5, y))
+        // Strict boundary validation - ensure bubble center + radius never exceeds bounds
+        const strictBuffer = radius + 5
+        const constrainedX = Math.max(strictBuffer, Math.min(CONTAINER_WIDTH - strictBuffer, x))
+        const constrainedY = Math.max(strictBuffer, Math.min(CONTAINER_HEIGHT - strictBuffer, y))
+        
+        // Additional sector boundary check - verify bubble doesn't cross sector lines
+        const bubbleAngle = Math.atan2(constrainedY - centerY, constrainedX - centerX)
+        const normalizedBubbleAngle = ((bubbleAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
+        const normalizedSectorStart = ((sectorStartAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
+        const normalizedSectorEnd = ((sectorEndAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
+        
+        // Handle angle wrapping around 0/2π
+        let isInSector = false
+        if (normalizedSectorStart <= normalizedSectorEnd) {
+          isInSector = normalizedBubbleAngle >= normalizedSectorStart && normalizedBubbleAngle <= normalizedSectorEnd
+        } else {
+          // Sector crosses 0/2π boundary
+          isInSector = normalizedBubbleAngle >= normalizedSectorStart || normalizedBubbleAngle <= normalizedSectorEnd
+        }
+        
+        // If bubble is outside sector, move it to sector center as fallback
+        let finalX = constrainedX
+        let finalY = constrainedY
+        if (!isInSector) {
+          const sectorCenterAngle = (sectorStartAngle + sectorEndAngle) / 2
+          const safeDistance = Math.min(finalDistance, (minDistance + maxDistance) / 2)
+          finalX = centerX + safeDistance * Math.cos(sectorCenterAngle)
+          finalY = centerY + safeDistance * Math.sin(sectorCenterAngle)
+          
+          // Re-apply strict bounds
+          finalX = Math.max(strictBuffer, Math.min(CONTAINER_WIDTH - strictBuffer, finalX))
+          finalY = Math.max(strictBuffer, Math.min(CONTAINER_HEIGHT - strictBuffer, finalY))
+        }
 
-        const bubble = Matter.Bodies.circle(constrainedX, constrainedY, radius, {
-          restitution: 0.6,
-          frictionAir: 0.02,
-          density: 0.001,
+        const bubble = Matter.Bodies.circle(finalX, finalY, radius, {
+          restitution: 0.8 + (Math.random() * 0.15), // 0.8 to 0.95 - high bounce with variation
+          frictionAir: 0.01 + (Math.random() * 0.01), // 0.01 to 0.02 - low air resistance for liveliness
+          friction: 0.3,
+          density: 0.0008 + (size / 1000), // Slightly variable density based on size
           render: { visible: false }
         })
 
@@ -433,10 +631,15 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
           size: size
         }
 
-        // Apply gentle initial random force
-        const forceX = (Math.random() - 0.5) * 0.00005
-        const forceY = (Math.random() - 0.5) * 0.00005
+        // Apply more dynamic initial forces for liveliness
+        const forceMultiplier = 0.0001 + (size / 50000) // Larger bubbles get more force
+        const forceX = (Math.random() - 0.5) * forceMultiplier
+        const forceY = (Math.random() - 0.5) * forceMultiplier
         Matter.Body.applyForce(bubble, bubble.position, { x: forceX, y: forceY })
+        
+        // Add slight rotational force for more natural movement
+        const torque = (Math.random() - 0.5) * 0.00001
+        Matter.Body.setAngularVelocity(bubble, torque)
 
         bubbles.push(bubble)
       })
@@ -468,9 +671,32 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
     Matter.World.add(engine.world, bubbles)
 
     // Animation loop to update React state with physics positions
+    let frameCount = 0
     const updatePhysics = () => {
       if (engineRef.current) {
         Matter.Engine.update(engineRef.current, 16.666) // ~60fps
+        
+        // Add periodic gentle forces to keep bubbles lively (every 3 seconds)
+        frameCount++
+        if (frameCount % 180 === 0) {
+          bubbles.forEach((bubble) => {
+            const velocity = bubble.velocity
+            const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y)
+            
+            // If bubble is moving slowly, give it a gentle nudge
+            if (speed < 0.1) {
+              const tokenData = (bubble as any).tokenData
+              const size = tokenData.size
+              const nudgeForce = 0.00005 + (size / 100000)
+              const randomAngle = Math.random() * 2 * Math.PI
+              
+              Matter.Body.applyForce(bubble, bubble.position, {
+                x: Math.cos(randomAngle) * nudgeForce,
+                y: Math.sin(randomAngle) * nudgeForce
+              })
+            }
+          })
+        }
       }
       
       const updatedBubbles: PhysicsBubble[] = bubbles.map((bubble) => {
