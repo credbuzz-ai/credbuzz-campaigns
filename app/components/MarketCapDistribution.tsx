@@ -168,6 +168,8 @@ const CustomPieChart = ({
   hoveredIndex: number | null
 }) => {
   const segmentsWithAngles = calculateAngles(data)
+  const totalValue = data.reduce((sum, entry) => sum + entry.value, 0)
+  
   const segments = segmentsWithAngles.map((entry, index) => {
     const { startAngle, endAngle, sliceAngle } = entry
     
@@ -199,29 +201,59 @@ const CustomPieChart = ({
       'Z'
     ].join(' ')
     
+    // Calculate percentage
+    const percentage = totalValue > 0 ? ((entry.value / totalValue) * 100).toFixed(1) : '0.0'
+    
+    // Calculate label position (middle of the segment, at 70% of radius)
+    const labelAngle = (startAngle + endAngle) / 2
+    const labelAngleRad = (labelAngle * Math.PI) / 180
+    const labelRadius = (innerRadius + outerRadius) * 0.7
+    const labelX = centerX + labelRadius * Math.cos(labelAngleRad)
+    const labelY = centerY + labelRadius * Math.sin(labelAngleRad)
+
     return {
       ...entry,
       pathData,
       startAngle,
       endAngle,
-      color: COLORS[entry.bucket as keyof typeof COLORS]
+      color: COLORS[entry.bucket as keyof typeof COLORS],
+      percentage,
+      labelX,
+      labelY,
+      labelAngle
     }
   })
   
   return (
     <g>
       {segments.map((segment, index) => (
-        <path
-          key={`segment-${index}`}
-          d={segment.pathData}
-          fill={segment.color}
-          stroke="white"
-          strokeWidth="1"
-          opacity={hoveredIndex === index ? 0.8 : 1}
-          style={{ cursor: 'pointer' }}
-          onMouseEnter={() => onSegmentHover(index)}
-          onMouseLeave={onSegmentLeave}
-        />
+        <g key={`segment-group-${index}`}>
+          <path
+            d={segment.pathData}
+            fill={segment.color}
+            stroke="white"
+            strokeWidth="1"
+            opacity={hoveredIndex === index ? 0.8 : 1}
+            style={{ cursor: 'pointer' }}
+            onMouseEnter={() => onSegmentHover(index)}
+            onMouseLeave={onSegmentLeave}
+          />
+          {/* Percentage label */}
+          {parseFloat(segment.percentage) > 5 && ( // Only show percentage if slice is larger than 5%
+            <text
+              x={segment.labelX}
+              y={segment.labelY}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize="10"
+              fontWeight="600"
+              fill="white"
+              style={{ pointerEvents: 'none' }}
+            >
+              {segment.percentage}%
+            </text>
+          )}
+        </g>
       ))}
     </g>
   )
@@ -312,104 +344,71 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
     const innerRadius = PIE_OUTER_RADIUS + 5
     const walls: Matter.Body[] = []
 
-    // Create rectangular boundary walls
-    const wallThickness = 20
+    // Create impenetrable circular outer boundary
+    const outerRadius = Math.min(CONTAINER_WIDTH, CONTAINER_HEIGHT) / 2 - 10
+    const numOuterSegments = 36 // More segments for smoother circular boundary
     
-    // Top wall
-    walls.push(Matter.Bodies.rectangle(CONTAINER_WIDTH / 2, -wallThickness / 2, CONTAINER_WIDTH, wallThickness, {
-      isStatic: true,
-      render: { visible: false }
-    }))
-    
-    // Bottom wall
-    walls.push(Matter.Bodies.rectangle(CONTAINER_WIDTH / 2, CONTAINER_HEIGHT + wallThickness / 2, CONTAINER_WIDTH, wallThickness, {
-      isStatic: true,
-      render: { visible: false }
-    }))
-    
-    // Left wall
-    walls.push(Matter.Bodies.rectangle(-wallThickness / 2, CONTAINER_HEIGHT / 2, wallThickness, CONTAINER_HEIGHT, {
-      isStatic: true,
-      render: { visible: false }
-    }))
-    
-    // Right wall
-    walls.push(Matter.Bodies.rectangle(CONTAINER_WIDTH + wallThickness / 2, CONTAINER_HEIGHT / 2, wallThickness, CONTAINER_HEIGHT, {
-      isStatic: true,
-      render: { visible: false }
-    }))
+    for (let i = 0; i < numOuterSegments; i++) {
+      const angle1 = (i * 2 * Math.PI) / numOuterSegments
+      const angle2 = ((i + 1) * 2 * Math.PI) / numOuterSegments
+      const x1 = centerX + outerRadius * Math.cos(angle1)
+      const y1 = centerY + outerRadius * Math.sin(angle1)
+      const x2 = centerX + outerRadius * Math.cos(angle2)
+      const y2 = centerY + outerRadius * Math.sin(angle2)
+      
+      const segmentX = (x1 + x2) / 2
+      const segmentY = (y1 + y2) / 2
+      const segmentLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+      const segmentAngle = Math.atan2(y2 - y1, x2 - x1)
+      
+      // Main outer wall
+      const outerWall1 = Matter.Bodies.rectangle(segmentX, segmentY, segmentLength + 4, 20, {
+        isStatic: true,
+        angle: segmentAngle,
+        render: { visible: false },
+        frictionStatic: 1.0,
+        friction: 1.0,
+        restitution: 0.95
+      })
+      walls.push(outerWall1)
+      
+      // Inner backup wall
+      const innerBackupX = centerX + (outerRadius - 8) * Math.cos((angle1 + angle2) / 2)
+      const innerBackupY = centerY + (outerRadius - 8) * Math.sin((angle1 + angle2) / 2)
+      const outerWall2 = Matter.Bodies.rectangle(innerBackupX, innerBackupY, segmentLength + 2, 16, {
+        isStatic: true,
+        angle: segmentAngle,
+        render: { visible: false },
+        frictionStatic: 1.0,
+        friction: 1.0,
+        restitution: 0.95
+      })
+      walls.push(outerWall2)
+    }
 
     // Create radial walls between sectors using robust intersection calculation
     sectors.forEach((sector, index) => {
       const startAngleRad = (sector.startAngle * Math.PI) / 180
       
-      // Use the same robust intersection calculation as the visual lines
-      const calculateWallEnd = (angleRad: number) => {
-        const normalizedAngle = ((angleRad % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
-        const cos = Math.cos(normalizedAngle)
-        const sin = Math.sin(normalizedAngle)
-        
-        const epsilon = 1e-10
-        const intersections = []
-        
-        // Calculate intersections with all four walls
-        if (Math.abs(cos) > epsilon) {
-          const t1 = (CONTAINER_WIDTH - centerX) / cos
-          if (t1 > 0) {
-            const y = centerY + t1 * sin
-            if (y >= 0 && y <= CONTAINER_HEIGHT) {
-              intersections.push({ x: CONTAINER_WIDTH, y, distance: t1 })
-            }
-          }
+              // Calculate intersection with circular boundary
+        const calculateWallEnd = (angleRad: number) => {
+          const normalizedAngle = ((angleRad % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
+          const cos = Math.cos(normalizedAngle)
+          const sin = Math.sin(normalizedAngle)
           
-          const t2 = (0 - centerX) / cos
-          if (t2 > 0) {
-            const y = centerY + t2 * sin
-            if (y >= 0 && y <= CONTAINER_HEIGHT) {
-              intersections.push({ x: 0, y, distance: t2 })
-            }
-          }
-        }
-        
-        if (Math.abs(sin) > epsilon) {
-          const t3 = (CONTAINER_HEIGHT - centerY) / sin
-          if (t3 > 0) {
-            const x = centerX + t3 * cos
-            if (x >= 0 && x <= CONTAINER_WIDTH) {
-              intersections.push({ x, y: CONTAINER_HEIGHT, distance: t3 })
-            }
-          }
+          // For circular boundary, intersection is simply at the outer radius
+          const x = centerX + outerRadius * cos
+          const y = centerY + outerRadius * sin
           
-          const t4 = (0 - centerY) / sin
-          if (t4 > 0) {
-            const x = centerX + t4 * cos
-            if (x >= 0 && x <= CONTAINER_WIDTH) {
-              intersections.push({ x, y: 0, distance: t4 })
-            }
-          }
+          return { x, y, cos, sin }
         }
-        
-        if (intersections.length > 0) {
-          const closest = intersections.reduce((min, curr) => 
-            curr.distance < min.distance ? curr : min
-          )
-          return { x: closest.x, y: closest.y, cos, sin }
-        }
-        
-        // Fallback
-        return { 
-          x: centerX + Math.max(CONTAINER_WIDTH, CONTAINER_HEIGHT) * cos, 
-          y: centerY + Math.max(CONTAINER_WIDTH, CONTAINER_HEIGHT) * sin, 
-          cos, sin 
-        }
-      }
       
       const wallEnd = calculateWallEnd(startAngleRad)
       
-      // Create dense wall segments for impenetrable boundaries
-      const totalLength = Math.sqrt((wallEnd.x - centerX) ** 2 + (wallEnd.y - centerY) ** 2) - innerRadius
-      const numSegments = Math.max(12, Math.ceil(totalLength / 8)) // At least 12 segments, or one every 8px
-      const segmentSize = totalLength / numSegments
+              // Create ultra-dense wall segments for absolute boundary enforcement
+        const totalLength = outerRadius - innerRadius
+        const numSegments = Math.max(20, Math.ceil(totalLength / 3)) // More segments, every 3px
+        const segmentSize = totalLength / numSegments
       
       for (let i = 0; i < numSegments; i++) {
         const segmentStart = innerRadius + (i * segmentSize)
@@ -418,42 +417,70 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         const wallCenterX = centerX + segmentCenter * wallEnd.cos
         const wallCenterY = centerY + segmentCenter * wallEnd.sin
         
-        // Create wider walls with overlapping segments for impenetrable barriers
-        const wall = Matter.Bodies.rectangle(wallCenterX, wallCenterY, 12, segmentSize + 2, {
+        // Create triple-layered walls for impenetrable barriers
+        // Main wall
+        const wall1 = Matter.Bodies.rectangle(wallCenterX, wallCenterY, 20, segmentSize + 4, {
           isStatic: true,
           angle: startAngleRad,
           render: { visible: false },
           frictionStatic: 1.0,
-          friction: 1.0
+          friction: 1.0,
+          restitution: 0.95
         })
-        walls.push(wall)
+        walls.push(wall1)
+        
+        // Left side wall for extra protection
+        const wall2 = Matter.Bodies.rectangle(
+          wallCenterX - 8 * Math.cos(startAngleRad + Math.PI / 2), 
+          wallCenterY - 8 * Math.sin(startAngleRad + Math.PI / 2), 
+          16, segmentSize + 2, {
+          isStatic: true,
+          angle: startAngleRad,
+          render: { visible: false },
+          frictionStatic: 1.0,
+          friction: 1.0,
+          restitution: 0.95
+        })
+        walls.push(wall2)
+        
+        // Right side wall for extra protection
+        const wall3 = Matter.Bodies.rectangle(
+          wallCenterX + 8 * Math.cos(startAngleRad + Math.PI / 2), 
+          wallCenterY + 8 * Math.sin(startAngleRad + Math.PI / 2), 
+          16, segmentSize + 2, {
+          isStatic: true,
+          angle: startAngleRad,
+          render: { visible: false },
+          frictionStatic: 1.0,
+          friction: 1.0,
+          restitution: 0.95
+        })
+        walls.push(wall3)
       }
       
-      // Add extra corner reinforcement walls at critical angles
-      if (Math.abs(wallEnd.cos) > 0.9 || Math.abs(wallEnd.sin) > 0.9) {
-        // Near horizontal or vertical lines need extra reinforcement
-        for (let i = 0; i < numSegments; i += 2) {
-          const segmentStart = innerRadius + (i * segmentSize)
-          const segmentCenter = segmentStart + (segmentSize / 2)
-          
-          const wallCenterX = centerX + segmentCenter * wallEnd.cos
-          const wallCenterY = centerY + segmentCenter * wallEnd.sin
-          
-          // Perpendicular reinforcement wall
-          const perpWall = Matter.Bodies.rectangle(wallCenterX, wallCenterY, 8, 16, {
-            isStatic: true,
-            angle: startAngleRad + Math.PI / 2,
-            render: { visible: false },
-            frictionStatic: 1.0,
-            friction: 1.0
-          })
-          walls.push(perpWall)
-        }
+      // Add perpendicular reinforcement walls along the entire length
+      for (let i = 0; i < numSegments; i += 2) {
+        const segmentStart = innerRadius + (i * segmentSize)
+        const segmentCenter = segmentStart + (segmentSize / 2)
+        
+        const wallCenterX = centerX + segmentCenter * wallEnd.cos
+        const wallCenterY = centerY + segmentCenter * wallEnd.sin
+        
+        // Perpendicular reinforcement wall
+        const perpWall = Matter.Bodies.rectangle(wallCenterX, wallCenterY, 16, 24, {
+          isStatic: true,
+          angle: startAngleRad + Math.PI / 2,
+          render: { visible: false },
+          frictionStatic: 1.0,
+          friction: 1.0,
+          restitution: 0.95
+        })
+        walls.push(perpWall)
       }
     })
 
-    // Create inner circular boundary (around the pie chart)
-    const numInnerSegments = 16
+    // Create reinforced inner circular boundary (around the pie chart)
+    const numInnerSegments = 24
     for (let i = 0; i < numInnerSegments; i++) {
       const angle1 = (i * 2 * Math.PI) / numInnerSegments
       const angle2 = ((i + 1) * 2 * Math.PI) / numInnerSegments
@@ -467,12 +494,29 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       const segmentLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
       const segmentAngle = Math.atan2(y2 - y1, x2 - x1)
       
-      const innerWall = Matter.Bodies.rectangle(segmentX, segmentY, segmentLength, 4, {
+      // Main inner wall
+      const innerWall1 = Matter.Bodies.rectangle(segmentX, segmentY, segmentLength + 2, 12, {
         isStatic: true,
         angle: segmentAngle,
-        render: { visible: false }
+        render: { visible: false },
+        frictionStatic: 1.0,
+        friction: 1.0,
+        restitution: 0.95
       })
-      walls.push(innerWall)
+      walls.push(innerWall1)
+      
+      // Backup inner wall
+      const backupX = centerX + (innerRadius + 4) * Math.cos((angle1 + angle2) / 2)
+      const backupY = centerY + (innerRadius + 4) * Math.sin((angle1 + angle2) / 2)
+      const innerWall2 = Matter.Bodies.rectangle(backupX, backupY, segmentLength, 8, {
+        isStatic: true,
+        angle: segmentAngle,
+        render: { visible: false },
+        frictionStatic: 1.0,
+        friction: 1.0,
+        restitution: 0.95
+      })
+      walls.push(innerWall2)
     }
 
     return walls
@@ -547,19 +591,13 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         const angleProgress = safeSpan > 0 ? adjustedCol / Math.max(adjustedBubblesPerRow, 1) : 0.5
         const angle = safeStartAngle + safeSpan * angleProgress
 
-        // Create strict distance constraints to prevent boundary violations
+        // Create strict distance constraints for circular boundary
         const safetyBuffer = radius + 8 // Extra buffer beyond bubble radius
         const minDistance = PIE_OUTER_RADIUS + 20 + safetyBuffer
         
-        // Calculate maximum safe distance considering bubble radius and safety buffer
-        const maxDistanceX = Math.abs(Math.cos(angle)) > 0.1 ? 
-          Math.abs((CONTAINER_WIDTH / 2 - safetyBuffer) / Math.cos(angle)) : 
-          CONTAINER_WIDTH
-        const maxDistanceY = Math.abs(Math.sin(angle)) > 0.1 ? 
-          Math.abs((CONTAINER_HEIGHT / 2 - safetyBuffer) / Math.sin(angle)) : 
-          CONTAINER_HEIGHT
-        const maxDistance = Math.min(maxDistanceX, maxDistanceY, 
-          Math.min(CONTAINER_WIDTH, CONTAINER_HEIGHT) / 2 - safetyBuffer)
+        // For circular boundary, max distance is simply the outer radius minus safety buffer
+        const circularOuterRadius = Math.min(CONTAINER_WIDTH, CONTAINER_HEIGHT) / 2 - 10
+        const maxDistance = circularOuterRadius - safetyBuffer
 
         // Distribute more evenly across the radial space
         const numDistanceLayers = Math.max(3, Math.ceil(totalRows * 1.2))
@@ -581,10 +619,20 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         const x = centerX + finalDistance * Math.cos(finalAngle)
         const y = centerY + finalDistance * Math.sin(finalAngle)
 
-        // Strict boundary validation - ensure bubble center + radius never exceeds bounds
+        // Strict circular boundary validation
         const strictBuffer = radius + 5
-        const constrainedX = Math.max(strictBuffer, Math.min(CONTAINER_WIDTH - strictBuffer, x))
-        const constrainedY = Math.max(strictBuffer, Math.min(CONTAINER_HEIGHT - strictBuffer, y))
+        const distanceFromCenter = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2)
+        const maxAllowedDistance = circularOuterRadius - strictBuffer
+        
+        let constrainedX = x
+        let constrainedY = y
+        
+        // If bubble exceeds circular boundary, pull it back to the boundary
+        if (distanceFromCenter > maxAllowedDistance) {
+          const scale = maxAllowedDistance / distanceFromCenter
+          constrainedX = centerX + (x - centerX) * scale
+          constrainedY = centerY + (y - centerY) * scale
+        }
         
         // Additional sector boundary check - verify bubble doesn't cross sector lines
         const bubbleAngle = Math.atan2(constrainedY - centerY, constrainedX - centerX)
@@ -610,9 +658,13 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
           finalX = centerX + safeDistance * Math.cos(sectorCenterAngle)
           finalY = centerY + safeDistance * Math.sin(sectorCenterAngle)
           
-          // Re-apply strict bounds
-          finalX = Math.max(strictBuffer, Math.min(CONTAINER_WIDTH - strictBuffer, finalX))
-          finalY = Math.max(strictBuffer, Math.min(CONTAINER_HEIGHT - strictBuffer, finalY))
+          // Re-apply circular boundary check
+          const fallbackDistanceFromCenter = Math.sqrt((finalX - centerX) ** 2 + (finalY - centerY) ** 2)
+          if (fallbackDistanceFromCenter > maxAllowedDistance) {
+            const scale = maxAllowedDistance / fallbackDistanceFromCenter
+            finalX = centerX + (finalX - centerX) * scale
+            finalY = centerY + (finalY - centerY) * scale
+          }
         }
 
         const bubble = Matter.Bodies.circle(finalX, finalY, radius, {
@@ -676,7 +728,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       if (engineRef.current) {
         Matter.Engine.update(engineRef.current, 16.666) // ~60fps
         
-        // Add periodic gentle forces to keep bubbles lively (every 3 seconds)
+        // Add periodic gentle forces and boundary enforcement (every 3 seconds)
         frameCount++
         if (frameCount % 180 === 0) {
           bubbles.forEach((bubble) => {
@@ -697,6 +749,92 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
             }
           })
         }
+        
+        // Continuous boundary enforcement (every frame)
+        bubbles.forEach((bubble) => {
+          const tokenData = (bubble as any).tokenData
+          const radius = tokenData.size / 2
+          const centerX = CONTAINER_WIDTH / 2
+          const centerY = CONTAINER_HEIGHT / 2
+          const outerRadius = Math.min(CONTAINER_WIDTH, CONTAINER_HEIGHT) / 2 - 10
+          const innerRadius = PIE_OUTER_RADIUS + 5
+          
+          // Check if bubble violates outer circular boundary
+          const distanceFromCenter = Math.sqrt((bubble.position.x - centerX) ** 2 + (bubble.position.y - centerY) ** 2)
+          const maxAllowedDistance = outerRadius - radius - 5
+          
+          if (distanceFromCenter > maxAllowedDistance) {
+            // Pull bubble back into bounds
+            const scale = maxAllowedDistance / distanceFromCenter
+            const correctedX = centerX + (bubble.position.x - centerX) * scale
+            const correctedY = centerY + (bubble.position.y - centerY) * scale
+            Matter.Body.setPosition(bubble, { x: correctedX, y: correctedY })
+            
+            // Reduce velocity to prevent immediate boundary violation
+            Matter.Body.setVelocity(bubble, { 
+              x: bubble.velocity.x * 0.5, 
+              y: bubble.velocity.y * 0.5 
+            })
+          }
+          
+          // Check if bubble violates inner circular boundary
+          const minAllowedDistance = innerRadius + radius + 5
+          if (distanceFromCenter < minAllowedDistance) {
+            // Push bubble away from center
+            const scale = minAllowedDistance / Math.max(distanceFromCenter, 1)
+            const correctedX = centerX + (bubble.position.x - centerX) * scale
+            const correctedY = centerY + (bubble.position.y - centerY) * scale
+            Matter.Body.setPosition(bubble, { x: correctedX, y: correctedY })
+            
+            // Reduce velocity to prevent immediate boundary violation
+            Matter.Body.setVelocity(bubble, { 
+              x: bubble.velocity.x * 0.5, 
+              y: bubble.velocity.y * 0.5 
+            })
+          }
+          
+          // Check if bubble violates sector boundaries
+          const bubbleAngle = Math.atan2(bubble.position.y - centerY, bubble.position.x - centerX)
+          const normalizedBubbleAngle = ((bubbleAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
+          
+          // Find which sector this bubble should belong to
+          const sectors = calculateSectors()
+          let bubbleInCorrectSector = false
+          let correctSector = null
+          
+          for (const sector of sectors) {
+            if (sector.tokens.some(token => token.symbol === tokenData.symbol)) {
+              correctSector = sector
+              const sectorStartAngle = (sector.startAngle * Math.PI) / 180
+              const sectorEndAngle = (sector.endAngle * Math.PI) / 180
+              const normalizedSectorStart = ((sectorStartAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
+              const normalizedSectorEnd = ((sectorEndAngle % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
+              
+              // Handle angle wrapping around 0/2π
+              if (normalizedSectorStart <= normalizedSectorEnd) {
+                bubbleInCorrectSector = normalizedBubbleAngle >= normalizedSectorStart && normalizedBubbleAngle <= normalizedSectorEnd
+              } else {
+                bubbleInCorrectSector = normalizedBubbleAngle >= normalizedSectorStart || normalizedBubbleAngle <= normalizedSectorEnd
+              }
+              break
+            }
+          }
+          
+          // If bubble is in wrong sector, move it to correct sector center
+          if (!bubbleInCorrectSector && correctSector) {
+            const sectorCenterAngle = (correctSector.startAngle + correctSector.endAngle) / 2 * Math.PI / 180
+            const safeDistance = (minAllowedDistance + maxAllowedDistance) / 2
+            const correctedX = centerX + safeDistance * Math.cos(sectorCenterAngle)
+            const correctedY = centerY + safeDistance * Math.sin(sectorCenterAngle)
+            Matter.Body.setPosition(bubble, { x: correctedX, y: correctedY })
+            
+            // Reduce velocity significantly to prevent sector jumping
+            Matter.Body.setVelocity(bubble, { 
+              x: bubble.velocity.x * 0.3, 
+              y: bubble.velocity.y * 0.3 
+            })
+          }
+        })
       }
       
       const updatedBubbles: PhysicsBubble[] = bubbles.map((bubble) => {
@@ -788,88 +926,24 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       </div>
 
       {/* Visualization Container */}
-      <div className="relative mx-auto border border-gray-200 rounded-lg" style={{ width: CONTAINER_WIDTH, height: CONTAINER_HEIGHT }}>
+      <div className="relative mx-auto" style={{ width: CONTAINER_WIDTH, height: CONTAINER_HEIGHT }}>
         {/* Sector dividing lines */}
         <svg className="absolute inset-0 w-full h-full" style={{ zIndex: 1 }}>
           {sectors.filter(sector => sector.startAngle !== undefined && sector.endAngle !== undefined).map((sector, index) => {
             const centerX = CONTAINER_WIDTH / 2
             const centerY = CONTAINER_HEIGHT / 2
             
-            // Helper function to calculate line intersection with container (robust version)
+            // Helper function to calculate line intersection with circular boundary
             const calculateLineEnd = (angleRad: number) => {
               // Normalize angle to avoid floating point issues
               const normalizedAngle = ((angleRad % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI)
               const cos = Math.cos(normalizedAngle)
               const sin = Math.sin(normalizedAngle)
               
-              let endX, endY
-              
-              // Use a small epsilon to avoid division by zero
-              const epsilon = 1e-10
-              
-              // Calculate intersections with all four walls and pick the closest valid one
-              const intersections = []
-              
-              // Right wall (x = CONTAINER_WIDTH)
-              if (Math.abs(cos) > epsilon) {
-                const t = (CONTAINER_WIDTH - centerX) / cos
-                if (t > 0) {
-                  const y = centerY + t * sin
-                  if (y >= 0 && y <= CONTAINER_HEIGHT) {
-                    intersections.push({ x: CONTAINER_WIDTH, y, distance: t })
-                  }
-                }
-              }
-              
-              // Left wall (x = 0)
-              if (Math.abs(cos) > epsilon) {
-                const t = (0 - centerX) / cos
-                if (t > 0) {
-                  const y = centerY + t * sin
-                  if (y >= 0 && y <= CONTAINER_HEIGHT) {
-                    intersections.push({ x: 0, y, distance: t })
-                  }
-                }
-              }
-              
-              // Bottom wall (y = CONTAINER_HEIGHT)
-              if (Math.abs(sin) > epsilon) {
-                const t = (CONTAINER_HEIGHT - centerY) / sin
-                if (t > 0) {
-                  const x = centerX + t * cos
-                  if (x >= 0 && x <= CONTAINER_WIDTH) {
-                    intersections.push({ x, y: CONTAINER_HEIGHT, distance: t })
-                  }
-                }
-              }
-              
-              // Top wall (y = 0)
-              if (Math.abs(sin) > epsilon) {
-                const t = (0 - centerY) / sin
-                if (t > 0) {
-                  const x = centerX + t * cos
-                  if (x >= 0 && x <= CONTAINER_WIDTH) {
-                    intersections.push({ x, y: 0, distance: t })
-                  }
-                }
-              }
-              
-              // Find the closest intersection
-              if (intersections.length > 0) {
-                const closest = intersections.reduce((min, curr) => 
-                  curr.distance < min.distance ? curr : min
-                )
-                endX = closest.x
-                endY = closest.y
-              } else {
-                // Fallback: just extend in the direction of the angle
-                const distance = Math.max(CONTAINER_WIDTH, CONTAINER_HEIGHT)
-                endX = centerX + distance * cos
-                endY = centerY + distance * sin
-                // Clamp to bounds
-                endX = Math.max(0, Math.min(CONTAINER_WIDTH, endX))
-                endY = Math.max(0, Math.min(CONTAINER_HEIGHT, endY))
-              }
+              // For circular boundary, intersection is at the outer radius
+              const circularRadius = Math.min(CONTAINER_WIDTH, CONTAINER_HEIGHT) / 2 - 10
+              const endX = centerX + circularRadius * cos
+              const endY = centerY + circularRadius * sin
               
               return { endX, endY, cos, sin }
             }
@@ -894,14 +968,25 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
           })}
           
           {/* Inner circle boundary */}
-                     <circle
-             cx={CONTAINER_WIDTH / 2}
-             cy={CONTAINER_HEIGHT / 2}
-             r={PIE_OUTER_RADIUS + 5}
+          <circle
+            cx={CONTAINER_WIDTH / 2}
+            cy={CONTAINER_HEIGHT / 2}
+            r={PIE_OUTER_RADIUS + 5}
             fill="none"
             stroke="#e5e7eb"
             strokeWidth="1"
             opacity="0.5"
+          />
+          
+          {/* Outer circular boundary */}
+          <circle
+            cx={CONTAINER_WIDTH / 2}
+            cy={CONTAINER_HEIGHT / 2}
+            r={Math.min(CONTAINER_WIDTH, CONTAINER_HEIGHT) / 2 - 10}
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth="2"
+            opacity="0.7"
           />
           
 
