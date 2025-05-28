@@ -275,6 +275,24 @@ const FollowersBubbleMap = ({
 
     Matter.World.add(engine.world, mouseConstraint)
 
+    // Add click event listener to the mouse constraint
+    Matter.Events.on(mouseConstraint, 'mouseup', function(event: any) {
+      const mouse = event.mouse;
+      const body = event.source.body;
+
+      // Check if a body was released and it's one of our bubbles
+      // Also check if the mouse didn't move much, to distinguish click from drag
+      const clickThreshold = 5; // Pixels moved to consider it a drag
+      const mouseMoved = Math.abs(mouse.mouseupPosition.x - mouse.mousedownPosition.x) > clickThreshold ||
+                         Math.abs(mouse.mouseupPosition.y - mouse.mousedownPosition.y) > clickThreshold;
+
+      if (body && !mouseMoved && (body as any).followerData) {
+        // It's a click on a bubble
+        const followerHandle = (body as any).followerData.follower.handle;
+        router.push(`/profile/${followerHandle}`);
+      }
+    });
+
     // Keep the mouse in sync with the canvas
     // mouse.element.removeEventListener("mousewheel", mouse.mousewheel);
     // mouse.element.removeEventListener("DOMMouseScroll", mouse.DOMMouseScroll);
@@ -520,6 +538,36 @@ const TagsDistributionChart = ({
   )
 }
 
+// Helper function for fetching with retry
+async function fetchWithRetry<T>(url: string, options?: RequestInit, attempt = 0, maxRetries = 3, retryDelay = 1000): Promise<T> {
+  try {
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      // Throw an error to trigger retry logic
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(`Invalid content type: ${contentType}`);
+    }
+
+    return await response.json() as T;
+
+  } catch (error) {
+    console.error(`Fetch failed for ${url} (attempt ${attempt + 1}):`, error);
+
+    if (attempt < maxRetries) {
+      const delay = retryDelay * Math.pow(2, attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchWithRetry(url, options, attempt + 1, maxRetries, retryDelay);
+    } else {
+      throw new Error(`Failed to fetch ${url} after ${maxRetries} retries: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+}
+
 // Main component
 export default function FollowersOverview({ authorHandle }: { authorHandle: string }) {
   const [followers, setFollowers] = useState<Follower[]>([])
@@ -534,15 +582,12 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
       try {
         setLoading(true)
         const sortParam = sortBy === 'followers_count' ? 'followers_count_desc' : 'smart_followers_count_desc'
-        const response = await fetch(
+        
+        // Use fetchWithRetry
+        const data = await fetchWithRetry<ApiResponse>(
           `https://api.cred.buzz/user/author-handle-followers?author_handle=${authorHandle}&sort_by=${sortParam}&limit=${limit}&start=0`
         )
         
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`)
-        }
-        
-        const data: ApiResponse = await response.json()
         setFollowers(data.result.followings)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred')

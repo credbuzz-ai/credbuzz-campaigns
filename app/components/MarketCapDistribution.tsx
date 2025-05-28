@@ -46,6 +46,16 @@ interface CalculatedSector {
   tokens: Token[]
 }
 
+interface TokenData {
+  id: string
+  symbol: string
+  name: string
+  market_cap_usd: number | null
+  current_price_usd: number | null
+  profile_image_url: string | null
+  sector?: string // Added sector for potential future use
+}
+
 // Constants
 const COLORS = {
   Micro: "#8884d8", // Purple
@@ -279,6 +289,35 @@ const BubbleTooltip = ({ token }: { token: Token }) => {
   )
 }
 
+// Helper function for fetching with retry (duplicate in both files for now, could be moved to a shared utility later)
+async function fetchWithRetry<T>(url: string, options?: RequestInit, attempt = 0, maxRetries = 3, retryDelay = 1000): Promise<T> {
+  try {
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(`Invalid content type: ${contentType}`);
+    }
+
+    return await response.json() as T;
+
+  } catch (error) {
+    console.error(`Fetch failed for ${url} (attempt ${attempt + 1}):`, error);
+
+    if (attempt < maxRetries) {
+      const delay = retryDelay * Math.pow(2, attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return fetchWithRetry(url, options, attempt + 1, maxRetries, retryDelay);
+    } else {
+      throw new Error(`Failed to fetch ${url} after ${maxRetries} retries: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+}
+
 export default function MarketCapDistribution({ authorHandle }: { authorHandle: string }) {
   // State
   const [marketCapData, setMarketCapData] = useState<MarketCapData | null>(null)
@@ -298,16 +337,16 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
 
   // Fetch data
   useEffect(() => {
-    const fetchMarketCapData = async () => {
+    const fetchData = async () => {
       try {
-        setLoading(true)
-        const response = await fetch(`https://api.cred.buzz/user/first-call-marketcap?author_handle=${authorHandle}`)
+        setLoading(true);
+        setError(null);
         
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`)
-        }
-        
-        const data: ApiResponse = await response.json()
+        // Use fetchWithRetry
+        const data = await fetchWithRetry<ApiResponse>(
+          `https://api.cred.buzz/user/first-call-marketcap?author_handle=${authorHandle}`
+        )
+
         setMarketCapData(data.result)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An unknown error occurred')
@@ -317,7 +356,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
     }
 
     if (authorHandle) {
-      fetchMarketCapData()
+      fetchData()
     }
   }, [authorHandle])
 
