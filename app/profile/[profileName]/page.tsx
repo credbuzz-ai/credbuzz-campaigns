@@ -3,6 +3,7 @@ import type { ProfileData, UserProfileResponse, ChartDataPoint, AuthorDetailsRes
 import { ProfileCharts } from "../../components/ProfileCharts"
 import SmartFeed from "../../components/SmartFeed"
 import MarketCapDistribution from "../../components/MarketCapDistribution"
+import FollowersOverview from "../../components/FollowersOverview"
 import Link from "next/link"
 
 async function fetchUserProfile(authorHandle: string, attempt = 0): Promise<UserProfileResponse | null> {
@@ -196,6 +197,11 @@ export default async function ProfilePage({ params }: { params: { profileName: s
             {/* Market Cap Distribution */}
             <div className="mt-8">
               <MarketCapDistribution authorHandle={profile.author_handle} />
+            </div>
+
+            {/* Followers Overview */}
+            <div className="mt-8">
+              <FollowersOverview authorHandle={profile.author_handle} />
             </div>
 
             {/* Additional bottom spacing to ensure smart feed extends fully */}
