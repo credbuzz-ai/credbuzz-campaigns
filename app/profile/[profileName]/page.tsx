@@ -198,14 +198,6 @@ export default async function ProfilePage({ params }: { params: { profileName: s
             <div className="mt-8">
               <MarketCapDistribution authorHandle={profile.author_handle} />
             </div>
-
-            {/* Followers Overview */}
-            <div className="mt-8">
-              <FollowersOverview authorHandle={profile.author_handle} />
-            </div>
-
-            {/* Additional bottom spacing to ensure smart feed extends fully */}
-            <div className="h-32"></div>
           </div>
         </div>
 
@@ -214,6 +206,14 @@ export default async function ProfilePage({ params }: { params: { profileName: s
           <SmartFeed authorHandle={profile.author_handle} />
         </div>
       </div>
+
+      {/* Followers Overview Section - Now full width below the above content */}
+      <div className="mt-8 py-8 px-8 lg:px-12">
+        <FollowersOverview authorHandle={profile.author_handle} />
+      </div>
+
+      {/* Additional bottom spacing to ensure smart feed extends fully (or for page bottom) */}
+      <div className="h-32"></div>
     </div>
   )
 }
