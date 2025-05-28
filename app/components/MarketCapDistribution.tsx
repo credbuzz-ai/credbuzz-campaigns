@@ -1070,4 +1070,4 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       )}
     </div>
   )
-} 
+}
