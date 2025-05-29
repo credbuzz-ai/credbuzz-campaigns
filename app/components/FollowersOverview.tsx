@@ -55,14 +55,18 @@ const getContainerDimensions = () => {
   if (typeof window !== 'undefined') {
     const screenWidth = window.innerWidth
     // Match the chart height (400) on lg and above when they are side-by-side
+    // Reducing widths slightly to see if it helps with perceived right-side border thickness
     if (screenWidth >= 1024) { // lg breakpoint and above
-      return { width: screenWidth >= 1536 ? 600 : screenWidth >= 1280 ? 500 : 450, height: 400 } // Fixed height for lg+
+      return { 
+        width: screenWidth >= 1536 ? 570 : screenWidth >= 1280 ? 470 : 420, 
+        height: 400 
+      } 
     } else { // Smaller screens, keep responsive width and a suitable height
-      return { width: Math.min(screenWidth - 40, 360), height: 280 } // Adjusted height for stacking layout
+      return { width: Math.min(screenWidth - 40, 360), height: 280 } // Width logic for smaller screens seems okay
     }
   }
-  // Default for SSR - match lg fixed height
-  return { width: 500, height: 400 }
+  // Default for SSR - align with a mid-tier reduced width
+  return { width: 470, height: 400 }
 }
 
 const CONTAINER_DIMENSIONS = getContainerDimensions()
@@ -200,11 +204,15 @@ const FollowersBubbleMap = ({
     }
 
     simulationRef.current = d3.forceSimulation<D3Node>(nodesRef.current)
-      .force("charge", d3.forceManyBody().strength(12))
-      .force("collide", d3.forceCollide<D3Node>((d: D3Node) => d.radius + 2).strength(0.9))
-      .force("x", d3.forceX(width / 2).strength(0.025))
-      .force("y", d3.forceY(height / 2).strength(0.025))
+      .alphaDecay(0.01) // Slow down the cooling rate (default is ~0.0228)
+      .alpha(0.7) // Start with a higher alpha
+      .force("charge", d3.forceManyBody().strength(15)) 
+      .force("collide", d3.forceCollide<D3Node>((d: D3Node) => d.radius + 1).strength(0.9)) // Reduced padding from +2 to +1
+      .force("x", d3.forceX(width / 2).strength(0.015)) 
+      .force("y", d3.forceY(height / 2).strength(0.015)) 
       .on("tick", ticked);
+    
+    simulationRef.current.restart(); // Ensure it starts/restarts effectively
 
     // RESTORED nodeElements definition and rendering logic
     const nodeElements = svg.selectAll<SVGGElement, D3Node>(".bubble-group")
@@ -322,13 +330,17 @@ const FollowersBubbleMap = ({
         (exit: d3.Selection<SVGGElement, D3Node, SVGSVGElement | null, undefined>) => exit.remove()
       );
     
+    const OUTER_BORDER_OFFSET = 7.5; // Half of 15px translucent border, which is the outermost extent
+
     function ticked() {
       nodeElements // This variable is now defined
         .attr("transform", (d: D3Node) => `translate(${d.x},${d.y})`)
         .each((d: D3Node) => {
           if (d.x !== undefined && d.y !== undefined && d.radius !== undefined) {
-            d.x = Math.max(d.radius, Math.min(width - d.radius, d.x));
-            d.y = Math.max(d.radius, Math.min(height - d.radius, d.y));
+            // Adjust clamping to account for the full visual extent of the bubble including borders
+            const effectiveRadius = d.radius + OUTER_BORDER_OFFSET;
+            d.x = Math.max(effectiveRadius, Math.min(width - effectiveRadius, d.x));
+            d.y = Math.max(effectiveRadius, Math.min(height - effectiveRadius, d.y));
           }
         });
     }
