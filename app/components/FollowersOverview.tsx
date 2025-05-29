@@ -123,113 +123,117 @@ const BubbleTooltip = ({ follower }: { follower: Follower }) => {
 const FollowersBubbleMap = ({ 
   followers, 
   sortBy, 
-  loading 
+  loading,
+  selectedTagForFilter
 }: { 
-  followers: Follower[]
-  sortBy: 'followers_count' | 'smart_followers'
-  loading: boolean
+  followers: Follower[];
+  sortBy: 'followers_count' | 'smart_followers';
+  loading: boolean;
+  selectedTagForFilter: string | null;
 }) => {
-  const [hoveredFollower, setHoveredFollower] = useState<Follower | null>(null)
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
-  const [containerDimensions, setContainerDimensions] = useState(getContainerDimensions())
-  
-  const router = useRouter()
-  const svgRef = useRef<SVGSVGElement>(null)
-  const simulationRef = useRef<d3.Simulation<D3Node, undefined> | null>(null)
-  const nodesRef = useRef<D3Node[]>([]) // Keep a ref for nodes data
+  const [hoveredFollower, setHoveredFollower] = useState<Follower | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [containerDimensions, setContainerDimensions] = useState(getContainerDimensions());
+  const router = useRouter();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const simulationRef = useRef<d3.Simulation<D3Node, undefined> | null>(null);
+  const nodesRef = useRef<D3Node[]>([]); // This will store the D3 nodes data
 
-  // Handle window resize
   useEffect(() => {
     const handleResize = () => {
-      const newDimensions = getContainerDimensions()
-      setContainerDimensions(newDimensions)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+      const newDimensions = getContainerDimensions();
+      setContainerDimensions(newDimensions);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // D3 Simulation Setup
   useEffect(() => {
-    if (loading || followers.length === 0 || !svgRef.current) return
+    if (!svgRef.current) return;
 
-    const { width, height } = containerDimensions
+    const followersToDisplay = selectedTagForFilter
+      ? followers.filter(f => f.tags.includes(selectedTagForFilter.toLowerCase().replace(/ /g, '_')))
+      : followers;
 
-    // Prepare nodes data
-    const maxCount = Math.max(...followers.map(f => sortBy === 'followers_count' ? f.followers_count : f.smart_followers), 0)
-    nodesRef.current = followers.map((follower): D3Node => {
-      const count = sortBy === 'followers_count' ? follower.followers_count : follower.smart_followers
-      const size = getBubbleSize(count, maxCount)
+    // If loading and there's no specific filter, or if there are no followers to display at all (even without filter)
+    // we might want to show a loader or an empty state, which is handled in the return statement.
+    // For the D3 logic, if followersToDisplay is empty, we clear the SVG and stop.
+    if (followersToDisplay.length === 0) {
+      d3.select(svgRef.current).selectAll("*").remove();
+      return;
+    }
+
+    const { width, height } = containerDimensions;
+    const maxCount = Math.max(...followersToDisplay.map(f => sortBy === 'followers_count' ? f.followers_count : f.smart_followers), 0);
+
+    nodesRef.current = followersToDisplay.map((follower): D3Node => {
+      const count = sortBy === 'followers_count' ? follower.followers_count : follower.smart_followers;
+      const size = getBubbleSize(count, maxCount);
       return {
         id: follower.handle,
         follower: follower,
         size: size,
         radius: size / 2,
-        // Initial positions can be set, or let D3 handle it
-        x: width / 2 + (Math.random() - 0.5) * 50, // Randomize initial positions slightly
-        y: height / 2 + (Math.random() - 0.5) * 50,
-      }
-    })
+        x: width / 2 + (Math.random() - 0.5) * width * 0.3, // Spread initial positions a bit more
+        y: height / 2 + (Math.random() - 0.5) * height * 0.3,
+      };
+    });
 
-    // Clear previous SVG contents
-    d3.select(svgRef.current).selectAll("*").remove()
+    d3.select(svgRef.current).selectAll("*").remove(); // Clear before re-render
 
     const svg = d3.select(svgRef.current)
       .attr("width", width)
       .attr("height", height)
-      .attr("viewBox", `0 0 ${width} ${height}`)
+      .attr("viewBox", `0 0 ${width} ${height}`);
 
-    // Create simulation if it doesn't exist or re-create if followers/sortBy changes
     if (simulationRef.current) {
-      simulationRef.current.stop()
+      simulationRef.current.stop();
     }
 
     simulationRef.current = d3.forceSimulation<D3Node>(nodesRef.current)
-      .force("charge", d3.forceManyBody().strength(12)) // Slightly increased repulsion again (was 10)
-      .force("collide", d3.forceCollide<D3Node>((d: D3Node) => d.radius + 2).strength(0.9)) // Slightly stronger collision (was 0.8)
-      .force("x", d3.forceX(width / 2).strength(0.025)) // Kept x-centering, slightly adjusted (was 0.02)
-      .force("y", d3.forceY(height / 2).strength(0.025)) // Kept y-centering, slightly adjusted (was 0.02)
-      .on("tick", ticked)
+      .force("charge", d3.forceManyBody().strength(12))
+      .force("collide", d3.forceCollide<D3Node>((d: D3Node) => d.radius + 2).strength(0.9))
+      .force("x", d3.forceX(width / 2).strength(0.025))
+      .force("y", d3.forceY(height / 2).strength(0.025))
+      .on("tick", ticked);
 
+    // RESTORED nodeElements definition and rendering logic
     const nodeElements = svg.selectAll<SVGGElement, D3Node>(".bubble-group")
       .data(nodesRef.current, (d: D3Node) => d.id)
       .join(
         (enter: d3.Selection<d3.EnterElement, D3Node, SVGSVGElement | null, undefined>) => {
           const group = enter.append("g")
             .attr("class", "bubble-group cursor-pointer")
-            .style("transform-origin", "center center") // For hover scale
+            .style("transform-origin", "center center")
             .on("mouseover", (event: MouseEvent, d: D3Node) => {
-              setHoveredFollower(d.follower)
-              // Adjust tooltip position slightly to avoid direct overlap
-              setTooltipPosition({ x: event.clientX, y: event.clientY }) 
-              d3.select(event.currentTarget as SVGGElement).select("circle").style("filter", "drop-shadow(0 4px 12px rgba(0,0,0,0.3))")
-              d3.select(event.currentTarget as SVGGElement).raise() // Bring to front
+              setHoveredFollower(d.follower);
+              setTooltipPosition({ x: event.clientX, y: event.clientY });
+              d3.select(event.currentTarget as SVGGElement).select("circle").style("filter", "drop-shadow(0 4px 12px rgba(0,0,0,0.3))");
+              d3.select(event.currentTarget as SVGGElement).raise();
             })
             .on("mouseout", (event: MouseEvent, d: D3Node) => {
-              setHoveredFollower(null)
-              d3.select(event.currentTarget as SVGGElement).select("circle").style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.1))")
+              setHoveredFollower(null);
+              d3.select(event.currentTarget as SVGGElement).select("circle").style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.1))");
             })
             .on("click", (event: MouseEvent, d: D3Node) => {
-              router.push(`/profile/${d.follower.handle}`)
+              router.push(`/profile/${d.follower.handle}`);
             })
-            .call(drag(simulationRef.current!)) // Attach drag behavior
+            .call(drag(simulationRef.current!));
 
           group.append("circle")
             .attr("r", (d: D3Node) => d.radius)
             .attr("fill", "white")
             .style("stroke-width", "3px")
             .style("stroke", (d: D3Node) => {
-              const primaryTag = d.follower.tags[0] || 'unknown'
-              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown
+              const primaryTag = d.follower.tags[0] || 'unknown';
+              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
             })
-            .style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.1))") // Initial shadow
-            .transition().duration(300) // Optional: Animate radius change if needed
-            .attr("r", (d: D3Node) => d.radius)
-
+            .style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.1))");
 
           group.append("clipPath")
             .attr("id", (d: D3Node) => `clip-${d.id}`)
             .append("circle")
-            .attr("r", (d: D3Node) => d.radius)
+            .attr("r", (d: D3Node) => d.radius);
 
           group.append("image")
             .attr("xlink:href", (d: D3Node) => d.follower.profile_image_url)
@@ -239,159 +243,175 @@ const FollowersBubbleMap = ({
             .attr("width", (d: D3Node) => d.size)
             .attr("height", (d: D3Node) => d.size)
             .attr("preserveAspectRatio", "xMidYMid slice")
-            .on("error", function(this: SVGImageElement, event: Event, d: D3Node) { // Use \'function\' for \'this\' context
-              d3.select(this).remove() // Remove image if error
-              // Add fallback text
-              group.filter((nodeData: D3Node) => nodeData.id === d.id) // Ensure we are on the correct group
+            .on("error", function(this: SVGImageElement, event: Event, d: D3Node) {
+              d3.select(this).remove();
+              group.filter((nodeData: D3Node) => nodeData.id === d.id)
                    .append("text")
                    .attr("text-anchor", "middle")
-                   .attr("dy", "0.3em") // Vertically center
+                   .attr("dy", "0.3em")
                    .style("font-size", (dNode: D3Node) => `${Math.max(8, dNode.radius / 3)}px`)
                    .style("font-weight", "bold")
-                   .style("fill", "#4A5568") // gray-700
-                   .text((dNode: D3Node) => dNode.follower.profile_name.substring(0, 2).toUpperCase())
-            })
+                   .style("fill", "#4A5568")
+                   .text((dNode: D3Node) => dNode.follower.profile_name.substring(0, 2).toUpperCase());
+            });
           
-          // Add title for native browser tooltip (accessibility)
           group.append("title")
-            .text((d: D3Node) => `${d.follower.profile_name} - ${formatNumber(sortBy === 'followers_count' ? d.follower.followers_count : d.follower.smart_followers)}`)
+            .text((d: D3Node) => `${d.follower.profile_name} - ${formatNumber(sortBy === 'followers_count' ? d.follower.followers_count : d.follower.smart_followers)}`);
 
-          return group
+          return group;
         },
         (update: d3.Selection<SVGGElement, D3Node, SVGSVGElement | null, undefined>) => {
-          // Update existing elements if data changes (e.g., size due to sortBy)
           update.select<SVGCircleElement>("circle")
             .transition().duration(300)
             .attr("r", (d: D3Node) => d.radius)
             .style("stroke", (d: D3Node) => {
-              const primaryTag = d.follower.tags[0] || 'unknown'
-              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown
-            })
-          
+              const primaryTag = d.follower.tags[0] || 'unknown';
+              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
+            });
           update.select<SVGClipPathElement>("clipPath").select("circle")
             .transition().duration(300)
-            .attr("r", (d: D3Node) => d.radius)
-
+            .attr("r", (d: D3Node) => d.radius);
           update.select<SVGImageElement>("image")
-            .attr("xlink:href", (d: D3Node) => d.follower.profile_image_url) // Ensure image updates if URL changes
+            .attr("xlink:href", (d: D3Node) => d.follower.profile_image_url)
             .transition().duration(300)
             .attr("x", (d: D3Node) => -d.radius)
             .attr("y", (d: D3Node) => -d.radius)
             .attr("width", (d: D3Node) => d.size)
-            .attr("height", (d: D3Node) => d.size)
-          
+            .attr("height", (d: D3Node) => d.size);
           update.select("title")
-            .text((d: D3Node) => `${d.follower.profile_name} - ${formatNumber(sortBy === 'followers_count' ? d.follower.followers_count : d.follower.smart_followers)}`)
-
-          return update
+            .text((d: D3Node) => `${d.follower.profile_name} - ${formatNumber(sortBy === 'followers_count' ? d.follower.followers_count : d.follower.smart_followers)}`);
+          return update;
         },
         (exit: d3.Selection<SVGGElement, D3Node, SVGSVGElement | null, undefined>) => exit.remove()
-      )
+      );
     
     function ticked() {
-      nodeElements
+      nodeElements // This variable is now defined
         .attr("transform", (d: D3Node) => `translate(${d.x},${d.y})`)
-        .each((d: D3Node) => { // Boundary enforcement - allow touching edges
-          if (d.x !== undefined && d.y !== undefined) { // Make sure x and y are defined
-            d.x = Math.max(0 + d.radius, Math.min(width - d.radius, d.x)); // Clamp between radius and width - radius
-            d.y = Math.max(0 + d.radius, Math.min(height - d.radius, d.y)); // Clamp between radius and height - radius
+        .each((d: D3Node) => {
+          if (d.x !== undefined && d.y !== undefined && d.radius !== undefined) {
+            d.x = Math.max(d.radius, Math.min(width - d.radius, d.x));
+            d.y = Math.max(d.radius, Math.min(height - d.radius, d.y));
           }
         });
     }
 
-    // Drag behavior
     function drag(simulation: d3.Simulation<D3Node, undefined>) {
       function dragstarted(event: d3.D3DragEvent<SVGGElement, D3Node, any>, d: D3Node) {
-        if (!event.active) simulation.alphaTarget(0.3).restart()
-        d.fx = d.x
-        d.fy = d.y
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
       }
-      
       function dragged(event: d3.D3DragEvent<SVGGElement, D3Node, any>, d: D3Node) {
-        d.fx = event.x
-        d.fy = event.y
+        d.fx = event.x;
+        d.fy = event.y;
       }
-      
       function dragended(event: d3.D3DragEvent<SVGGElement, D3Node, any>, d: D3Node) {
-        if (!event.active) simulation.alphaTarget(0)
-        d.fx = null
-        d.fy = null
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
       }
-      
       return d3.drag<SVGGElement, D3Node>()
         .on("start", dragstarted)
         .on("drag", dragged)
-        .on("end", dragended)
+        .on("end", dragended);
     }
     
-    // Cleanup simulation on component unmount or when dependencies change
     return () => {
       if (simulationRef.current) {
-        simulationRef.current.stop()
+        simulationRef.current.stop();
       }
-    }
-  }, [followers, sortBy, loading, containerDimensions]) // Rerun on dimension change too
+    };
+  }, [followers, sortBy, loading, containerDimensions, selectedTagForFilter, router]); // Added router to deps for click handler
 
-  if (loading && followers.length === 0) { // Ensure loader shows if followers is empty but still loading
-    const loaderHeight = containerDimensions.height > 0 ? containerDimensions.height : CONTAINER_HEIGHT; // Use dynamic height if available
+  const followersToDisplayCount = selectedTagForFilter 
+    ? followers.filter(f => f.tags.includes(selectedTagForFilter.toLowerCase().replace(/ /g, '_'))).length 
+    : followers.length;
+
+  // Initial loading state for the whole component (before any data or when authorHandle changes)
+  if (loading && followers.length === 0 && !selectedTagForFilter) { 
+    const loaderHeight = containerDimensions.height > 0 ? containerDimensions.height : CONTAINER_HEIGHT;
     return (
-      <div className="flex items-center justify-center bg-gray-50 rounded-lg" style={{ height: loaderHeight }}> {/* Use dynamic height */}
+      <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 flex items-center justify-center" style={{ height: loaderHeight }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
           <p className="text-gray-500">Loading followers...</p>
         </div>
       </div>
-    )
+    );
   }
-
+  
+  // State when a filter is active but results in no followers
+  if (!loading && selectedTagForFilter && followersToDisplayCount === 0) {
+    return (
+      <div 
+        className="bg-gray-50 rounded-lg border border-gray-200 p-6 flex items-center justify-center"
+        style={{ height: containerDimensions.height || CONTAINER_HEIGHT }} 
+      >
+        <p className="text-gray-500 text-center">
+            No followers match the selected tag: "{selectedTagForFilter}".
+        </p>
+      </div>
+    );
+  }
+  
+  // Default: Render the SVG container for D3 to draw in
   return (
     <div className="relative">
       <div 
-        className="bg-gray-50 rounded-lg border border-gray-200 relative overflow-hidden p-6" // Added padding
-        // Ensure this div itself doesn't create scrollbars if svg is larger for a moment
-        // The height will be implicitly set by the SVG and padding inside
+        className="bg-gray-50 rounded-lg border border-gray-200 relative overflow-hidden p-6" 
       >
         <svg 
           ref={svgRef} 
-          className="block" // Remove extra space below inline SVG
+          className="block" 
           style={{ width: containerDimensions.width, height: containerDimensions.height }} 
         />
       </div>
-
-      {/* Tooltip */}
       {hoveredFollower && (
         <div 
-          className="fixed z-[1000] pointer-events-none" // Ensure tooltip is above SVG
+          className="fixed z-[1000] pointer-events-none"
           style={{
             left: `${tooltipPosition.x + 15}px`,
-            top: `${tooltipPosition.y - 10}px`, // Position above cursor
-            transform: 'translateY(-100%)', // Adjust based on tooltip height
-            // Consider adding a max-width to the tooltip if not already handled by BubbleTooltip
+            top: `${tooltipPosition.y - 10}px`,
+            transform: 'translateY(-100%)',
           }}
         >
           <BubbleTooltip follower={hoveredFollower} />
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // Sub-component 2: Tags Distribution Donut Chart
 const TagsDistributionChart = ({ 
   followers,
-  loading 
+  loading, 
+  selectedTagForFilter, 
+  setSelectedTagForFilter 
 }: { 
-  followers: Follower[]
-  loading: boolean
+  followers: Follower[];
+  loading: boolean;
+  selectedTagForFilter: string | null;
+  setSelectedTagForFilter: (tag: string | null) => void;
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const onPieEnter = (_: any, index: number) => {
     setActiveIndex(index);
   };
-
   const onPieLeave = () => {
     setActiveIndex(null);
+  };
+
+  const handlePieClick = (data: any, index: number) => {
+    const clickedTagName = data.name; // This is the display name like "Project Member"
+    if (selectedTagForFilter === clickedTagName) {
+      setSelectedTagForFilter(null); // Toggle off if same tag is clicked
+    } else {
+      setSelectedTagForFilter(clickedTagName); // Set to the display name
+    }
+    setActiveIndex(null); // Reset hover effect after click
   };
 
   if (loading) {
@@ -405,20 +425,19 @@ const TagsDistributionChart = ({
     )
   }
 
-  // Count tag occurrences
-  const tagCounts: { [key: string]: number } = {}
+  const tagCounts: { [key: string]: number } = {};
   followers.forEach(follower => {
     follower.tags.forEach(tag => {
-      tagCounts[tag] = (tagCounts[tag] || 0) + 1
-    })
-  })
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  });
 
-  // Convert to chart data
   const chartData = Object.entries(tagCounts).map(([tag, count]) => ({
-    name: tag.replace('_', ' '),
+    name: tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // Format for display: 'project_member' -> 'Project Member'
+    originalTag: tag, // Keep original for potential reverse mapping if needed
     value: count,
     color: TAG_COLORS[tag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown
-  })).sort((a, b) => b.value - a.value)
+  })).sort((a, b) => b.value - a.value);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -442,7 +461,7 @@ const TagsDistributionChart = ({
   // Custom Active Shape for Pie Chart
   const renderActiveShape = (props: any) => {
     const RADIAN = Math.PI / 180;
-    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props; // payload.name here is the formatted one
     const sin = Math.sin(-RADIAN * midAngle);
     const cos = Math.cos(-RADIAN * midAngle);
     const sx = cx + (outerRadius + 5) * cos; // Move text slightly out
@@ -482,31 +501,57 @@ const TagsDistributionChart = ({
       <ResponsiveContainer width="100%" height={400}>
         <PieChart>
           <Pie
-            activeIndex={activeIndex ?? undefined} // Handle null case for activeIndex
+            activeIndex={activeIndex ?? undefined}
             activeShape={renderActiveShape}
             data={chartData}
             cx="50%"
             cy="50%"
-            innerRadius={80} // Increased from 60
-            outerRadius={150} // Increased from 120
-            paddingAngle={3} // Slightly increased padding
+            innerRadius={80}
+            outerRadius={150}
+            paddingAngle={3}
             dataKey="value"
-            nameKey="name"
+            nameKey="name" // This uses the formatted name from chartData
             onMouseEnter={onPieEnter}
             onMouseLeave={onPieLeave}
-            cornerRadius={5} // Add rounded corners to all segments
+            onClick={handlePieClick} 
+            cornerRadius={5}
           >
-            {chartData.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.color} 
-                // Apply a subtle effect if not active and another segment is active
-                opacity={activeIndex === null || activeIndex === index ? 1 : 0.6}
-                style={{ transition: 'opacity 0.2s ease-in-out' }} // Smooth transition for opacity
-              />
-            ))}
+            {chartData.map((entry, index) => {
+              // entry.name is the formatted display name like "Project Member"
+              const isGloballySelected = selectedTagForFilter === entry.name;
+              const isHoveredCurrently = activeIndex === index;
+              
+              let cellOpacity = 1;
+              let cellStrokeWidth = 1;
+              let cellStroke = 'rgba(0,0,0,0.1)'; // Default faint border
+
+              if (isGloballySelected) {
+                cellOpacity = 1; 
+                cellStrokeWidth = 3;
+                cellStroke = entry.color; // Highlight with its own color
+              } else if (selectedTagForFilter) { // A filter is active, but this cell is not it
+                cellOpacity = 0.3;
+              } else if (isHoveredCurrently) { // No global filter, this cell is hovered
+                cellOpacity = 1;
+                cellStrokeWidth = 2;
+                cellStroke = entry.color;
+              } else if (activeIndex !== null && !isHoveredCurrently) { // No global filter, another cell is hovered
+                cellOpacity = 0.6;
+              }
+
+              return (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={entry.color} 
+                  opacity={cellOpacity}
+                  stroke={cellStroke} 
+                  strokeWidth={cellStrokeWidth}
+                  style={{ transition: 'all 0.2s ease-in-out', cursor: 'pointer' }}
+                />
+              );
+            })}
           </Pie>
-          <RechartsTooltip content={<CustomTooltip />} /> {/* Use aliased RechartsTooltip */}
+          <RechartsTooltip content={<CustomTooltip />} />
           <Legend 
             verticalAlign="bottom" 
             height={36}
@@ -518,6 +563,16 @@ const TagsDistributionChart = ({
           />
         </PieChart>
       </ResponsiveContainer>
+      {selectedTagForFilter && (
+        <div className="text-center mt-3">
+          <button 
+            onClick={() => { setSelectedTagForFilter(null); setActiveIndex(null); }}
+            className="px-3 py-1 bg-blue-500 text-white rounded-md text-xs hover:bg-blue-600 transition-colors"
+          >
+            Clear filter: {selectedTagForFilter}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -566,57 +621,49 @@ async function fetchWithRetry<T>(url: string, options?: RequestInit, attempt = 0
 
 // Main component
 export default function FollowersOverview({ authorHandle }: { authorHandle: string }) {
-  const [followers, setFollowers] = useState<Follower[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
-  const [sortBy, setSortBy] = useState<'followers_count' | 'smart_followers'>('smart_followers')
-  const [limit, setLimit] = useState<20 | 50 | 100>(50)
+  const [followers, setFollowers] = useState<Follower[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<'followers_count' | 'smart_followers'>('smart_followers');
+  const [limit, setLimit] = useState<20 | 50 | 100>(50);
   const [currentAuthorHandle, setCurrentAuthorHandle] = useState<string | null>(null);
+  const [selectedTagForFilter, setSelectedTagForFilter] = useState<string | null>(null);
 
   // Fetch data
   useEffect(() => {
     const fetchFollowersData = async () => {
-      if (!authorHandle) { // Don't fetch if authorHandle is not set
-        setFollowers([])
-        setLoading(false)
-        return
+      if (!authorHandle) {
+        setFollowers([]);
+        setLoading(false);
+        return;
       }
-      
-      // Only refetch if authorHandle, sortBy, or limit changes.
-      // Reset followers if authorHandle changes to show loading state properly for new author.
       if (authorHandle !== currentAuthorHandle) {
-        setFollowers([]); // Clear previous followers
+        setFollowers([]); 
         setCurrentAuthorHandle(authorHandle);
+        setSelectedTagForFilter(null); // Clear filter when author changes
       }
-      
-      setLoading(true)
-      setError(null) // Clear previous errors
-
+      setLoading(true);
+      setError(null); 
       try {
-        const sortParam = sortBy === 'followers_count' ? 'followers_count_desc' : 'smart_followers_count_desc'
-        
+        const sortParam = sortBy === 'followers_count' ? 'followers_count_desc' : 'smart_followers_count_desc';
         const data = await fetchWithRetry<ApiResponse>(
           `https://api.cred.buzz/user/author-handle-followers?author_handle=${authorHandle}&sort_by=${sortParam}&limit=${limit}&start=0`
-        )
-        
+        );
         if (data.result && Array.isArray(data.result.followings)) {
-        setFollowers(data.result.followings)
+          setFollowers(data.result.followings);
         } else {
-          console.warn("Unexpected API response structure:", data);
-          setFollowers([]) // Set to empty array if data is not as expected
+          setFollowers([]);
           setError("Failed to parse followers data from API.");
         }
       } catch (err) {
-        console.error("Error fetching followers: ", err);
-        setError(err instanceof Error ? err.message : 'An unknown error occurred while fetching followers.')
-        setFollowers([]) // Ensure followers is empty on error
+        setError(err instanceof Error ? err.message : 'An unknown error occurred while fetching followers.');
+        setFollowers([]);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-
-      fetchFollowersData()
-  }, [authorHandle, sortBy, limit, currentAuthorHandle]) // Add currentAuthorHandle to dependencies
+    };
+    fetchFollowersData();
+  }, [authorHandle, sortBy, limit, currentAuthorHandle]);
 
   // Loading and error states
   if (error && !loading) { // Show error only if not actively loading new data
@@ -686,12 +733,14 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
         <div className="min-w-0 lg:col-span-1">
           <h4 className="text-md font-medium text-gray-800 mb-3">
             Top {limit} by {sortBy === 'smart_followers' ? 'Smart Followers' : 'Total Followers'}
+            {selectedTagForFilter && <span className="text-sm text-gray-600 ml-2">(filtered by: {selectedTagForFilter})</span>} 
           </h4>
           <div className="w-full overflow-x-auto">
             <FollowersBubbleMap 
               followers={followers}
               sortBy={sortBy}
               loading={loading}
+              selectedTagForFilter={selectedTagForFilter}
             />
           </div>
         </div>
@@ -711,8 +760,10 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
           ) : followers.length > 0 ? (
           <TagsDistributionChart 
             followers={followers}
-              loading={loading && followers.length === 0} // Pass loading only if truly no data yet for chart
-            />
+            loading={loading && followers.length === 0}
+            selectedTagForFilter={selectedTagForFilter}
+            setSelectedTagForFilter={setSelectedTagForFilter}
+          />
           ) : !loading && followers.length === 0 && !error ? ( // Case: No followers found, not loading, no error
             <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
               <p className="text-gray-500">No followers data to display for this selection.</p>
