@@ -69,6 +69,15 @@ const CONTAINER_DIMENSIONS = getContainerDimensions()
 const CONTAINER_WIDTH = CONTAINER_DIMENSIONS.width
 const CONTAINER_HEIGHT = CONTAINER_DIMENSIONS.height
 
+// Utility function to convert hex to RGBA
+const hexToRgba = (hex: string, alpha: number = 1): string => {
+  const bigint = parseInt(hex.slice(1), 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 // Utility functions
 const formatNumber = (num: number): string => {
   if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`
@@ -76,7 +85,7 @@ const formatNumber = (num: number): string => {
   return num.toString()
 }
 
-const getBubbleSize = (count: number, maxCount: number, minSize: number = 25, maxSize: number = 100): number => {
+const getBubbleSize = (count: number, maxCount: number, minSize: number = 20, maxSize: number = 80): number => {
   if (maxCount === 0) return minSize
   // Use linear scale for more drastic size difference
   const normalized = count / maxCount
@@ -223,10 +232,11 @@ const FollowersBubbleMap = ({
           group.append("circle")
             .attr("r", (d: D3Node) => d.radius)
             .attr("fill", "white")
-            .style("stroke-width", "3px")
+            .style("stroke-width", "15px")
             .style("stroke", (d: D3Node) => {
               const primaryTag = d.follower.tags[0] || 'unknown';
-              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
+              const colorHex = TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
+              return hexToRgba(colorHex, 0.5);
             })
             .style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.1))");
 
@@ -255,22 +265,39 @@ const FollowersBubbleMap = ({
                    .text((dNode: D3Node) => dNode.follower.profile_name.substring(0, 2).toUpperCase());
             });
           
+          // New outer sharp border circle
+          group.append("circle")
+            .attr("class", "outer-sharp-border")
+            .attr("r", (d: D3Node) => d.radius + 6.75) // (15px translucent / 2) - (1.5px sharp / 2) = 7.5 - 0.75 = 6.75
+            .style("fill", "none")
+            .style("stroke-width", "1.5px")
+            .style("stroke", (d: D3Node) => {
+              const primaryTag = d.follower.tags[0] || 'unknown';
+              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown; // Opaque color
+            });
+
           group.append("title")
             .text((d: D3Node) => `${d.follower.profile_name} - ${formatNumber(sortBy === 'followers_count' ? d.follower.followers_count : d.follower.smart_followers)}`);
 
           return group;
         },
         (update: d3.Selection<SVGGElement, D3Node, SVGSVGElement | null, undefined>) => {
-          update.select<SVGCircleElement>("circle")
+          // Update existing main circle (translucent border)
+          update.select<SVGCircleElement>("circle:not(.outer-sharp-border)") // Ensure we don't select the new border circle here
             .transition().duration(300)
             .attr("r", (d: D3Node) => d.radius)
             .style("stroke", (d: D3Node) => {
               const primaryTag = d.follower.tags[0] || 'unknown';
-              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
+              const colorHex = TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
+              return hexToRgba(colorHex, 0.5); 
             });
+          
+          // Update clipPath
           update.select<SVGClipPathElement>("clipPath").select("circle")
             .transition().duration(300)
             .attr("r", (d: D3Node) => d.radius);
+
+          // Update image
           update.select<SVGImageElement>("image")
             .attr("xlink:href", (d: D3Node) => d.follower.profile_image_url)
             .transition().duration(300)
@@ -278,6 +305,16 @@ const FollowersBubbleMap = ({
             .attr("y", (d: D3Node) => -d.radius)
             .attr("width", (d: D3Node) => d.size)
             .attr("height", (d: D3Node) => d.size);
+
+          // Update the new outer sharp border circle
+          update.select<SVGCircleElement>(".outer-sharp-border")
+            .transition().duration(300)
+            .attr("r", (d: D3Node) => d.radius + 6.75)
+            .style("stroke", (d: D3Node) => {
+              const primaryTag = d.follower.tags[0] || 'unknown';
+              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
+            });
+
           update.select("title")
             .text((d: D3Node) => `${d.follower.profile_name} - ${formatNumber(sortBy === 'followers_count' ? d.follower.followers_count : d.follower.smart_followers)}`);
           return update;
