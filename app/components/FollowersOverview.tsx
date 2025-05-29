@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts"
-import Matter from "matter-js"
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Sector } from "recharts"
+import * as d3 from "d3" // Import D3
 import { useRouter } from "next/navigation"
 
 // Type definitions
@@ -26,13 +26,17 @@ interface ApiResponse {
   message: string
 }
 
-interface PhysicsBubble {
+// D3 specific type for nodes
+interface D3Node extends d3.SimulationNodeDatum {
   id: string
   follower: Follower
-  x: number
-  y: number
   size: number
-  bodyId: number
+  radius: number // Store radius for collision detection
+  // Explicitly add x, y, fx, fy as optional for D3 simulation and drag
+  x?: number
+  y?: number
+  fx?: number | null // fx and fy can be null when drag ends
+  fy?: number | null
 }
 
 // Color scheme for tags
@@ -50,17 +54,15 @@ const TAG_COLORS = {
 const getContainerDimensions = () => {
   if (typeof window !== 'undefined') {
     const screenWidth = window.innerWidth
-    if (screenWidth >= 1536) { // 2xl breakpoint
-      return { width: 1000, height: 500 }
-    } else if (screenWidth >= 1280) { // xl breakpoint
-      return { width: 800, height: 450 }
-    } else if (screenWidth >= 1024) { // lg breakpoint
-      return { width: 700, height: 400 }
-    } else {
-      return { width: 600, height: 350 }
+    // Match the chart height (400) on lg and above when they are side-by-side
+    if (screenWidth >= 1024) { // lg breakpoint and above
+      return { width: screenWidth >= 1536 ? 600 : screenWidth >= 1280 ? 500 : 450, height: 400 } // Fixed height for lg+
+    } else { // Smaller screens, keep responsive width and a suitable height
+      return { width: Math.min(screenWidth - 40, 360), height: 280 } // Adjusted height for stacking layout
     }
   }
-  return { width: 800, height: 450 } // default for SSR
+  // Default for SSR - match lg fixed height
+  return { width: 500, height: 400 }
 }
 
 const CONTAINER_DIMENSIONS = getContainerDimensions()
@@ -74,7 +76,7 @@ const formatNumber = (num: number): string => {
   return num.toString()
 }
 
-const getBubbleSize = (count: number, maxCount: number, minSize: number = 40, maxSize: number = 150): number => {
+const getBubbleSize = (count: number, maxCount: number, minSize: number = 25, maxSize: number = 100): number => {
   if (maxCount === 0) return minSize
   // Use linear scale for more drastic size difference
   const normalized = count / maxCount
@@ -117,7 +119,7 @@ const BubbleTooltip = ({ follower }: { follower: Follower }) => {
   )
 }
 
-// Sub-component 1: Followers Bubble Map with Physics
+// Sub-component 1: Followers Bubble Map with D3.js
 const FollowersBubbleMap = ({ 
   followers, 
   sortBy, 
@@ -129,21 +131,12 @@ const FollowersBubbleMap = ({
 }) => {
   const [hoveredFollower, setHoveredFollower] = useState<Follower | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
-  const [physicsBubbles, setPhysicsBubbles] = useState<PhysicsBubble[]>([])
-  const [containerDimensions, setContainerDimensions] = useState({ 
-    width: CONTAINER_WIDTH, 
-    height: CONTAINER_HEIGHT 
-  })
+  const [containerDimensions, setContainerDimensions] = useState(getContainerDimensions())
   
-  // Get Next.js router
   const router = useRouter()
-
-  // Refs for Matter.js
-  const engineRef = useRef<Matter.Engine | null>(null)
-  const wallBodiesRef = useRef<Matter.Body[]>([])
-  const bubbleBodiesRef = useRef<Matter.Body[]>([])
-  const animationFrameRef = useRef<number | undefined>(undefined)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const svgRef = useRef<SVGSVGElement>(null)
+  const simulationRef = useRef<d3.Simulation<D3Node, undefined> | null>(null)
+  const nodesRef = useRef<D3Node[]>([]) // Keep a ref for nodes data
 
   // Handle window resize
   useEffect(() => {
@@ -151,236 +144,198 @@ const FollowersBubbleMap = ({
       const newDimensions = getContainerDimensions()
       setContainerDimensions(newDimensions)
     }
-
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Create physics walls
-  const createWalls = (): Matter.Body[] => {
-    const wallThickness = 20
-    const walls: Matter.Body[] = []
+  // D3 Simulation Setup
+  useEffect(() => {
+    if (loading || followers.length === 0 || !svgRef.current) return
 
-    // Top wall
-    walls.push(Matter.Bodies.rectangle(CONTAINER_WIDTH / 2, -wallThickness / 2, CONTAINER_WIDTH, wallThickness, {
-      isStatic: true,
-      render: { visible: false }
-    }))
-    
-    // Bottom wall
-    walls.push(Matter.Bodies.rectangle(CONTAINER_WIDTH / 2, CONTAINER_HEIGHT + wallThickness / 2, CONTAINER_WIDTH, wallThickness, {
-      isStatic: true,
-      render: { visible: false }
-    }))
-    
-    // Left wall
-    walls.push(Matter.Bodies.rectangle(-wallThickness / 2, CONTAINER_HEIGHT / 2, wallThickness, CONTAINER_HEIGHT, {
-      isStatic: true,
-      render: { visible: false }
-    }))
-    
-    // Right wall
-    walls.push(Matter.Bodies.rectangle(CONTAINER_WIDTH + wallThickness / 2, CONTAINER_HEIGHT / 2, wallThickness, CONTAINER_HEIGHT, {
-      isStatic: true,
-      render: { visible: false }
-    }))
+    const { width, height } = containerDimensions
 
-    return walls
-  }
-
-  // Create bubble bodies
-  const createBubbleBodies = (followers: Follower[], sortBy: 'followers_count' | 'smart_followers'): Matter.Body[] => {
-    const bubbles: Matter.Body[] = []
-    const maxCount = Math.max(...followers.map(f => sortBy === 'followers_count' ? f.followers_count : f.smart_followers))
-
-    followers.forEach((follower, index) => {
+    // Prepare nodes data
+    const maxCount = Math.max(...followers.map(f => sortBy === 'followers_count' ? f.followers_count : f.smart_followers), 0)
+    nodesRef.current = followers.map((follower): D3Node => {
       const count = sortBy === 'followers_count' ? follower.followers_count : follower.smart_followers
       const size = getBubbleSize(count, maxCount)
-      const radius = size / 2
-
-      // Set initial position to the center of the container
-      const x = CONTAINER_WIDTH / 2
-      const y = CONTAINER_HEIGHT / 2
-
-      const bubble = Matter.Bodies.circle(x, y, radius, {
-        restitution: 0.9, // Increased restitution for more bounce
-        frictionAir: 0.02,
-        friction: 0.2, // Decreased friction
-        density: 0.001,
-        render: { visible: false }
-      })
-
-      // Add custom data
-      ;(bubble as any).followerData = {
-        follower,
-        size
-      }
-
-      // Apply random initial force for movement
-      const forceMultiplier = 2 // Increased force multiplier by user
-      const forceX = (Math.random() - 0.5) * forceMultiplier
-      const forceY = (Math.random() - 0.5) * forceMultiplier
-      Matter.Body.applyForce(bubble, bubble.position, { x: forceX, y: forceY })
-
-      bubbles.push(bubble)
-    })
-
-    return bubbles
-  }
-
-  // Physics engine setup and cleanup
-  useEffect(() => {
-    if (loading || followers.length === 0) return
-
-    // Create engine
-    const engine = Matter.Engine.create({
-      gravity: { x: 0, y: 0 }, // Set gravity to zero for floating effect
-      positionIterations: 10, // Increased iterations for more accurate collision resolution
-      velocityIterations: 8 // Increased iterations for more accurate collision resolution
-    })
-    engineRef.current = engine
-
-    // Create a renderer (optional, but helpful for debugging)
-    // const render = Matter.Render.create({
-    //   element: containerRef.current!,
-    //   engine: engine,
-    //   options: {
-    //     width: CONTAINER_WIDTH,
-    //     height: CONTAINER_HEIGHT,
-    //     wireframes: false
-    //   }
-    // });
-    // Matter.Render.run(render);
-
-    // Create walls
-    const walls = createWalls()
-    wallBodiesRef.current = walls
-    Matter.World.add(engine.world, walls)
-
-    // Create bubbles
-    const bubbles = createBubbleBodies(followers, sortBy)
-    bubbleBodiesRef.current = bubbles
-    Matter.World.add(engine.world, bubbles)
-
-    // Add mouse control
-    const mouse = Matter.Mouse.create(containerRef.current!)
-    mouse.element.style.zIndex = '100' // Ensure mouse capture area is above other elements
-    const mouseConstraint = Matter.MouseConstraint.create(engine, {
-      mouse: mouse,
-      constraint: {
-        stiffness: 0.02, // Lower stiffness for smoother following
-        render: { visible: false }
+      return {
+        id: follower.handle,
+        follower: follower,
+        size: size,
+        radius: size / 2,
+        // Initial positions can be set, or let D3 handle it
+        x: width / 2 + (Math.random() - 0.5) * 50, // Randomize initial positions slightly
+        y: height / 2 + (Math.random() - 0.5) * 50,
       }
     })
 
-    Matter.World.add(engine.world, mouseConstraint)
+    // Clear previous SVG contents
+    d3.select(svgRef.current).selectAll("*").remove()
 
-    // Add click event listener to the mouse constraint
-    Matter.Events.on(mouseConstraint, 'mouseup', function(event: any) {
-      const mouse = event.mouse;
-      const body = event.source.body;
+    const svg = d3.select(svgRef.current)
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", `0 0 ${width} ${height}`)
 
-      // Check if a body was released and it's one of our bubbles
-      // Also check if the mouse didn't move much, to distinguish click from drag
-      const clickThreshold = 5; // Pixels moved to consider it a drag
-      const mouseMoved = Math.abs(mouse.mouseupPosition.x - mouse.mousedownPosition.x) > clickThreshold ||
-                         Math.abs(mouse.mouseupPosition.y - mouse.mousedownPosition.y) > clickThreshold;
+    // Create simulation if it doesn't exist or re-create if followers/sortBy changes
+    if (simulationRef.current) {
+      simulationRef.current.stop()
+    }
 
-      if (body && !mouseMoved && (body as any).followerData) {
-        // It's a click on a bubble
-        const followerHandle = (body as any).followerData.follower.handle;
-        router.push(`/profile/${followerHandle}`);
-      }
-    });
+    simulationRef.current = d3.forceSimulation<D3Node>(nodesRef.current)
+      .force("charge", d3.forceManyBody().strength(12)) // Slightly increased repulsion again (was 10)
+      .force("collide", d3.forceCollide<D3Node>((d: D3Node) => d.radius + 2).strength(0.9)) // Slightly stronger collision (was 0.8)
+      .force("x", d3.forceX(width / 2).strength(0.025)) // Kept x-centering, slightly adjusted (was 0.02)
+      .force("y", d3.forceY(height / 2).strength(0.025)) // Kept y-centering, slightly adjusted (was 0.02)
+      .on("tick", ticked)
 
-    // Keep the mouse in sync with the canvas
-    // mouse.element.removeEventListener("mousewheel", mouse.mousewheel);
-    // mouse.element.removeEventListener("DOMMouseScroll", mouse.DOMMouseScroll);
-
-    // Animation loop
-    let frameCount = 0
-    const updatePhysics = () => {
-      if (engineRef.current) {
-        Matter.Engine.update(engineRef.current, 16.666) // ~60fps
-        
-        // Boundary enforcement
-        bubbles.forEach((bubble) => {
-          const followerData = (bubble as any).followerData
-          const radius = followerData.size / 2
-          
-          // Check boundaries and correct position if needed
-          let correctedX = bubble.position.x
-          let correctedY = bubble.position.y
-          let needsCorrection = false
-
-          if (bubble.position.x - radius < 0) {
-            correctedX = radius
-            needsCorrection = true
-          } else if (bubble.position.x + radius > CONTAINER_WIDTH) {
-            correctedX = CONTAINER_WIDTH - radius
-            needsCorrection = true
-          }
-
-          if (bubble.position.y - radius < 0) {
-            correctedY = radius
-            needsCorrection = true
-          } else if (bubble.position.y + radius > CONTAINER_HEIGHT) {
-            correctedY = CONTAINER_HEIGHT - radius
-            needsCorrection = true
-          }
-
-          if (needsCorrection) {
-            Matter.Body.setPosition(bubble, { x: correctedX, y: correctedY })
-            // Reduce velocity to prevent immediate boundary violation
-            Matter.Body.setVelocity(bubble, { 
-              x: bubble.velocity.x * 0.5, 
-              y: bubble.velocity.y * 0.5 
+    const nodeElements = svg.selectAll<SVGGElement, D3Node>(".bubble-group")
+      .data(nodesRef.current, (d: D3Node) => d.id)
+      .join(
+        (enter: d3.Selection<d3.EnterElement, D3Node, SVGSVGElement | null, undefined>) => {
+          const group = enter.append("g")
+            .attr("class", "bubble-group cursor-pointer")
+            .style("transform-origin", "center center") // For hover scale
+            .on("mouseover", (event: MouseEvent, d: D3Node) => {
+              setHoveredFollower(d.follower)
+              // Adjust tooltip position slightly to avoid direct overlap
+              setTooltipPosition({ x: event.clientX, y: event.clientY }) 
+              d3.select(event.currentTarget as SVGGElement).select("circle").style("filter", "drop-shadow(0 4px 12px rgba(0,0,0,0.3))")
+              d3.select(event.currentTarget as SVGGElement).raise() // Bring to front
             })
+            .on("mouseout", (event: MouseEvent, d: D3Node) => {
+              setHoveredFollower(null)
+              d3.select(event.currentTarget as SVGGElement).select("circle").style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.1))")
+            })
+            .on("click", (event: MouseEvent, d: D3Node) => {
+              router.push(`/profile/${d.follower.handle}`)
+            })
+            .call(drag(simulationRef.current!)) // Attach drag behavior
+
+          group.append("circle")
+            .attr("r", (d: D3Node) => d.radius)
+            .attr("fill", "white")
+            .style("stroke-width", "3px")
+            .style("stroke", (d: D3Node) => {
+              const primaryTag = d.follower.tags[0] || 'unknown'
+              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown
+            })
+            .style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.1))") // Initial shadow
+            .transition().duration(300) // Optional: Animate radius change if needed
+            .attr("r", (d: D3Node) => d.radius)
+
+
+          group.append("clipPath")
+            .attr("id", (d: D3Node) => `clip-${d.id}`)
+            .append("circle")
+            .attr("r", (d: D3Node) => d.radius)
+
+          group.append("image")
+            .attr("xlink:href", (d: D3Node) => d.follower.profile_image_url)
+            .attr("clip-path", (d: D3Node) => `url(#clip-${d.id})`)
+            .attr("x", (d: D3Node) => -d.radius)
+            .attr("y", (d: D3Node) => -d.radius)
+            .attr("width", (d: D3Node) => d.size)
+            .attr("height", (d: D3Node) => d.size)
+            .attr("preserveAspectRatio", "xMidYMid slice")
+            .on("error", function(this: SVGImageElement, event: Event, d: D3Node) { // Use \'function\' for \'this\' context
+              d3.select(this).remove() // Remove image if error
+              // Add fallback text
+              group.filter((nodeData: D3Node) => nodeData.id === d.id) // Ensure we are on the correct group
+                   .append("text")
+                   .attr("text-anchor", "middle")
+                   .attr("dy", "0.3em") // Vertically center
+                   .style("font-size", (dNode: D3Node) => `${Math.max(8, dNode.radius / 3)}px`)
+                   .style("font-weight", "bold")
+                   .style("fill", "#4A5568") // gray-700
+                   .text((dNode: D3Node) => dNode.follower.profile_name.substring(0, 2).toUpperCase())
+            })
+          
+          // Add title for native browser tooltip (accessibility)
+          group.append("title")
+            .text((d: D3Node) => `${d.follower.profile_name} - ${formatNumber(sortBy === 'followers_count' ? d.follower.followers_count : d.follower.smart_followers)}`)
+
+          return group
+        },
+        (update: d3.Selection<SVGGElement, D3Node, SVGSVGElement | null, undefined>) => {
+          // Update existing elements if data changes (e.g., size due to sortBy)
+          update.select<SVGCircleElement>("circle")
+            .transition().duration(300)
+            .attr("r", (d: D3Node) => d.radius)
+            .style("stroke", (d: D3Node) => {
+              const primaryTag = d.follower.tags[0] || 'unknown'
+              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown
+            })
+          
+          update.select<SVGClipPathElement>("clipPath").select("circle")
+            .transition().duration(300)
+            .attr("r", (d: D3Node) => d.radius)
+
+          update.select<SVGImageElement>("image")
+            .attr("xlink:href", (d: D3Node) => d.follower.profile_image_url) // Ensure image updates if URL changes
+            .transition().duration(300)
+            .attr("x", (d: D3Node) => -d.radius)
+            .attr("y", (d: D3Node) => -d.radius)
+            .attr("width", (d: D3Node) => d.size)
+            .attr("height", (d: D3Node) => d.size)
+          
+          update.select("title")
+            .text((d: D3Node) => `${d.follower.profile_name} - ${formatNumber(sortBy === 'followers_count' ? d.follower.followers_count : d.follower.smart_followers)}`)
+
+          return update
+        },
+        (exit: d3.Selection<SVGGElement, D3Node, SVGSVGElement | null, undefined>) => exit.remove()
+      )
+    
+    function ticked() {
+      nodeElements
+        .attr("transform", (d: D3Node) => `translate(${d.x},${d.y})`)
+        .each((d: D3Node) => { // Boundary enforcement - allow touching edges
+          if (d.x !== undefined && d.y !== undefined) { // Make sure x and y are defined
+            d.x = Math.max(0 + d.radius, Math.min(width - d.radius, d.x)); // Clamp between radius and width - radius
+            d.y = Math.max(0 + d.radius, Math.min(height - d.radius, d.y)); // Clamp between radius and height - radius
           }
-        })
+        });
+    }
+
+    // Drag behavior
+    function drag(simulation: d3.Simulation<D3Node, undefined>) {
+      function dragstarted(event: d3.D3DragEvent<SVGGElement, D3Node, any>, d: D3Node) {
+        if (!event.active) simulation.alphaTarget(0.3).restart()
+        d.fx = d.x
+        d.fy = d.y
       }
       
-      // Update React state with current positions
-      const updatedBubbles: PhysicsBubble[] = bubbles.map((bubble) => {
-        const followerData = (bubble as any).followerData
-        return {
-          id: followerData.follower.handle,
-          follower: followerData.follower,
-          x: bubble.position.x,
-          y: bubble.position.y,
-          size: followerData.size,
-          bodyId: bubble.id
-        }
-      })
-      setPhysicsBubbles(updatedBubbles)
-      animationFrameRef.current = requestAnimationFrame(updatePhysics)
+      function dragged(event: d3.D3DragEvent<SVGGElement, D3Node, any>, d: D3Node) {
+        d.fx = event.x
+        d.fy = event.y
+      }
+      
+      function dragended(event: d3.D3DragEvent<SVGGElement, D3Node, any>, d: D3Node) {
+        if (!event.active) simulation.alphaTarget(0)
+        d.fx = null
+        d.fy = null
+      }
+      
+      return d3.drag<SVGGElement, D3Node>()
+        .on("start", dragstarted)
+        .on("drag", dragged)
+        .on("end", dragended)
     }
-    updatePhysics()
-
-    // Cleanup
+    
+    // Cleanup simulation on component unmount or when dependencies change
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-      }
-      if (engineRef.current) {
-        Matter.World.clear(engineRef.current.world, false)
-        Matter.Engine.clear(engineRef.current)
+      if (simulationRef.current) {
+        simulationRef.current.stop()
       }
     }
-  }, [followers, sortBy, loading])
+  }, [followers, sortBy, loading, containerDimensions]) // Rerun on dimension change too
 
-  const handleBubbleHover = (e: React.MouseEvent, follower: Follower) => {
-    setHoveredFollower(follower)
-    setTooltipPosition({ x: e.clientX, y: e.clientY })
-  }
-
-  const handleBubbleLeave = () => {
-    setHoveredFollower(null)
-  }
-
-  if (loading) {
+  if (loading && followers.length === 0) { // Ensure loader shows if followers is empty but still loading
+    const loaderHeight = containerDimensions.height > 0 ? containerDimensions.height : CONTAINER_HEIGHT; // Use dynamic height if available
     return (
-      <div className="flex items-center justify-center bg-gray-50 rounded-lg" style={{ height: CONTAINER_HEIGHT }}>
+      <div className="flex items-center justify-center bg-gray-50 rounded-lg" style={{ height: loaderHeight }}> {/* Use dynamic height */}
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
           <p className="text-gray-500">Loading followers...</p>
@@ -392,60 +347,26 @@ const FollowersBubbleMap = ({
   return (
     <div className="relative">
       <div 
-        ref={containerRef}
-        className="bg-gray-50 rounded-lg border border-gray-200 relative overflow-hidden"
-        style={{ width: containerDimensions.width, height: containerDimensions.height }}
+        className="bg-gray-50 rounded-lg border border-gray-200 relative overflow-hidden p-6" // Added padding
+        // Ensure this div itself doesn't create scrollbars if svg is larger for a moment
+        // The height will be implicitly set by the SVG and padding inside
       >
-        {/* Physics bubbles */}
-        <div className="absolute inset-0">
-          {physicsBubbles.map((bubble) => {
-            const primaryTag = bubble.follower.tags[0] || 'unknown'
-            const count = sortBy === 'followers_count' ? bubble.follower.followers_count : bubble.follower.smart_followers
-            
-            return (
-              <div
-                key={bubble.id}
-                className="absolute rounded-full cursor-pointer transition-all duration-200 hover:scale-110 hover:z-10"
-                style={{
-                  width: `${bubble.size}px`,
-                  height: `${bubble.size}px`,
-                  left: `${bubble.x}px`,
-                  top: `${bubble.y}px`,
-                  transform: 'translate(-50%, -50%)',
-                  border: `3px solid ${TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown}`,
-                  backgroundColor: 'white',
-                  boxShadow: hoveredFollower?.handle === bubble.follower.handle ? '0 4px 12px rgba(0,0,0,0.3)' : '0 2px 6px rgba(0,0,0,0.1)',
-                  zIndex: hoveredFollower?.handle === bubble.follower.handle ? 10 : 5,
-                }}
-                onMouseEnter={(e) => handleBubbleHover(e, bubble.follower)}
-                onMouseLeave={handleBubbleLeave}
-                onClick={() => router.push(`/profile/${bubble.follower.handle}`)}
-                title={`${bubble.follower.profile_name} - ${formatNumber(count)}`}
-              >
-                <img 
-                  src={bubble.follower.profile_image_url} 
-                  alt={bubble.follower.profile_name}
-                  className="w-full h-full object-cover rounded-full"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.style.display = 'none'
-                    target.parentElement!.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xs font-bold text-gray-600">${bubble.follower.profile_name.substring(0, 2)}</div>`
-                  }}
-                />
-              </div>
-            )
-          })}
-        </div>
+        <svg 
+          ref={svgRef} 
+          className="block" // Remove extra space below inline SVG
+          style={{ width: containerDimensions.width, height: containerDimensions.height }} 
+        />
       </div>
 
       {/* Tooltip */}
       {hoveredFollower && (
         <div 
-          className="fixed z-[1000] pointer-events-none"
+          className="fixed z-[1000] pointer-events-none" // Ensure tooltip is above SVG
           style={{
             left: `${tooltipPosition.x + 15}px`,
-            top: `${tooltipPosition.y - 10}px`,
-            transform: 'translateY(-100%)'
+            top: `${tooltipPosition.y - 10}px`, // Position above cursor
+            transform: 'translateY(-100%)', // Adjust based on tooltip height
+            // Consider adding a max-width to the tooltip if not already handled by BubbleTooltip
           }}
         >
           <BubbleTooltip follower={hoveredFollower} />
@@ -463,6 +384,16 @@ const TagsDistributionChart = ({
   followers: Follower[]
   loading: boolean
 }) => {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  const onPieEnter = (_: any, index: number) => {
+    setActiveIndex(index);
+  };
+
+  const onPieLeave = () => {
+    setActiveIndex(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
@@ -491,42 +422,95 @@ const TagsDistributionChart = ({
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0]
+      const data = payload[0].payload // Access payload directly for recharts data
+      const currentFollowers = followers // Capture followers in closure for safety in async contexts
       return (
         <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
           <p className="font-medium">{data.name}</p>
           <p className="text-sm text-gray-600">Count: {data.value}</p>
+          {currentFollowers && currentFollowers.length > 0 && data.value && ( // Check followers length and data.value
           <p className="text-sm text-gray-600">
-            {((data.value / followers.length) * 100).toFixed(1)}%
+              {((data.value / currentFollowers.length) * 100).toFixed(1)}%
           </p>
+          )}
         </div>
       )
     }
     return null
   }
 
+  // Custom Active Shape for Pie Chart
+  const renderActiveShape = (props: any) => {
+    const RADIAN = Math.PI / 180;
+    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    const sx = cx + (outerRadius + 5) * cos; // Move text slightly out
+    const sy = cy + (outerRadius + 5) * sin;
+    const mx = cx + (outerRadius + 15) * cos; // Line end point further out
+    const my = cy + (outerRadius + 15) * sin;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 12; // Horizontal line part
+    const ey = my;
+    const textAnchor = cos >= 0 ? 'start' : 'end';
+
+    return (
+      <g>
+        <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} fontSize={16} fontWeight="bold">
+          {payload.name}
+        </text>
+        <Sector
+          cx={cx}
+          cy={cy}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius + 4} // Make active segment slightly larger
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={fill}
+          cornerRadius={5} // Add rounded corners
+        />
+        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
+        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
+        <text x={ex + (cos >= 0 ? 1 : -1) * 8} y={ey} textAnchor={textAnchor} fill="#333">
+          {`${value} (${(percent * 100).toFixed(1)}%)`}
+        </text>
+      </g>
+    );
+  };
+
   return (
     <div className="bg-gray-50 rounded-lg p-6">
       <ResponsiveContainer width="100%" height={400}>
         <PieChart>
           <Pie
+            activeIndex={activeIndex ?? undefined} // Handle null case for activeIndex
+            activeShape={renderActiveShape}
             data={chartData}
             cx="50%"
             cy="50%"
-            innerRadius={60}
-            outerRadius={120}
-            paddingAngle={2}
+            innerRadius={80} // Increased from 60
+            outerRadius={150} // Increased from 120
+            paddingAngle={3} // Slightly increased padding
             dataKey="value"
+            nameKey="name"
+            onMouseEnter={onPieEnter}
+            onMouseLeave={onPieLeave}
+            cornerRadius={5} // Add rounded corners to all segments
           >
             {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.color} 
+                // Apply a subtle effect if not active and another segment is active
+                opacity={activeIndex === null || activeIndex === index ? 1 : 0.6}
+                style={{ transition: 'opacity 0.2s ease-in-out' }} // Smooth transition for opacity
+              />
             ))}
           </Pie>
-          <Tooltip content={<CustomTooltip />} />
+          <RechartsTooltip content={<CustomTooltip />} /> {/* Use aliased RechartsTooltip */}
           <Legend 
             verticalAlign="bottom" 
             height={36}
-            formatter={(value, entry) => (
+            formatter={(value: string, entry: any) => ( // Add types for formatter
               <span style={{ color: entry.color }}>
                 {value} ({entry.payload?.value || 0})
               </span>
@@ -544,13 +528,25 @@ async function fetchWithRetry<T>(url: string, options?: RequestInit, attempt = 0
     const response = await fetch(url, options);
 
     if (!response.ok) {
+      let errorBody = '';
+      try {
+        errorBody = await response.text();
+      } catch (e) {
+        // ignore if can't read body
+      }
       // Throw an error to trigger retry logic
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
     }
 
     const contentType = response.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
-        throw new Error(`Invalid content type: ${contentType}`);
+        let responseText = '';
+        try {
+            responseText = await response.text(); // Attempt to read response text
+        } catch(e) {
+            // ignore
+        }
+        throw new Error(`Invalid content type: ${contentType}. Response: ${responseText.substring(0,100)}`);
     }
 
     return await response.json() as T;
@@ -575,34 +571,55 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
   const [error, setError] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'followers_count' | 'smart_followers'>('smart_followers')
   const [limit, setLimit] = useState<20 | 50 | 100>(50)
+  const [currentAuthorHandle, setCurrentAuthorHandle] = useState<string | null>(null);
 
   // Fetch data
   useEffect(() => {
     const fetchFollowersData = async () => {
+      if (!authorHandle) { // Don't fetch if authorHandle is not set
+        setFollowers([])
+        setLoading(false)
+        return
+      }
+      
+      // Only refetch if authorHandle, sortBy, or limit changes.
+      // Reset followers if authorHandle changes to show loading state properly for new author.
+      if (authorHandle !== currentAuthorHandle) {
+        setFollowers([]); // Clear previous followers
+        setCurrentAuthorHandle(authorHandle);
+      }
+      
+      setLoading(true)
+      setError(null) // Clear previous errors
+
       try {
-        setLoading(true)
         const sortParam = sortBy === 'followers_count' ? 'followers_count_desc' : 'smart_followers_count_desc'
         
-        // Use fetchWithRetry
         const data = await fetchWithRetry<ApiResponse>(
           `https://api.cred.buzz/user/author-handle-followers?author_handle=${authorHandle}&sort_by=${sortParam}&limit=${limit}&start=0`
         )
         
+        if (data.result && Array.isArray(data.result.followings)) {
         setFollowers(data.result.followings)
+        } else {
+          console.warn("Unexpected API response structure:", data);
+          setFollowers([]) // Set to empty array if data is not as expected
+          setError("Failed to parse followers data from API.");
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred')
+        console.error("Error fetching followers: ", err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred while fetching followers.')
+        setFollowers([]) // Ensure followers is empty on error
       } finally {
         setLoading(false)
       }
     }
 
-    if (authorHandle) {
       fetchFollowersData()
-    }
-  }, [authorHandle, sortBy, limit])
+  }, [authorHandle, sortBy, limit, currentAuthorHandle]) // Add currentAuthorHandle to dependencies
 
   // Loading and error states
-  if (error) {
+  if (error && !loading) { // Show error only if not actively loading new data
     return <div className="p-6 text-center text-red-500">Error: {error}</div>
   }
 
@@ -664,9 +681,9 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
       </div>
 
       {/* Sub-components Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Sub-component 1: Followers Bubble Map */}
-        <div className="min-w-0 lg:col-span-2">
+        <div className="min-w-0 lg:col-span-1">
           <h4 className="text-md font-medium text-gray-800 mb-3">
             Top {limit} by {sortBy === 'smart_followers' ? 'Smart Followers' : 'Total Followers'}
           </h4>
@@ -684,44 +701,26 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
           <h4 className="text-md font-medium text-gray-800 mb-3">
             Tags Distribution
           </h4>
+          { (loading && followers.length === 0) ? ( // Show specific loader for chart if main data is loading and no followers yet
+             <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <p className="text-gray-500">Loading chart data...</p>
+                </div>
+              </div>
+          ) : followers.length > 0 ? (
           <TagsDistributionChart 
             followers={followers}
-            loading={loading}
-          />
+              loading={loading && followers.length === 0} // Pass loading only if truly no data yet for chart
+            />
+          ) : !loading && followers.length === 0 && !error ? ( // Case: No followers found, not loading, no error
+            <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">No followers data to display for this selection.</p>
+            </div>
+          ) : null /* Error state is handled globally */
+          }
         </div>
       </div>
-
-      {/* Summary Stats */}
-      {!loading && followers.length > 0 && (
-        <div className="mt-8 p-6 bg-gray-50 rounded-lg">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div>
-              <p className="text-2xl font-bold text-blue-600">
-                {formatNumber(followers.reduce((sum, f) => sum + f.followers_count, 0))}
-              </p>
-              <p className="text-sm text-gray-600">Total Followers</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-green-600">
-                {formatNumber(followers.reduce((sum, f) => sum + f.smart_followers, 0))}
-              </p>
-              <p className="text-sm text-gray-600">Smart Followers</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-purple-600">
-                {followers.length}
-              </p>
-              <p className="text-sm text-gray-600">Profiles</p>
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-orange-600">
-                {new Set(followers.flatMap(f => f.tags)).size}
-              </p>
-              <p className="text-sm text-gray-600">Unique Tags</p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 } 
