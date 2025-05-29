@@ -58,11 +58,11 @@ const getContainerDimensions = () => {
     // Reducing widths slightly to see if it helps with perceived right-side border thickness
     if (screenWidth >= 1024) { // lg breakpoint and above
       return { 
-        width: screenWidth >= 1536 ? 570 : screenWidth >= 1280 ? 470 : 420, 
+        width: screenWidth >= 1536 ? 620 : screenWidth >= 1280 ? 620 : 620, 
         height: 400 
       } 
     } else { // Smaller screens, keep responsive width and a suitable height
-      return { width: Math.min(screenWidth - 40, 360), height: 280 } // Width logic for smaller screens seems okay
+      return { width: Math.min(screenWidth - 40, 560), height: 280 } // Width logic for smaller screens seems okay
     }
   }
   // Default for SSR - align with a mid-tier reduced width
@@ -89,7 +89,7 @@ const formatNumber = (num: number): string => {
   return num.toString()
 }
 
-const getBubbleSize = (count: number, maxCount: number, minSize: number = 20, maxSize: number = 80): number => {
+const getBubbleSize = (count: number, maxCount: number, minSize: number = 20, maxSize: number = 100): number => {
   if (maxCount === 0) return minSize
   // Use linear scale for more drastic size difference
   const normalized = count / maxCount
@@ -164,6 +164,13 @@ const FollowersBubbleMap = ({
   useEffect(() => {
     if (!svgRef.current) return;
 
+    
+    // Constants for the outer border offset
+    const OUTER_BORDER_WIDTH = 20; // Width of the outer border
+    const OUTER_BORDER_OFFSET = OUTER_BORDER_WIDTH / 2; // Half of 50px translucent border, which is the outermost extent
+    const OUTER_SHARP_BORDER_WIDTH = 2; // Width of the outer sharp border
+    const OUTER_SHARP_BORDER_OFFSET = OUTER_SHARP_BORDER_WIDTH / 2; // Half of 2px sharp border, which is the outermost extent
+
     const followersToDisplay = selectedTagForFilter
       ? followers.filter(f => f.tags.includes(selectedTagForFilter.toLowerCase().replace(/ /g, '_')))
       : followers;
@@ -207,9 +214,9 @@ const FollowersBubbleMap = ({
       .alphaDecay(0.01) // Slow down the cooling rate (default is ~0.0228)
       .alpha(0.7) // Start with a higher alpha
       .force("charge", d3.forceManyBody().strength(15)) 
-      .force("collide", d3.forceCollide<D3Node>((d: D3Node) => d.radius + 1).strength(0.9)) // Reduced padding from +2 to +1
-      .force("x", d3.forceX(width / 2).strength(0.015)) 
-      .force("y", d3.forceY(height / 2).strength(0.015)) 
+      .force("collide", d3.forceCollide<D3Node>((d: D3Node) => d.radius + OUTER_BORDER_OFFSET).strength(0.9)) // Reduced padding from +2 to +1
+      .force("x", d3.forceX(width / 2).strength(0.01)) 
+      .force("y", d3.forceY(height / 2).strength(0.01)) 
       .on("tick", ticked);
     
     simulationRef.current.restart(); // Ensure it starts/restarts effectively
@@ -240,7 +247,7 @@ const FollowersBubbleMap = ({
           group.append("circle")
             .attr("r", (d: D3Node) => d.radius)
             .attr("fill", "white")
-            .style("stroke-width", "15px")
+            .style("stroke-width", OUTER_BORDER_WIDTH) // width of the border
             .style("stroke", (d: D3Node) => {
               const primaryTag = d.follower.tags[0] || 'unknown';
               const colorHex = TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
@@ -276,9 +283,9 @@ const FollowersBubbleMap = ({
           // New outer sharp border circle
           group.append("circle")
             .attr("class", "outer-sharp-border")
-            .attr("r", (d: D3Node) => d.radius + 6.75) // (15px translucent / 2) - (1.5px sharp / 2) = 7.5 - 0.75 = 6.75
+            .attr("r", (d: D3Node) => d.radius + OUTER_BORDER_OFFSET - OUTER_SHARP_BORDER_OFFSET) // (15px translucent / 2) - (1.5px sharp / 2) = 7.5 - 0.75 = 6.75
             .style("fill", "none")
-            .style("stroke-width", "1.5px")
+            .style("stroke-width", OUTER_SHARP_BORDER_OFFSET)
             .style("stroke", (d: D3Node) => {
               const primaryTag = d.follower.tags[0] || 'unknown';
               return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown; // Opaque color
@@ -317,7 +324,7 @@ const FollowersBubbleMap = ({
           // Update the new outer sharp border circle
           update.select<SVGCircleElement>(".outer-sharp-border")
             .transition().duration(300)
-            .attr("r", (d: D3Node) => d.radius + 6.75)
+            .attr("r", (d: D3Node) => d.radius + 24.75)
             .style("stroke", (d: D3Node) => {
               const primaryTag = d.follower.tags[0] || 'unknown';
               return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
@@ -329,8 +336,7 @@ const FollowersBubbleMap = ({
         },
         (exit: d3.Selection<SVGGElement, D3Node, SVGSVGElement | null, undefined>) => exit.remove()
       );
-    
-    const OUTER_BORDER_OFFSET = 7.5; // Half of 15px translucent border, which is the outermost extent
+  
 
     function ticked() {
       nodeElements // This variable is now defined
