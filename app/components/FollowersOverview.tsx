@@ -54,15 +54,15 @@ const getContainerDimensions = () => {
   if (typeof window !== 'undefined') {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    // Make the circular container reduced by 0.8 factor
-    const size = Math.min(screenWidth * 0.72, screenHeight * 0.84, 960) // Reduced by 0.8 factor: 0.9*0.8=0.72, 1.05*0.8=0.84, 1200*0.8=960
+    // Make the circular container sized appropriately
+    const size = Math.min(screenWidth * 0.6, screenHeight * 0.7, 800)
     return { 
       width: size, 
       height: size 
     } 
   }
-  // Default for SSR - reduced by 0.8 factor
-  return { width: 720, height: 720 } // Reduced from 900x900 to 720x720 (900*0.8=720)
+  // Default for SSR
+  return { width: 600, height: 600 }
 }
 
 const CONTAINER_DIMENSIONS = getContainerDimensions()
@@ -217,11 +217,11 @@ const FollowersBubbleMap = ({
     
     simulationRef.current.restart(); // Ensure it starts/restarts effectively
 
-    // RESTORED nodeElements definition and rendering logic
+    // Fixed nodeElements definition and rendering logic with proper types
     const nodeElements = svg.selectAll<SVGGElement, D3Node>(".bubble-group")
       .data(nodesRef.current, (d: D3Node) => d.id)
       .join(
-        (enter: d3.Selection<d3.EnterElement, D3Node, SVGSVGElement | null, undefined>) => {
+        (enter) => {
           const group = enter.append("g")
             .attr("class", "bubble-group cursor-pointer")
             .style("transform-origin", "center center")
@@ -292,7 +292,7 @@ const FollowersBubbleMap = ({
 
           return group;
         },
-        (update: d3.Selection<SVGGElement, D3Node, SVGSVGElement | null, undefined>) => {
+        (update) => {
           // Update existing main circle (translucent border)
           update.select<SVGCircleElement>("circle:not(.outer-sharp-border)") // Ensure we don't select the new border circle here
             .transition().duration(300)
@@ -330,7 +330,7 @@ const FollowersBubbleMap = ({
             .text((d: D3Node) => `${d.follower.profile_name} - ${formatNumber(sortBy === 'followers_count' ? d.follower.followers_count : d.follower.smart_followers)}`);
           return update;
         },
-        (exit: d3.Selection<SVGGElement, D3Node, SVGSVGElement | null, undefined>) => exit.remove()
+        (exit) => exit.remove()
       );
   
 
@@ -408,7 +408,7 @@ const FollowersBubbleMap = ({
   
   // Default: Render the SVG container for D3 to draw in
   return (
-    <div className="relative">
+    <div className="relative mx-auto" style={{ width: containerDimensions.width, height: containerDimensions.height }}>
       <div 
         className="bg-gray-50 rounded-full border border-gray-200 relative overflow-hidden shadow-lg mx-auto" 
         style={{ 
@@ -692,125 +692,152 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
   }, [authorHandle, sortBy, limit, currentAuthorHandle]);
 
   // Loading and error states
+  if (loading && followers.length === 0) {
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Followers Overview</h3>
+        </div>
+        <div className="p-6 text-center">Loading followers overview...</div>
+      </div>
+    )
+  }
+
   if (error && !loading) { // Show error only if not actively loading new data
-    return <div className="p-6 text-center text-red-500">Error: {error}</div>
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">Followers Overview</h3>
+        </div>
+        <div className="p-6 text-center text-red-500">Error: {error}</div>
+      </div>
+    )
   }
 
   return (
-    <div className="bg-white min-h-screen relative">
+    <div className="bg-white p-6 rounded-lg shadow-sm">
       {/* Header */}
-      <div className="p-6 pb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Followers Overview</h3>
+      <div className="mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Followers Overview</h3>
+        <div className="flex items-center gap-2 mt-1">
+          <p className="text-sm text-gray-500">
+            Top {limit} by {sortBy === 'smart_followers' ? 'Smart Followers' : 'Total Followers'}
+            {selectedTagForFilter && <span className="ml-2">(filtered by: {selectedTagForFilter})</span>} 
+          </p>
+        </div>
+      </div>
         
-        {/* Controls */}
-        <div className="flex flex-wrap gap-4 items-center">
-          {/* Sort By Toggle */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Sort by:</label>
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setSortBy('smart_followers')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  sortBy === 'smart_followers' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Smart Followers
-              </button>
-              <button
-                onClick={() => setSortBy('followers_count')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                  sortBy === 'followers_count' 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Total Followers
-              </button>
-            </div>
+      {/* Controls */}
+      <div className="flex flex-wrap gap-4 items-center mb-6">
+        {/* Sort By Toggle */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Sort by:</label>
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setSortBy('smart_followers')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                sortBy === 'smart_followers' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Smart Followers
+            </button>
+            <button
+              onClick={() => setSortBy('followers_count')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                sortBy === 'followers_count' 
+                  ? 'bg-blue-600 text-white' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Total Followers
+            </button>
           </div>
+        </div>
 
-          {/* Limit Toggle */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Show:</label>
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              {([20, 50, 100] as const).map((num) => (
-                <button
-                  key={num}
-                  onClick={() => setLimit(num)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    limit === num 
-                      ? 'bg-blue-600 text-white' 
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Top {num}
-                </button>
-              ))}
-            </div>
+        {/* Limit Toggle */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-gray-700">Show:</label>
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            {([20, 50, 100] as const).map((num) => (
+              <button
+                key={num}
+                onClick={() => setLimit(num)}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                  limit === num 
+                    ? 'bg-blue-600 text-white' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Top {num}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="relative px-6 pb-6">
-        {/* Central Circular Bubble Map */}
-        <div className="flex justify-center items-center">
-          <div className="text-center relative">
-            <h4 className="text-md font-medium text-gray-800 mb-6">
-              Top {limit} by {sortBy === 'smart_followers' ? 'Smart Followers' : 'Total Followers'}
-              {selectedTagForFilter && <span className="text-sm text-gray-600 ml-2">(filtered by: {selectedTagForFilter})</span>} 
-            </h4>
-            <FollowersBubbleMap 
-              followers={followers}
-              sortBy={sortBy}
-              loading={loading}
-              selectedTagForFilter={selectedTagForFilter}
-            />
-            
-            {/* Bottom Right Tags Distribution Chart - positioned relative to bubble map */}
-            <div className="absolute bottom-0 right-0">
-              { (loading && followers.length === 0) ? ( 
-                 <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                      <p className="text-gray-500 text-xs">Loading...</p>
-                    </div>
+      {/* Visualization Container */}
+      <div className="relative flex justify-center items-center">
+        <div className="text-center relative">
+          <FollowersBubbleMap 
+            followers={followers}
+            sortBy={sortBy}
+            loading={loading}
+            selectedTagForFilter={selectedTagForFilter}
+          />
+          
+          {/* Bottom Right Tags Distribution Chart - positioned relative to bubble map */}
+          <div className="absolute bottom-0 right-0">
+            { (loading && followers.length === 0) ? ( 
+               <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-gray-500 text-xs">Loading...</p>
                   </div>
-              ) : followers.length > 0 ? (
-                <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 relative flex items-center justify-center">
-                  <div className="absolute top-2 left-0 right-0 text-center z-10">
-                    <h5 className="text-xs font-medium text-gray-700">Tags</h5>
-                  </div>
-                  <div className="w-40 h-40 flex items-center justify-center">
-                    <TagsDistributionChart 
-                      followers={followers}
-                      loading={loading && followers.length === 0}
-                      selectedTagForFilter={selectedTagForFilter}
-                      setSelectedTagForFilter={setSelectedTagForFilter}
-                    />
-                  </div>
-                  {selectedTagForFilter && (
-                    <div className="absolute bottom-2 left-0 right-0 text-center z-10">
-                      <button 
-                        onClick={() => setSelectedTagForFilter(null)}
-                        className="px-2 py-1 bg-blue-500 text-white rounded-md text-xs hover:bg-blue-600 transition-colors"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  )}
                 </div>
-              ) : !loading && followers.length === 0 && !error ? ( 
-                <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center">
-                  <p className="text-gray-500 text-xs text-center px-4">No data</p>
+            ) : followers.length > 0 ? (
+              <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 relative flex items-center justify-center">
+                <div className="absolute top-2 left-0 right-0 text-center z-10">
+                  <h5 className="text-xs font-medium text-gray-700">Tags</h5>
                 </div>
-              ) : null 
-              }
-            </div>
+                <div className="w-40 h-40 flex items-center justify-center">
+                  <TagsDistributionChart 
+                    followers={followers}
+                    loading={loading && followers.length === 0}
+                    selectedTagForFilter={selectedTagForFilter}
+                    setSelectedTagForFilter={setSelectedTagForFilter}
+                  />
+                </div>
+                {selectedTagForFilter && (
+                  <div className="absolute bottom-2 left-0 right-0 text-center z-10">
+                    <button 
+                      onClick={() => setSelectedTagForFilter(null)}
+                      className="px-2 py-1 bg-blue-500 text-white rounded-md text-xs hover:bg-blue-600 transition-colors"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : !loading && followers.length === 0 && !error ? ( 
+              <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center">
+                <p className="text-gray-500 text-xs text-center px-4">No data</p>
+              </div>
+            ) : null 
+            }
           </div>
         </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex justify-center gap-x-4 gap-y-2 mt-4 flex-wrap">
+        {Object.entries(TAG_COLORS).map(([tag, color]) => (
+          <div key={tag} className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+            <span className="text-xs font-medium text-gray-600">{tag.replace('_', ' ')}</span>
+          </div>
+        ))}
       </div>
     </div>
   )

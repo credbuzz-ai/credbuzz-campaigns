@@ -280,9 +280,9 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
   }
 
   return (
-    <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 flex flex-col">
-      {/* Smart Feed Container with height constraint */}
-      <div className="card-pastel !bg-slate-300 flex flex-col max-h-[calc(100vh-4rem)]">
+    <div className="w-full flex flex-col">
+      {/* Smart Feed Container with controlled height */}
+      <div className="card-pastel !bg-slate-300 flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]">
         {/* Header */}
         <div className="p-6 border-b border-slate-400/50 flex-shrink-0">
           <div className="flex items-center gap-3 mb-6">
@@ -334,7 +334,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           </div>
         </div>
 
-        {/* Feed Content with constrained height */}
+        {/* Feed Content with controlled scrolling */}
         <div className="flex-1 overflow-y-auto bg-white/30 backdrop-blur-sm min-h-0">
           {loading ? (
             <div className="p-6">
