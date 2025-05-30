@@ -1,6 +1,8 @@
 "use client"
 
 import type React from "react"
+import { useRef, useEffect } from "react"
+import * as d3 from "d3"
 
 import { LineChart, Line, ResponsiveContainer, Tooltip, type TooltipProps } from "recharts"
 import type { ChartDataPoint, UserProfileResponse } from "../types"
@@ -16,30 +18,6 @@ interface MetricChartProps {
   data: ChartDataPoint[]
   color?: string
   metricType?: "followers" | "smart_followers" | "mindshare"
-}
-
-interface HoverTooltipProps {
-  x: number
-  y: number
-  content: string
-  visible: boolean
-}
-
-function HoverTooltip({ x, y, content, visible }: HoverTooltipProps) {
-  if (!visible) return null
-
-  return (
-    <div
-      className="fixed bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-xs z-50 pointer-events-none"
-      style={{
-        left: x + 10,
-        top: y - 10,
-        transform: "translateY(-100%)",
-      }}
-    >
-      {content}
-    </div>
-  )
 }
 
 function CustomTooltip({ active, payload, metricType }: TooltipProps<number, string> & { metricType?: string }) {
@@ -146,115 +124,204 @@ function MetricChart({ title, value, change, isPositive, data, color = "#22c55e"
 }
 
 function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["result"]["activity_data"] }) {
-  const [tooltip, setTooltip] = useState<HoverTooltipProps>({
-    x: 0,
-    y: 0,
-    content: "",
-    visible: false,
-  })
+  const svgRef = useRef<SVGSVGElement>(null)
 
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] // Shortened day names
-  const hours = Array.from({ length: 24 }, (_, i) => i) // 0 to 23
+  useEffect(() => {
+    if (!svgRef.current || !activityData.daily_activity.length) return
 
-  const getActivityColor = (tweets: number) => {
-    if (tweets === 0) return "bg-gray-100"
-    if (tweets <= 1) return "bg-green-100"
-    if (tweets <= 2) return "bg-green-200"
-    if (tweets <= 3) return "bg-green-300"
-    return "bg-green-400"
-  }
+    const svg = d3.select(svgRef.current)
+    svg.selectAll("*").remove()
 
-  const handleMouseEnter = (event: React.MouseEvent, day: string, hour: number, tweets: number) => {
-    const rect = event.currentTarget.getBoundingClientRect()
-    const fullDayName =
-      {
-        Sun: "Sunday",
-        Mon: "Monday",
-        Tue: "Tuesday",
-        Wed: "Wednesday",
-        Thu: "Thursday",
-        Fri: "Friday",
-        Sat: "Saturday",
-      }[day] || day
-
-    setTooltip({
-      x: rect.left + rect.width / 2,
-      y: rect.top,
-      content: `${fullDayName} ${hour.toString().padStart(2, "0")}:00 UTC - ${tweets} tweets`,
-      visible: true,
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    const hours = Array.from({ length: 24 }, (_, i) => i)
+    
+    // Prepare data
+    const heatmapData: Array<{day: string, hour: number, tweets: number, dayIndex: number}> = []
+    days.forEach((day, dayIndex) => {
+      const dayData = activityData.daily_activity.find((d) => d.day === day)
+      hours.forEach((hour) => {
+        const hourData = dayData?.activity.find((a) => a.hour === hour)
+        const tweets = hourData?.avg_tweets || 0
+        heatmapData.push({ day, hour, tweets, dayIndex })
+      })
     })
-  }
 
-  const handleMouseLeave = () => {
-    setTooltip((prev) => ({ ...prev, visible: false }))
-  }
+    // Dimensions
+    const margin = { top: 40, right: 20, bottom: 25, left: 60 }
+    const cellSize = 31
+    const width = 24 * cellSize + margin.left + margin.right
+    const height = 7 * cellSize + margin.top + margin.bottom
+
+    svg.attr("width", width).attr("height", height)
+
+    // Color scale
+    const maxTweets = d3.max(heatmapData, d => d.tweets) || 4
+    const colorScale = d3.scaleSequential(d3.interpolateGreens)
+      .domain([0, maxTweets])
+
+    // Create main group
+    const g = svg.append("g")
+      .attr("transform", `translate(${margin.left}, ${margin.top})`)
+
+    // Create tooltip
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "heatmap-tooltip")
+      .style("position", "absolute")
+      .style("visibility", "hidden")
+      .style("background", "rgba(0, 0, 0, 0.8)")
+      .style("color", "white")
+      .style("padding", "8px 12px")
+      .style("border-radius", "6px")
+      .style("font-size", "12px")
+      .style("pointer-events", "none")
+      .style("z-index", "1000")
+      .style("box-shadow", "0 4px 12px rgba(0,0,0,0.2)")
+
+    // Add hour labels (top)
+    g.selectAll(".hour-label")
+      .data(hours.filter(h => h % 3 === 0)) // Show every 3rd hour
+      .enter().append("text")
+      .attr("class", "hour-label")
+      .attr("x", d => d * cellSize + cellSize / 2)
+      .attr("y", -10)
+      .attr("text-anchor", "middle")
+      .attr("font-size", "12px")
+      .attr("fill", "#6b7280")
+      .text(d => `${d.toString().padStart(2, '0')}:00`)
+
+    // Add day labels (left)
+    g.selectAll(".day-label")
+      .data(days)
+      .enter().append("text")
+      .attr("class", "day-label")
+      .attr("x", -15)
+      .attr("y", (d, i) => i * cellSize + cellSize / 2)
+      .attr("text-anchor", "end")
+      .attr("dominant-baseline", "middle")
+      .attr("font-size", "12px")
+      .attr("fill", "#6b7280")
+      .text(d => d.substring(0, 3)) // Shortened day names
+
+    // Create heatmap cells
+    const cells = g.selectAll(".cell")
+      .data(heatmapData)
+      .enter().append("rect")
+      .attr("class", "cell")
+      .attr("x", d => d.hour * cellSize + 1)
+      .attr("y", d => d.dayIndex * cellSize + 1)
+      .attr("width", cellSize - 2)
+      .attr("height", cellSize - 2)
+      .attr("rx", 3)
+      .attr("ry", 3)
+      .attr("fill", d => d.tweets === 0 ? "#f3f4f6" : colorScale(d.tweets))
+      .attr("stroke", "white")
+      .attr("stroke-width", 1)
+      .style("cursor", "pointer")
+
+    // Add hover effects
+    cells
+      .on("mouseover", function(event, d) {
+        d3.select(this)
+          .transition()
+          .duration(150)
+          .attr("stroke", "#374151")
+          .attr("stroke-width", 2)
+          .style("filter", "brightness(1.1)")
+
+        tooltip.style("visibility", "visible")
+          .html(`
+            <div style="font-weight: 600; margin-bottom: 4px;">${d.day}</div>
+            <div style="margin-bottom: 2px;">${d.hour.toString().padStart(2, '0')}:00 UTC</div>
+            <div style="color: #a3e635;">${d.tweets.toFixed(1)} avg tweets</div>
+          `)
+      })
+      .on("mousemove", function(event) {
+        tooltip
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 10) + "px")
+      })
+      .on("mouseout", function() {
+        d3.select(this)
+          .transition()
+          .duration(150)
+          .attr("stroke", "white")
+          .attr("stroke-width", 1)
+          .style("filter", "none")
+
+        tooltip.style("visibility", "hidden")
+      })
+
+    // Add entrance animation
+    cells
+      .style("opacity", 0)
+      .transition()
+      .delay((d, i) => i * 3)
+      .duration(400)
+      .style("opacity", 1)
+
+    // Add legend
+    const legendWidth = 250
+    const legendHeight = 12
+    const legendMargin = 10
+
+    const legendGroup = svg.append("g")
+      .attr("transform", `translate(${width - legendWidth - margin.right}, ${height - margin.bottom + legendMargin})`)
+
+    // Create legend gradient
+    const defs = svg.append("defs")
+    const gradient = defs.append("linearGradient")
+      .attr("id", "legend-gradient")
+      .attr("x1", "0%")
+      .attr("x2", "100%")
+      .attr("y1", "0%")
+      .attr("y2", "0%")
+
+    gradient.selectAll("stop")
+      .data(d3.range(0, 1.1, 0.1))
+      .enter().append("stop")
+      .attr("offset", d => `${d * 100}%`)
+      .attr("stop-color", d => colorScale(d * maxTweets))
+
+    // Legend rectangle
+    legendGroup.append("rect")
+      .attr("width", legendWidth)
+      .attr("height", legendHeight)
+      .attr("fill", "url(#legend-gradient)")
+      .attr("rx", 2)
+
+    // Legend labels
+    legendGroup.append("text")
+      .attr("x", 0)
+      .attr("y", legendHeight + 15)
+      .attr("text-anchor", "start")
+      .attr("font-size", "10px")
+      .attr("fill", "#6b7280")
+      .text("Less")
+
+    legendGroup.append("text")
+      .attr("x", legendWidth)
+      .attr("y", legendHeight + 15)
+      .attr("text-anchor", "end")
+      .attr("font-size", "10px")
+      .attr("fill", "#6b7280")
+      .text("More")
+
+    // Cleanup function
+    return () => {
+      tooltip.remove()
+    }
+  }, [activityData])
 
   return (
-    <div className="card-pastel !bg-white p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="card-pastel !bg-white p-3">
+      <div className="flex items-center justify-between mb-2">
         <h3 className="text-lg font-semibold text-gray-900">Activity Heatmap</h3>
         <p className="text-xs text-gray-500">All times in UTC</p>
       </div>
 
-      <div className="w-full">
-        {/* Hour headers - Compact layout */}
-        <div className="grid grid-cols-[50px_repeat(24,1fr)] gap-0.5 mb-2">
-          <div></div>
-          {hours.map((hour) => (
-            <div key={hour} className="text-center text-[10px] text-gray-500 flex items-center justify-center h-4">
-              {hour % 6 === 0 ? hour : ""} {/* Show only every 6th hour to reduce clutter */}
-            </div>
-          ))}
-        </div>
-
-        {/* Activity grid - Compact layout */}
-        {days.map((day) => {
-          const fullDayName = {
-            Sun: "Sunday",
-            Mon: "Monday",
-            Tue: "Tuesday",
-            Wed: "Wednesday",
-            Thu: "Thursday",
-            Fri: "Friday",
-            Sat: "Saturday",
-          }[day]
-
-          const dayData = activityData.daily_activity.find((d) => d.day === fullDayName)
-          return (
-            <div key={day} className="grid grid-cols-[50px_repeat(24,1fr)] gap-0.5 mb-1">
-              <div className="text-xs text-gray-600 flex items-center pr-1">{day}</div>
-              {hours.map((hour) => {
-                const hourData = dayData?.activity.find((a) => a.hour === hour)
-                const tweets = hourData?.avg_tweets || 0
-                return (
-                  <div key={hour} className="flex items-center justify-center">
-                    <div
-                      className={`w-4 h-4 rounded-full cursor-pointer transition-all duration-200 hover:scale-125 ${getActivityColor(tweets)}`}
-                      onMouseEnter={(e) => handleMouseEnter(e, day, hour, tweets)}
-                      onMouseLeave={handleMouseLeave}
-                    />
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })}
-
-        {/* Legend - Compact */}
-        <div className="flex items-center justify-center mt-4 gap-3">
-          <span className="text-xs text-gray-500">Less</span>
-          <div className="flex gap-1">
-            <div className="w-2.5 h-2.5 rounded-full bg-gray-100"></div>
-            <div className="w-2.5 h-2.5 rounded-full bg-green-100"></div>
-            <div className="w-2.5 h-2.5 rounded-full bg-green-200"></div>
-            <div className="w-2.5 h-2.5 rounded-full bg-green-300"></div>
-            <div className="w-2.5 h-2.5 rounded-full bg-green-400"></div>
-          </div>
-          <span className="text-xs text-gray-500">More</span>
-        </div>
+      <div className="w-full overflow-x-auto">
+        <svg ref={svgRef} className="w-full" style={{ minHeight: "300px" }}></svg>
       </div>
-
-      <HoverTooltip {...tooltip} />
     </div>
   )
 }
@@ -347,11 +414,11 @@ export function ProfileCharts({
         />
       </div>
 
-      {/* Activity Heatmap */}
-      {activityData.daily_activity.length > 0 && <ActivityHeatmap activityData={activityData} />}
-
       {/* Token Overview */}
       <TokenOverview authorHandle={authorHandle} />
+
+      {/* Activity Heatmap */}
+      {activityData.daily_activity.length > 0 && <ActivityHeatmap activityData={activityData} />}
     </div>
   )
 }
