@@ -8,6 +8,7 @@ import Matter from "matter-js"
 interface Token {
   symbol: string
   marketcap: number
+  icon?: string
 }
 
 interface Bucket {
@@ -36,6 +37,7 @@ interface PhysicsBubble {
   y: number
   size: number
   bodyId: number
+  icon?: string
 }
 
 interface CalculatedSector {
@@ -719,7 +721,8 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
           symbol: token.symbol,
           marketcap: token.marketcap,
           bucket: sector.bucket,
-          size: size
+          size: size,
+          icon: token.icon
         }
 
         // Apply more dynamic initial forces for liveliness
@@ -886,7 +889,8 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
           x: bubble.position.x,
           y: bubble.position.y,
           size: tokenData.size,
-          bodyId: bubble.id
+          bodyId: bubble.id,
+          icon: tokenData.icon
         }
       })
       setPhysicsBubbles(updatedBubbles)
@@ -1051,29 +1055,48 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
 
         {/* Physics bubbles */}
         <div className="absolute inset-0" style={{ zIndex: 3 }}>
-          {physicsBubbles.map((bubble) => (
-            <div
-              key={bubble.id}
-              className="absolute rounded-full flex items-center justify-center text-xs font-semibold text-white uppercase cursor-pointer shadow-lg hover:shadow-xl transition-all duration-200"
-              style={{
-                width: `${bubble.size}px`,
-                height: `${bubble.size}px`,
-                left: `${bubble.x}px`,
-                top: `${bubble.y}px`,
-                backgroundColor: COLORS[bubble.bucket as keyof typeof COLORS],
-                transform: 'translate(-50%, -50%)',
-                opacity: hoveredToken?.symbol === bubble.symbol ? 1 : 0.85,
-                border: hoveredToken?.symbol === bubble.symbol ? '2px solid white' : '1px solid rgba(255,255,255,0.3)',
-                zIndex: hoveredToken?.symbol === bubble.symbol ? 10 : 5,
-                scale: hoveredToken?.symbol === bubble.symbol ? '1.1' : '1',
-              }}
-              onMouseEnter={(e) => handleBubbleHover(e, bubble)}
-              onMouseLeave={handleBubbleLeave}
-              title={`${bubble.symbol.toUpperCase()} - ${formatMarketCap(bubble.marketcap)}`}
-            >
-              {bubble.symbol.substring(0, bubble.size > 30 ? 4 : 3).toUpperCase()}
-            </div>
-          ))}
+          {physicsBubbles.map((bubble) => {
+            const hasIcon = bubble.icon && bubble.icon.trim() !== ''
+            
+            return (
+              <div
+                key={bubble.id}
+                className="absolute rounded-full flex items-center justify-center text-xs font-semibold text-white uppercase cursor-pointer shadow-lg hover:shadow-xl transition-all duration-200"
+                style={{
+                  width: `${bubble.size}px`,
+                  height: `${bubble.size}px`,
+                  left: `${bubble.x}px`,
+                  top: `${bubble.y}px`,
+                  backgroundColor: hasIcon ? 'transparent' : COLORS[bubble.bucket as keyof typeof COLORS],
+                  backgroundImage: hasIcon ? `url(${bubble.icon})` : 'none',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat',
+                  transform: 'translate(-50%, -50%)',
+                  opacity: hoveredToken?.symbol === bubble.symbol ? 1 : 0.85,
+                  border: hoveredToken?.symbol === bubble.symbol ? '2px solid white' : '1px solid rgba(255,255,255,0.3)',
+                  zIndex: hoveredToken?.symbol === bubble.symbol ? 10 : 5,
+                  scale: hoveredToken?.symbol === bubble.symbol ? '1.1' : '1',
+                }}
+                onMouseEnter={(e) => handleBubbleHover(e, bubble)}
+                onMouseLeave={handleBubbleLeave}
+                title={`${bubble.symbol.toUpperCase()} - ${formatMarketCap(bubble.marketcap)}`}
+              >
+                {/* Show symbol text only if no icon or as overlay for small bubbles */}
+                {(!hasIcon || bubble.size <= 25) && (
+                  <span 
+                    style={{ 
+                      textShadow: hasIcon ? '1px 1px 2px rgba(0,0,0,0.8)' : 'none',
+                      color: hasIcon ? 'white' : 'white',
+                      fontSize: bubble.size > 30 ? '10px' : '8px'
+                    }}
+                  >
+                    {bubble.symbol.substring(0, bubble.size > 30 ? 4 : 3).toUpperCase()}
+                  </span>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
