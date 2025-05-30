@@ -57,6 +57,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
   const [interval, setInterval] = useState<Interval>("7day")
   const [selectedNarrative, setSelectedNarrative] = useState<string | null>(null)
   const [hoveredToken, setHoveredToken] = useState<string | null>(null)
+  const [showAllLegends, setShowAllLegends] = useState(false)
   const svgRef = useRef<SVGSVGElement>(null)
 
   const fetchTokenData = async (attempt = 0) => {
@@ -214,7 +215,9 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
             narrativeMap.get(narrative)!.children!.push({
               name: token.symbol,
               symbol: token.symbol,
-              value: Math.ceil(token.total_tweets / token.narratives.length), // Distribute mentions across narratives
+              // When filtering to a specific narrative, show full mention count
+              // When showing all narratives, distribute mentions across narratives
+              value: selectedNarrative ? token.total_tweets : Math.ceil(token.total_tweets / token.narratives.length),
               icon: token.icon,
               volume_24hr: token.volume_24hr,
               first_tweet_time: token.first_tweet_time,
@@ -245,7 +248,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
     const svg = d3.select(svgRef.current)
     svg.selectAll("*").remove()
 
-    const width = 600 // Reduced from 800 to make room for legend
+    const width = 600
     const height = 400
     const margin = 20
 
@@ -264,8 +267,23 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
 
     const packedRoot = pack(root)
 
+    // Create main container group
     const container = svg.append("g")
       .attr("transform", `translate(${margin}, ${margin})`)
+
+    // Create zoomable group
+    const zoomGroup = container.append("g")
+      .attr("class", "zoom-group")
+
+    // Create zoom behavior
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 3]) // Allow zoom from 50% to 300%
+      .on("zoom", (event) => {
+        zoomGroup.attr("transform", event.transform)
+      })
+
+    // Apply zoom behavior to SVG
+    svg.call(zoom)
 
     // Create tooltip
     const tooltip = d3.select("body").append("div")
@@ -280,8 +298,8 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
       .style("pointer-events", "none")
       .style("z-index", "1000")
 
-    // Draw narrative circles (parent nodes)
-    const narrativeNodes = container.selectAll(".narrative")
+    // Draw narrative circles (parent nodes) - now in zoomGroup
+    const narrativeNodes = zoomGroup.selectAll(".narrative")
       .data(packedRoot.children || [])
       .enter().append("g")
       .attr("class", "narrative")
@@ -312,6 +330,26 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           .attr("fill-opacity", 0.6)
           .attr("stroke-width", 3)
           .style("filter", "drop-shadow(0 4px 8px rgba(0,0,0,0.2))")
+        
+        // Show narrative name in tooltip
+        const narrative = d.data.narrative || "other"
+        tooltip.style("visibility", "visible")
+          .html(`
+            <div style="text-align: center;">
+              <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px; text-transform: capitalize;">
+                ${narrative.replace("-", " ")}
+              </div>
+              <div style="font-size: 11px; color: #ccc;">
+                ${d.children?.length || 0} tokens • ${d.value || 0} total mentions
+              </div>
+            </div>
+          `)
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 10) + "px")
+      })
+      .on("mousemove", function(event) {
+        tooltip.style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 10) + "px")
       })
       .on("mouseout", function(event, d) {
         d3.select(this)
@@ -320,6 +358,8 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           .attr("fill-opacity", 0.3)
           .attr("stroke-width", 2)
           .style("filter", "none")
+        
+        tooltip.style("visibility", "hidden")
       })
 
     // Add subtle floating animation to narrative circles
@@ -345,19 +385,8 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           .on("end", repeat)
       })
 
-    // Add narrative labels
-    narrativeNodes.append("text")
-      .attr("text-anchor", "middle")
-      .attr("dy", d => -d.r! + 20)
-      .attr("font-size", d => Math.min(d.r! / 3, 14))
-      .attr("font-weight", "bold")
-      .attr("fill", "white")
-      .style("pointer-events", "none")
-      .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.5)")
-      .text(d => d.data.name.replace("-", " ").toUpperCase())
-
-    // Draw token circles (child nodes)
-    const tokenNodes = container.selectAll(".token")
+    // Draw token circles (child nodes) - now in zoomGroup
+    const tokenNodes = zoomGroup.selectAll(".token")
       .data(packedRoot.descendants().filter(d => d.depth === 2))
       .enter().append("g")
       .attr("class", "token")
@@ -600,8 +629,8 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           {/* Visualization Container */}
           <div className="flex-1 overflow-x-auto">
             <svg ref={svgRef} className="w-full" style={{ minHeight: "400px" }}></svg>
-          </div>
-          
+      </div>
+
           {/* Legend on the right side */}
           <div className="lg:w-48 lg:flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
@@ -613,47 +642,85 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
                 >
                   Show All
                 </button>
-              )}
-            </div>
+                  )}
+                </div>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 lg:space-y-1 lg:gap-0">
-              {Object.entries(narrativeColors).slice(0, 12).map(([narrative, color]) => {
-                const isSelected = selectedNarrative === narrative
-                const hasTokens = data?.narrative_breakdown?.[narrative] > 0 || 
-                  (narrative === "other" && data?.tokens?.some(t => t.narratives.length === 0))
+              {(() => {
+                // Sort narratives by mention count (descending)
+                const sortedNarratives = Object.entries(narrativeColors)
+                  .filter(([narrative]) => {
+                    return data?.narrative_breakdown?.[narrative] > 0 || 
+                      (narrative === "other" && data?.tokens?.some(t => t.narratives.length === 0))
+                  })
+                  .sort(([a], [b]) => {
+                    const countA = data?.narrative_breakdown?.[a] || 0
+                    const countB = data?.narrative_breakdown?.[b] || 0
+                    return countB - countA
+                  })
                 
-                return (
-                  <div 
-                    key={narrative} 
-                    className={`flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer transition-all duration-200 ${
-                      isSelected 
-                        ? 'bg-white shadow-sm ring-2 ring-blue-200' 
-                        : hasTokens 
-                          ? 'hover:bg-white/50' 
-                          : 'opacity-50 cursor-not-allowed'
-                    }`}
-                    onClick={() => {
-                      if (hasTokens) {
-                        setSelectedNarrative(isSelected ? null : narrative)
-                      }
-                    }}
-                  >
+                // Show only top 6 if not expanded
+                const narrativesToShow = showAllLegends ? sortedNarratives : sortedNarratives.slice(0, 6)
+                
+                return narrativesToShow.map(([narrative, color]) => {
+                  const isSelected = selectedNarrative === narrative
+                  const hasTokens = data?.narrative_breakdown?.[narrative] > 0 || 
+                    (narrative === "other" && data?.tokens?.some(t => t.narratives.length === 0))
+                  
+                  return (
                     <div 
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: color }}
-                    ></div>
-                    <span className={`text-xs capitalize leading-tight ${
-                      isSelected ? 'text-gray-900 font-medium' : 'text-gray-600'
-                    }`}>
-                      {narrative.replace("-", " ")}
-                    </span>
-                    {hasTokens && (
-                      <span className="text-xs text-gray-400 ml-auto">
-                        {data?.narrative_breakdown?.[narrative] || 0}
+                        key={narrative}
+                      className={`flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer transition-all duration-200 ${
+                        isSelected 
+                          ? 'bg-white shadow-sm ring-2 ring-blue-200' 
+                          : hasTokens 
+                            ? 'hover:bg-white/50' 
+                            : 'opacity-50 cursor-not-allowed'
+                      }`}
+                      onClick={() => {
+                        if (hasTokens) {
+                          setSelectedNarrative(isSelected ? null : narrative)
+                        }
+                      }}
+                    >
+                      <div 
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
+                        style={{ backgroundColor: color }}
+                      ></div>
+                      <span className={`text-xs capitalize leading-tight ${
+                        isSelected ? 'text-gray-900 font-medium' : 'text-gray-600'
+                      }`}>
+                        {narrative.replace("-", " ")}
+                      </span>
+                      {hasTokens && (
+                        <span className="text-xs text-gray-400 ml-auto">
+                          {data?.narrative_breakdown?.[narrative] || 0}
                       </span>
                     )}
                   </div>
-                )
-              })}
+                  )
+                })
+              })()}
+              
+              {/* Show More/Less Button */}
+              {(() => {
+                const totalNarratives = Object.entries(narrativeColors)
+                  .filter(([narrative]) => {
+                    return data?.narrative_breakdown?.[narrative] > 0 || 
+                      (narrative === "other" && data?.tokens?.some(t => t.narratives.length === 0))
+                  }).length
+                
+                if (totalNarratives > 6) {
+                  return (
+                    <button
+                      onClick={() => setShowAllLegends(!showAllLegends)}
+                      className="flex items-center gap-1 py-1 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors duration-200 mt-1"
+                    >
+                      <span>{showAllLegends ? 'Show less...' : `See more... (+${totalNarratives - 6})`}</span>
+                    </button>
+                  )
+                }
+                return null
+              })()}
             </div>
           </div>
         </div>
