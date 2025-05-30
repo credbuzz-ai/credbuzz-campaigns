@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend, Sector } from "recharts"
 import * as d3 from "d3" // Import D3
 import { useRouter } from "next/navigation"
 
@@ -55,15 +54,15 @@ const getContainerDimensions = () => {
   if (typeof window !== 'undefined') {
     const screenWidth = window.innerWidth
     const screenHeight = window.innerHeight
-    // Make the circular container much larger and centered - increased by 1.5x
-    const size = Math.min(screenWidth * 0.9, screenHeight * 1.05, 1200) // Increased from 0.6, 0.7, 800 to 0.9, 1.05, 1200
+    // Make the circular container reduced by 0.8 factor
+    const size = Math.min(screenWidth * 0.72, screenHeight * 0.84, 960) // Reduced by 0.8 factor: 0.9*0.8=0.72, 1.05*0.8=0.84, 1200*0.8=960
     return { 
       width: size, 
       height: size 
     } 
   }
-  // Default for SSR - large circular container - increased by 1.5x
-  return { width: 900, height: 900 } // Increased from 600x600 to 900x900
+  // Default for SSR - reduced by 0.8 factor
+  return { width: 720, height: 720 } // Reduced from 900x900 to 720x720 (900*0.8=720)
 }
 
 const CONTAINER_DIMENSIONS = getContainerDimensions()
@@ -443,7 +442,7 @@ const FollowersBubbleMap = ({
   );
 }
 
-// Sub-component 2: Tags Distribution Donut Chart
+// D3-based Tags Distribution Donut Chart
 const TagsDistributionChart = ({ 
   followers,
   loading, 
@@ -455,34 +454,111 @@ const TagsDistributionChart = ({
   selectedTagForFilter: string | null;
   setSelectedTagForFilter: (tag: string | null) => void;
 }) => {
-  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [hoveredSegment, setHoveredSegment] = useState<{tag: string; data: any} | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
-  const onPieEnter = (_: any, index: number) => {
-    setActiveIndex(index);
-  };
-  const onPieLeave = () => {
-    setActiveIndex(null);
-  };
+  useEffect(() => {
+    if (!svgRef.current || loading) return;
 
-  const handlePieClick = (data: any, index: number) => {
-    const clickedTagName = data.name; // This is the display name like "Project Member"
-    if (selectedTagForFilter === clickedTagName) {
-      setSelectedTagForFilter(null); // Toggle off if same tag is clicked
-    } else {
-      setSelectedTagForFilter(clickedTagName); // Set to the display name
-    }
-    setActiveIndex(null); // Reset hover effect after click
-  };
+    const tagCounts: { [key: string]: number } = {};
+    followers.forEach(follower => {
+      follower.tags.forEach(tag => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+    });
+
+    const chartData = Object.entries(tagCounts).map(([tag, count]) => ({
+      name: tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      originalTag: tag,
+      value: count,
+      color: TAG_COLORS[tag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown
+    })).sort((a, b) => b.value - a.value);
+
+    if (chartData.length === 0) return;
+
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
+
+    const width = 160;
+    const height = 160;
+    const radius = Math.min(width, height) / 2;
+    const innerRadius = 30;
+    const outerRadius = 65;
+
+    const g = svg
+      .attr("width", width)
+      .attr("height", height)
+      .append("g")
+      .attr("transform", `translate(${width / 2}, ${height / 2})`);
+
+    const pie = d3.pie<any>()
+      .value((d: any) => d.value)
+      .sort(null);
+
+    const arc = d3.arc<any>()
+      .innerRadius(innerRadius)
+      .outerRadius(outerRadius)
+      .cornerRadius(2);
+
+    const arcs = g.selectAll(".arc")
+      .data(pie(chartData))
+      .enter()
+      .append("g")
+      .attr("class", "arc");
+
+    arcs.append("path")
+      .attr("d", arc)
+      .attr("fill", (d: any) => d.data.color)
+      .attr("stroke", "rgba(0,0,0,0.1)")
+      .attr("stroke-width", 1)
+      .style("opacity", (d: any) => {
+        if (selectedTagForFilter === d.data.name) return 1;
+        if (selectedTagForFilter && selectedTagForFilter !== d.data.name) return 0.3;
+        return 1;
+      })
+      .style("cursor", "pointer")
+      .on("mouseenter", function(this: SVGPathElement, event: MouseEvent, d: any) {
+        d3.select(this)
+          .attr("stroke", d.data.color)
+          .attr("stroke-width", 2)
+          .style("opacity", 1);
+        
+        setHoveredSegment({ tag: d.data.name, data: d.data });
+        setTooltipPosition({ x: event.clientX, y: event.clientY });
+      })
+      .on("mouseleave", function(this: SVGPathElement, event: MouseEvent, d: any) {
+        d3.select(this)
+          .attr("stroke", "rgba(0,0,0,0.1)")
+          .attr("stroke-width", 1)
+          .style("opacity", (d: any) => {
+            if (selectedTagForFilter === d.data.name) return 1;
+            if (selectedTagForFilter && selectedTagForFilter !== d.data.name) return 0.3;
+            return 1;
+          });
+        
+        setHoveredSegment(null);
+      })
+      .on("click", function(this: SVGPathElement, event: MouseEvent, d: any) {
+        const clickedTagName = d.data.name;
+        if (selectedTagForFilter === clickedTagName) {
+          setSelectedTagForFilter(null);
+        } else {
+          setSelectedTagForFilter(clickedTagName);
+        }
+      });
+
+  }, [followers, loading, selectedTagForFilter, setSelectedTagForFilter]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
+      <div className="w-full h-full flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-500">Loading chart...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+          <p className="text-gray-500 text-xs">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   const tagCounts: { [key: string]: number } = {};
@@ -492,15 +568,7 @@ const TagsDistributionChart = ({
     });
   });
 
-  const chartData = Object.entries(tagCounts).map(([tag, count]) => ({
-    name: tag.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // Format for display: 'project_member' -> 'Project Member'
-    originalTag: tag, // Keep original for potential reverse mapping if needed
-    value: count,
-    color: TAG_COLORS[tag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown
-  })).sort((a, b) => b.value - a.value);
-
-  // If no data, show a simple message
-  if (chartData.length === 0) {
+  if (Object.keys(tagCounts).length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center">
         <p className="text-xs text-gray-500">No tags</p>
@@ -508,80 +576,31 @@ const TagsDistributionChart = ({
     );
   }
 
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload // Access payload directly for recharts data
-      const currentFollowers = followers // Capture followers in closure for safety in async contexts
-      return (
-        <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
-          <p className="font-medium text-xs">{data.name}</p>
-          <p className="text-xs text-gray-600">Count: {data.value}</p>
-          {currentFollowers && currentFollowers.length > 0 && data.value && ( // Check followers length and data.value
-          <p className="text-xs text-gray-600">
-              {((data.value / currentFollowers.length) * 100).toFixed(1)}%
-          </p>
-          )}
-        </div>
-      )
-    }
-    return null
-  }
-
   return (
-    <div className="w-full h-full flex items-center justify-center">
-      <PieChart width={160} height={160}>
-        <Pie
-          data={chartData}
-          cx={80}
-          cy={80}
-          innerRadius={30}
-          outerRadius={65}
-          paddingAngle={1}
-          dataKey="value"
-          nameKey="name"
-          onMouseEnter={onPieEnter}
-          onMouseLeave={onPieLeave}
-          onClick={handlePieClick} 
-          cornerRadius={2}
+    <div className="w-full h-full flex items-center justify-center relative">
+      <svg ref={svgRef} className="block" />
+      {hoveredSegment && (
+        <div 
+          className="fixed z-[1000] pointer-events-none"
+          style={{
+            left: `${tooltipPosition.x + 15}px`,
+            top: `${tooltipPosition.y - 10}px`,
+            transform: 'translateY(-100%)',
+          }}
         >
-          {chartData.map((entry, index) => {
-            const isGloballySelected = selectedTagForFilter === entry.name;
-            const isHoveredCurrently = activeIndex === index;
-            
-            let cellOpacity = 1;
-            let cellStrokeWidth = 1;
-            let cellStroke = 'rgba(0,0,0,0.1)';
-
-            if (isGloballySelected) {
-              cellOpacity = 1; 
-              cellStrokeWidth = 2;
-              cellStroke = entry.color;
-            } else if (selectedTagForFilter) {
-              cellOpacity = 0.3;
-            } else if (isHoveredCurrently) {
-              cellOpacity = 1;
-              cellStrokeWidth = 2;
-              cellStroke = entry.color;
-            } else if (activeIndex !== null && !isHoveredCurrently) {
-              cellOpacity = 0.6;
-            }
-
-            return (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.color} 
-                opacity={cellOpacity}
-                stroke={cellStroke} 
-                strokeWidth={cellStrokeWidth}
-                style={{ cursor: 'pointer' }}
-              />
-            );
-          })}
-        </Pie>
-        <RechartsTooltip content={<CustomTooltip />} />
-      </PieChart>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+            <p className="font-medium text-xs">{hoveredSegment.tag}</p>
+            <p className="text-xs text-gray-600">Count: {hoveredSegment.data.value}</p>
+            {followers.length > 0 && (
+              <p className="text-xs text-gray-600">
+                {((hoveredSegment.data.value / followers.length) * 100).toFixed(1)}%
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
-  )
+  );
 }
 
 // Helper function for fetching with retry
