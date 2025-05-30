@@ -8,7 +8,7 @@ import { LineChart, Line, ResponsiveContainer, Tooltip, type TooltipProps } from
 import type { ChartDataPoint, UserProfileResponse } from "../types"
 import { TrendingUp, TrendingDown } from "lucide-react"
 import { useState } from "react"
-import TokenOverview from "./TokenOverview"
+import FollowersOverview from "./FollowersOverview"
 
 interface MetricChartProps {
   title: string
@@ -414,8 +414,8 @@ export function ProfileCharts({
         />
       </div>
 
-      {/* Token Overview */}
-      <TokenOverview authorHandle={authorHandle} />
+      {/* Followers Overview */}
+      <FollowersOverview authorHandle={authorHandle} />
 
       {/* Activity Heatmap */}
       {activityData.daily_activity.length > 0 && <ActivityHeatmap activityData={activityData} />}
