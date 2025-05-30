@@ -198,7 +198,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
     const segmentWidth = CHART_WIDTH / MARKET_CAP_SEGMENTS.length
     const segmentData = MARKET_CAP_SEGMENTS.map((segment, index) => ({
       ...segment,
-      tokens: segmentTokens[index].sort((a, b) => b.marketcap - a.marketcap).slice(0, MAX_ICONS_PER_SEGMENT),
+      tokens: segmentTokens[index].sort((a, b) => a.marketcap - b.marketcap).slice(0, MAX_ICONS_PER_SEGMENT),
       allTokens: segmentTokens[index],
       x: index * segmentWidth,
       width: segmentWidth
@@ -222,6 +222,48 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
 
     // Create main group
     const g = svg.append("g")
+
+    // Define gradients for each segment
+    const defs = svg.append("defs")
+    
+    segmentData.forEach((segment, index) => {
+      const gradient = defs.append("linearGradient")
+        .attr("id", `gradient-${index}`)
+        .attr("x1", "0%")
+        .attr("y1", "100%") // Start from bottom
+        .attr("x2", "0%")
+        .attr("y2", "0%") // End at top
+      
+      // Darker color at bottom (base)
+      gradient.append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", segment.color)
+        .attr("stop-opacity", "0.3")
+      
+      // Medium opacity in middle
+      gradient.append("stop")
+        .attr("offset", "50%")
+        .attr("stop-color", segment.color)
+        .attr("stop-opacity", "0.15")
+      
+      // Fade to transparent at top
+      gradient.append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", segment.color)
+        .attr("stop-opacity", "0")
+    })
+
+    // Create background rectangles with gradient
+    const backgroundHeight = BAR_Y_POSITION - 20 // Extend from slightly above the bar to top of chart area
+    const backgrounds = g.selectAll(".segment-background")
+      .data(segmentData)
+      .enter().append("rect")
+      .attr("class", "segment-background")
+      .attr("x", d => d.x)
+      .attr("y", 20) // Start from top of chart area
+      .attr("width", d => d.width)
+      .attr("height", backgroundHeight)
+      .attr("fill", (d, i) => `url(#gradient-${i})`)
 
     // Create segmented bar
     const segments = g.selectAll(".segment")
