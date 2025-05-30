@@ -85,7 +85,7 @@ const formatNumber = (num: number): string => {
   return num.toString()
 }
 
-const getBubbleSize = (count: number, maxCount: number, minSize: number = 20, maxSize: number = 150): number => {
+const getBubbleSize = (count: number, maxCount: number, minSize: number = 10, maxSize: number = 80): number => {
   if (maxCount === 0) return minSize
   // Use linear scale for more drastic size difference
   const normalized = count / maxCount
