@@ -54,19 +54,16 @@ const TAG_COLORS = {
 const getContainerDimensions = () => {
   if (typeof window !== 'undefined') {
     const screenWidth = window.innerWidth
-    // Match the chart height (400) on lg and above when they are side-by-side
-    // Reducing widths slightly to see if it helps with perceived right-side border thickness
-    if (screenWidth >= 1024) { // lg breakpoint and above
-      return { 
-        width: screenWidth >= 1536 ? 620 : screenWidth >= 1280 ? 620 : 620, 
-        height: 400 
-      } 
-    } else { // Smaller screens, keep responsive width and a suitable height
-      return { width: Math.min(screenWidth - 40, 560), height: 280 } // Width logic for smaller screens seems okay
-    }
+    const screenHeight = window.innerHeight
+    // Make the circular container much larger and centered - increased by 1.5x
+    const size = Math.min(screenWidth * 0.9, screenHeight * 1.05, 1200) // Increased from 0.6, 0.7, 800 to 0.9, 1.05, 1200
+    return { 
+      width: size, 
+      height: size 
+    } 
   }
-  // Default for SSR - align with a mid-tier reduced width
-  return { width: 470, height: 400 }
+  // Default for SSR - large circular container - increased by 1.5x
+  return { width: 900, height: 900 } // Increased from 600x600 to 900x900
 }
 
 const CONTAINER_DIMENSIONS = getContainerDimensions()
@@ -89,7 +86,7 @@ const formatNumber = (num: number): string => {
   return num.toString()
 }
 
-const getBubbleSize = (count: number, maxCount: number, minSize: number = 20, maxSize: number = 100): number => {
+const getBubbleSize = (count: number, maxCount: number, minSize: number = 20, maxSize: number = 150): number => {
   if (maxCount === 0) return minSize
   // Use linear scale for more drastic size difference
   const normalized = count / maxCount
@@ -414,12 +411,20 @@ const FollowersBubbleMap = ({
   return (
     <div className="relative">
       <div 
-        className="bg-gray-50 rounded-lg border border-gray-200 relative overflow-hidden p-6" 
+        className="bg-gray-50 rounded-full border border-gray-200 relative overflow-hidden shadow-lg mx-auto" 
+        style={{ 
+          width: containerDimensions.width, 
+          height: containerDimensions.height,
+          padding: '24px'
+        }}
       >
         <svg 
           ref={svgRef} 
-          className="block" 
-          style={{ width: containerDimensions.width, height: containerDimensions.height }} 
+          className="block rounded-full" 
+          style={{ 
+            width: containerDimensions.width - 48, 
+            height: containerDimensions.height - 48 
+          }} 
         />
       </div>
       {hoveredFollower && (
@@ -494,16 +499,25 @@ const TagsDistributionChart = ({
     color: TAG_COLORS[tag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown
   })).sort((a, b) => b.value - a.value);
 
+  // If no data, show a simple message
+  if (chartData.length === 0) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <p className="text-xs text-gray-500">No tags</p>
+      </div>
+    );
+  }
+
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload // Access payload directly for recharts data
       const currentFollowers = followers // Capture followers in closure for safety in async contexts
       return (
         <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
-          <p className="font-medium">{data.name}</p>
-          <p className="text-sm text-gray-600">Count: {data.value}</p>
+          <p className="font-medium text-xs">{data.name}</p>
+          <p className="text-xs text-gray-600">Count: {data.value}</p>
           {currentFollowers && currentFollowers.length > 0 && data.value && ( // Check followers length and data.value
-          <p className="text-sm text-gray-600">
+          <p className="text-xs text-gray-600">
               {((data.value / currentFollowers.length) * 100).toFixed(1)}%
           </p>
           )}
@@ -513,121 +527,59 @@ const TagsDistributionChart = ({
     return null
   }
 
-  // Custom Active Shape for Pie Chart
-  const renderActiveShape = (props: any) => {
-    const RADIAN = Math.PI / 180;
-    const { cx, cy, midAngle, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props; // payload.name here is the formatted one
-    const sin = Math.sin(-RADIAN * midAngle);
-    const cos = Math.cos(-RADIAN * midAngle);
-    const sx = cx + (outerRadius + 5) * cos; // Move text slightly out
-    const sy = cy + (outerRadius + 5) * sin;
-    const mx = cx + (outerRadius + 15) * cos; // Line end point further out
-    const my = cy + (outerRadius + 15) * sin;
-    const ex = mx + (cos >= 0 ? 1 : -1) * 12; // Horizontal line part
-    const ey = my;
-    const textAnchor = cos >= 0 ? 'start' : 'end';
-
-    return (
-      <g>
-        <text x={cx} y={cy} dy={8} textAnchor="middle" fill={fill} fontSize={16} fontWeight="bold">
-          {payload.name}
-        </text>
-        <Sector
-          cx={cx}
-          cy={cy}
-          innerRadius={innerRadius}
-          outerRadius={outerRadius + 4} // Make active segment slightly larger
-          startAngle={startAngle}
-          endAngle={endAngle}
-          fill={fill}
-          cornerRadius={5} // Add rounded corners
-        />
-        <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
-        <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-        <text x={ex + (cos >= 0 ? 1 : -1) * 8} y={ey} textAnchor={textAnchor} fill="#333">
-          {`${value} (${(percent * 100).toFixed(1)}%)`}
-        </text>
-      </g>
-    );
-  };
-
   return (
-    <div className="bg-gray-50 rounded-lg p-6">
-      <ResponsiveContainer width="100%" height={400}>
-        <PieChart>
-          <Pie
-            activeIndex={activeIndex ?? undefined}
-            activeShape={renderActiveShape}
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius={80}
-            outerRadius={150}
-            paddingAngle={3}
-            dataKey="value"
-            nameKey="name" // This uses the formatted name from chartData
-            onMouseEnter={onPieEnter}
-            onMouseLeave={onPieLeave}
-            onClick={handlePieClick} 
-            cornerRadius={5}
-          >
-            {chartData.map((entry, index) => {
-              // entry.name is the formatted display name like "Project Member"
-              const isGloballySelected = selectedTagForFilter === entry.name;
-              const isHoveredCurrently = activeIndex === index;
-              
-              let cellOpacity = 1;
-              let cellStrokeWidth = 1;
-              let cellStroke = 'rgba(0,0,0,0.1)'; // Default faint border
+    <div className="w-full h-full flex items-center justify-center">
+      <PieChart width={160} height={160}>
+        <Pie
+          data={chartData}
+          cx={80}
+          cy={80}
+          innerRadius={30}
+          outerRadius={65}
+          paddingAngle={1}
+          dataKey="value"
+          nameKey="name"
+          onMouseEnter={onPieEnter}
+          onMouseLeave={onPieLeave}
+          onClick={handlePieClick} 
+          cornerRadius={2}
+        >
+          {chartData.map((entry, index) => {
+            const isGloballySelected = selectedTagForFilter === entry.name;
+            const isHoveredCurrently = activeIndex === index;
+            
+            let cellOpacity = 1;
+            let cellStrokeWidth = 1;
+            let cellStroke = 'rgba(0,0,0,0.1)';
 
-              if (isGloballySelected) {
-                cellOpacity = 1; 
-                cellStrokeWidth = 3;
-                cellStroke = entry.color; // Highlight with its own color
-              } else if (selectedTagForFilter) { // A filter is active, but this cell is not it
-                cellOpacity = 0.3;
-              } else if (isHoveredCurrently) { // No global filter, this cell is hovered
-                cellOpacity = 1;
-                cellStrokeWidth = 2;
-                cellStroke = entry.color;
-              } else if (activeIndex !== null && !isHoveredCurrently) { // No global filter, another cell is hovered
-                cellOpacity = 0.6;
-              }
+            if (isGloballySelected) {
+              cellOpacity = 1; 
+              cellStrokeWidth = 2;
+              cellStroke = entry.color;
+            } else if (selectedTagForFilter) {
+              cellOpacity = 0.3;
+            } else if (isHoveredCurrently) {
+              cellOpacity = 1;
+              cellStrokeWidth = 2;
+              cellStroke = entry.color;
+            } else if (activeIndex !== null && !isHoveredCurrently) {
+              cellOpacity = 0.6;
+            }
 
-              return (
-                <Cell 
-                  key={`cell-${index}`} 
-                  fill={entry.color} 
-                  opacity={cellOpacity}
-                  stroke={cellStroke} 
-                  strokeWidth={cellStrokeWidth}
-                  style={{ transition: 'all 0.2s ease-in-out', cursor: 'pointer' }}
-                />
-              );
-            })}
-          </Pie>
-          <RechartsTooltip content={<CustomTooltip />} />
-          <Legend 
-            verticalAlign="bottom" 
-            height={36}
-            formatter={(value: string, entry: any) => ( // Add types for formatter
-              <span style={{ color: entry.color }}>
-                {value} ({entry.payload?.value || 0})
-              </span>
-            )}
-          />
-        </PieChart>
-      </ResponsiveContainer>
-      {selectedTagForFilter && (
-        <div className="text-center mt-3">
-          <button 
-            onClick={() => { setSelectedTagForFilter(null); setActiveIndex(null); }}
-            className="px-3 py-1 bg-blue-500 text-white rounded-md text-xs hover:bg-blue-600 transition-colors"
-          >
-            Clear filter: {selectedTagForFilter}
-          </button>
-        </div>
-      )}
+            return (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.color} 
+                opacity={cellOpacity}
+                stroke={cellStroke} 
+                strokeWidth={cellStrokeWidth}
+                style={{ cursor: 'pointer' }}
+              />
+            );
+          })}
+        </Pie>
+        <RechartsTooltip content={<CustomTooltip />} />
+      </PieChart>
     </div>
   )
 }
@@ -726,9 +678,9 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
+    <div className="bg-white min-h-screen relative">
       {/* Header */}
-      <div className="mb-6">
+      <div className="p-6 pb-8">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Followers Overview</h3>
         
         {/* Controls */}
@@ -782,49 +734,63 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
         </div>
       </div>
 
-      {/* Sub-components Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Sub-component 1: Followers Bubble Map */}
-        <div className="min-w-0 lg:col-span-1">
-          <h4 className="text-md font-medium text-gray-800 mb-3">
-            Top {limit} by {sortBy === 'smart_followers' ? 'Smart Followers' : 'Total Followers'}
-            {selectedTagForFilter && <span className="text-sm text-gray-600 ml-2">(filtered by: {selectedTagForFilter})</span>} 
-          </h4>
-          <div className="w-full overflow-x-auto">
+      {/* Main Content Area */}
+      <div className="relative px-6 pb-6">
+        {/* Central Circular Bubble Map */}
+        <div className="flex justify-center items-center">
+          <div className="text-center relative">
+            <h4 className="text-md font-medium text-gray-800 mb-6">
+              Top {limit} by {sortBy === 'smart_followers' ? 'Smart Followers' : 'Total Followers'}
+              {selectedTagForFilter && <span className="text-sm text-gray-600 ml-2">(filtered by: {selectedTagForFilter})</span>} 
+            </h4>
             <FollowersBubbleMap 
               followers={followers}
               sortBy={sortBy}
               loading={loading}
               selectedTagForFilter={selectedTagForFilter}
             />
-          </div>
-        </div>
-
-        {/* Sub-component 2: Tags Distribution Chart */}
-        <div className="min-w-0">
-          <h4 className="text-md font-medium text-gray-800 mb-3">
-            Tags Distribution
-          </h4>
-          { (loading && followers.length === 0) ? ( // Show specific loader for chart if main data is loading and no followers yet
-             <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                  <p className="text-gray-500">Loading chart data...</p>
+            
+            {/* Bottom Right Tags Distribution Chart - positioned relative to bubble map */}
+            <div className="absolute bottom-0 right-0">
+              { (loading && followers.length === 0) ? ( 
+                 <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-gray-500 text-xs">Loading...</p>
+                    </div>
+                  </div>
+              ) : followers.length > 0 ? (
+                <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 relative flex items-center justify-center">
+                  <div className="absolute top-2 left-0 right-0 text-center z-10">
+                    <h5 className="text-xs font-medium text-gray-700">Tags</h5>
+                  </div>
+                  <div className="w-40 h-40 flex items-center justify-center">
+                    <TagsDistributionChart 
+                      followers={followers}
+                      loading={loading && followers.length === 0}
+                      selectedTagForFilter={selectedTagForFilter}
+                      setSelectedTagForFilter={setSelectedTagForFilter}
+                    />
+                  </div>
+                  {selectedTagForFilter && (
+                    <div className="absolute bottom-2 left-0 right-0 text-center z-10">
+                      <button 
+                        onClick={() => setSelectedTagForFilter(null)}
+                        className="px-2 py-1 bg-blue-500 text-white rounded-md text-xs hover:bg-blue-600 transition-colors"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
-          ) : followers.length > 0 ? (
-          <TagsDistributionChart 
-            followers={followers}
-            loading={loading && followers.length === 0}
-            selectedTagForFilter={selectedTagForFilter}
-            setSelectedTagForFilter={setSelectedTagForFilter}
-          />
-          ) : !loading && followers.length === 0 && !error ? ( // Case: No followers found, not loading, no error
-            <div className="flex items-center justify-center h-96 bg-gray-50 rounded-lg">
-              <p className="text-gray-500">No followers data to display for this selection.</p>
+              ) : !loading && followers.length === 0 && !error ? ( 
+                <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center">
+                  <p className="text-gray-500 text-xs text-center px-4">No data</p>
+                </div>
+              ) : null 
+              }
             </div>
-          ) : null /* Error state is handled globally */
-          }
+          </div>
         </div>
       </div>
     </div>
