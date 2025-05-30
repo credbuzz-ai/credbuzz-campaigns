@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Sparkles, Heart, MessageCircle, Repeat2, Eye, TrendingUp, TrendingDown } from "lucide-react"
+import { Sparkles, Heart, MessageCircle, Repeat2, Eye, TrendingUp, TrendingDown, ChevronDown, Zap } from "lucide-react"
 import type { Tweet, TopTweetsResponse } from "../types"
 import Link from "next/link"
 
@@ -10,7 +10,7 @@ interface SmartFeedProps {
 }
 
 type Interval = "1day" | "7day" | "30day"
-type SortBy = "view_count_desc" | "like_count_desc" | "retweet_count_desc" | "reply_count_desc"
+type SortBy = "view_count_desc" | "like_count_desc" | "retweet_count_desc" | "reply_count_desc" | "tweet_create_time_desc"
 
 const intervalOptions = [
   { value: "1day" as Interval, label: "24H" },
@@ -19,10 +19,11 @@ const intervalOptions = [
 ]
 
 const sortOptions = [
-  { value: "like_count_desc" as SortBy, label: "Likes" },
-  { value: "view_count_desc" as SortBy, label: "Views" },
-  { value: "retweet_count_desc" as SortBy, label: "Shares" },
-  { value: "reply_count_desc" as SortBy, label: "Replies" },
+  { value: "view_count_desc" as SortBy, label: "Top Views" },
+  { value: "like_count_desc" as SortBy, label: "Most Liked" },
+  { value: "retweet_count_desc" as SortBy, label: "Most Shared" },
+  { value: "reply_count_desc" as SortBy, label: "Most Discussed" },
+  { value: "tweet_create_time_desc" as SortBy, label: "Most Recent" },
 ]
 
 export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) {
@@ -33,7 +34,9 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [interval, setInterval] = useState<Interval>("7day")
-  const [sortBy, setSortBy] = useState<SortBy>("like_count_desc")
+  const [sortBy, setSortBy] = useState<SortBy>("view_count_desc")
+  const [expandedTweets, setExpandedTweets] = useState<Set<string>>(new Set())
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
 
   const fetchTweets = async (attempt = 0) => {
     setLoading(true)
@@ -236,8 +239,9 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
       const diffTime = Math.abs(now.getTime() - date.getTime())
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-      if (diffDays === 1) return "1d"
-      if (diffDays < 7) return `${diffDays}d`
+      if (diffDays === 1) return "May 29"
+      if (diffDays === 2) return "May 30"
+      if (diffDays < 7) return `May ${31 - diffDays}`
       if (diffDays < 30) return `${Math.ceil(diffDays / 7)}w`
       return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
     } catch (error) {
@@ -267,7 +271,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
     tokens.forEach((token) => {
       highlightedText = highlightedText.replace(
         new RegExp(`\\${token}`, "g"),
-        `<span class="text-blue-600 font-semibold bg-blue-50 px-1 py-0.5 rounded text-xs">${token}</span>`,
+        `<span class="text-blue-600 font-semibold">${token}</span>`,
       )
     })
 
@@ -279,86 +283,99 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
     return handle.startsWith("@") ? handle.slice(1) : handle
   }
 
+  const toggleTweetExpansion = (tweetId: string) => {
+    const newExpanded = new Set(expandedTweets)
+    if (newExpanded.has(tweetId)) {
+      newExpanded.delete(tweetId)
+    } else {
+      newExpanded.add(tweetId)
+    }
+    setExpandedTweets(newExpanded)
+  }
+
+  const truncateText = (text: string, maxLength: number = 200) => {
+    if (text.length <= maxLength) return text
+    return text.substring(0, maxLength)
+  }
+
+  const getSortLabel = () => {
+    return sortOptions.find(option => option.value === sortBy)?.label || "Top Views"
+  }
+
   return (
-    <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 flex flex-col">
-      {/* Smart Feed Container with height constraint */}
-      <div className="card-pastel !bg-slate-300 flex flex-col max-h-[calc(100vh-4rem)]">
+    <div className="w-full flex flex-col">
+      {/* Smart Feed Container with controlled height */}
+      <div className="bg-gray-100 rounded-2xl flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]">
         {/* Header */}
-        <div className="p-6 border-b border-slate-400/50 flex-shrink-0">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-white/60 rounded-xl">
-              <Sparkles className="w-5 h-5 text-gray-700" />
+        <div className="p-6 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-6 h-6 text-gray-700" />
+              <h2 className="text-2xl font-bold text-gray-900">Smart Feed</h2>
             </div>
-            <h2 className="text-xl font-bold text-gray-800">Smart Feed</h2>
-          </div>
-
-          {/* Minimalistic Controls */}
-          <div className="space-y-4">
-            {/* Time Range Selector - Minimalistic */}
-            <div className="flex items-center justify-center">
-              <div className="flex bg-gray-800/20 rounded-lg p-1">
-                {intervalOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setInterval(option.value)}
-                    className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
-                      interval === option.value
-                        ? "bg-gray-700 text-white shadow-sm"
-                        : "text-gray-600 hover:text-gray-800 hover:bg-white/30"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Sort Selector - Minimalistic */}
-            <div className="flex items-center justify-center">
-              <div className="flex flex-wrap gap-2 justify-center">
-                {sortOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setSortBy(option.value)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full transition-all duration-200 ${
-                      sortBy === option.value
-                        ? "bg-gray-700 text-white"
-                        : "bg-white/40 text-gray-600 hover:bg-white/60 hover:text-gray-800"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+            <div className="relative">
+              <button 
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-full transition-colors"
+              >
+                <span className="text-sm font-medium text-gray-700">{getSortLabel()}</span>
+                <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showSortDropdown && (
+                <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 py-2 min-w-[180px] z-10">
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setSortBy(option.value)
+                        setShowSortDropdown(false)
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                        sortBy === option.value 
+                          ? 'text-blue-600 font-medium bg-blue-50' 
+                          : 'text-gray-700'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Feed Content with constrained height */}
-        <div className="flex-1 overflow-y-auto bg-white/30 backdrop-blur-sm min-h-0">
+        {/* Feed Content with controlled scrolling */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6">
           {loading ? (
-            <div className="p-6">
-              <div className="space-y-4">
-                {[...Array(3)].map((_, i) => (
-                  <div key={i} className="bg-white/60 rounded-xl p-4 animate-pulse">
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
-                      <div className="flex-1">
-                        <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                      </div>
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl p-6 animate-pulse">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                    </div>
+                    <div className="h-3 bg-gray-200 rounded w-16"></div>
                   </div>
-                ))}
-              </div>
+                  <div className="space-y-2 mb-4">
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                  </div>
+                  <div className="flex items-center gap-6">
+                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                    <div className="h-4 bg-gray-200 rounded w-16"></div>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : error ? (
-            <div className="p-6 text-center">
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+            <div className="text-center py-8">
+              <div className="bg-white rounded-2xl p-6">
                 <p className="text-red-600 text-sm mb-3">{retryCount > 0 ? `${error}` : error}</p>
                 <button
                   onClick={() => fetchTweets()}
@@ -374,89 +391,106 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
               </div>
             </div>
           ) : tweets.length === 0 ? (
-            <div className="p-6 text-center">
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-8">
+            <div className="text-center py-8">
+              <div className="bg-white rounded-2xl p-8">
                 <MessageCircle className="w-8 h-8 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-500">No tweets found</p>
               </div>
             </div>
           ) : (
-            <div className="p-6 space-y-4">
-              {tweets.map((tweet, index) => (
-                <Link
-                  key={tweet.tweet_id}
-                  href={`https://twitter.com/${tweet.author_handle}/status/${tweet.tweet_id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block"
-                >
-                  <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 border border-white/50 hover:bg-white/80 transition-all duration-200 hover:shadow-sm">
-                    {/* Tweet Header */}
-                    <div className="flex items-start gap-3 mb-4">
-                      <img
-                        src={tweet.profile_image_url || "/placeholder.svg?height=40&width=40"}
-                        alt={getDisplayHandle(tweet.author_handle)}
-                        className="w-10 h-10 rounded-full flex-shrink-0 ring-2 ring-white/50"
-                        onError={(e) => {
-                          e.currentTarget.src = "/placeholder.svg?height=40&width=40"
-                        }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-gray-900 text-sm">
-                            {getDisplayHandle(tweet.author_handle)}
-                          </span>
-                          <span className="text-gray-500 text-xs">@{getDisplayHandle(tweet.author_handle)}</span>
-                          <span className="text-gray-400 text-xs">·</span>
-                          <span className="text-gray-500 text-xs">{formatDate(tweet.tweet_create_time)}</span>
-                          {getSentimentIcon(tweet.sentiment)}
-                          {tweet.tweet_category && (
-                            <span className="px-2 py-0.5 rounded-full text-xs bg-gray-700 text-white">
-                              {tweet.tweet_category}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+            <div className="space-y-4">
+              {tweets.map((tweet, index) => {
+                const isExpanded = expandedTweets.has(tweet.tweet_id)
+                const needsTruncation = tweet.body && tweet.body.length > 200
+                const displayText = needsTruncation && !isExpanded 
+                  ? truncateText(tweet.body || "", 200) + "..."
+                  : tweet.body || ""
 
-                    {/* Tweet Content */}
-                    <div className="mb-4">
-                      <p
-                        className="text-gray-800 text-sm leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: highlightTokens(tweet.body || "") }}
-                      />
-                    </div>
+                return (
+                  <Link
+                    key={tweet.tweet_id}
+                    href={`https://twitter.com/${tweet.author_handle}/status/${tweet.tweet_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    <div className="bg-white rounded-2xl p-6 hover:bg-gray-50 transition-colors border border-gray-100">
+                      {/* Tweet Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-start gap-3">
+                          <img
+                            src={tweet.profile_image_url || "/placeholder.svg?height=48&width=48"}
+                            alt={getDisplayHandle(tweet.author_handle)}
+                            className="w-12 h-12 rounded-full"
+                            onError={(e) => {
+                              e.currentTarget.src = "/placeholder.svg?height=48&width=48"
+                            }}
+                          />
+                          <div>
+                            <div className="flex items-center gap-1">
+                              <span className="font-bold text-gray-900">
+                                {getDisplayHandle(tweet.author_handle)}
+                              </span>
+                              {tweet.tweet_category === "influencer" && (
+                                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                  <span className="text-white text-xs">✓</span>
+                                </div>
+                              )}
+                            </div>
+                            <span className="text-gray-500 text-sm">@{getDisplayHandle(tweet.author_handle)}</span>
+                          </div>
+                        </div>
+                        <span className="text-gray-500 text-sm">{formatDate(tweet.tweet_create_time)}</span>
+                      </div>
 
-                    {/* Engagement Metrics */}
-                    <div className="flex items-center gap-4 text-xs">
-                      <div className="flex items-center gap-1.5 text-gray-500 group">
-                        <div className="p-1.5 rounded-lg group-hover:bg-gray-100/50 transition-colors">
-                          <Eye className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="font-medium">{formatNumber(tweet.view_count)}</span>
+                      {/* Tweet Content */}
+                      <div className="mb-4">
+                        <p
+                          className="text-gray-900 text-base leading-relaxed"
+                          dangerouslySetInnerHTML={{ __html: highlightTokens(displayText) }}
+                        />
+                        {needsTruncation && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              toggleTweetExpansion(tweet.tweet_id)
+                            }}
+                            className="text-gray-500 text-sm mt-2 hover:text-gray-700 transition-colors flex items-center gap-1"
+                          >
+                            <span>{isExpanded ? "View less" : "View more"}</span>
+                            <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                          </button>
+                        )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-gray-500 group">
-                        <div className="p-1.5 rounded-lg group-hover:bg-red-50 transition-colors">
-                          <Heart className="w-3.5 h-3.5" />
+
+                      {/* Engagement Metrics */}
+                      <div className="flex items-center gap-6 text-gray-500">
+                        <div className="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                          <Zap className="w-4 h-4" />
+                          <span className="text-sm font-medium">{formatNumber(tweet.retweet_count)}</span>
                         </div>
-                        <span className="font-medium">{formatNumber(tweet.like_count)}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-gray-500 group">
-                        <div className="p-1.5 rounded-lg group-hover:bg-blue-50 transition-colors">
-                          <MessageCircle className="w-3.5 h-3.5" />
+                        <div className="flex items-center gap-2 hover:text-red-600 transition-colors">
+                          <Heart className="w-4 h-4" />
+                          <span className="text-sm font-medium">{formatNumber(tweet.like_count)}</span>
                         </div>
-                        <span className="font-medium">{formatNumber(tweet.reply_count)}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-gray-500 group">
-                        <div className="p-1.5 rounded-lg group-hover:bg-green-50 transition-colors">
-                          <Repeat2 className="w-3.5 h-3.5" />
+                        <div className="flex items-center gap-2 hover:text-blue-600 transition-colors">
+                          <MessageCircle className="w-4 h-4" />
+                          <span className="text-sm font-medium">{formatNumber(tweet.reply_count)}</span>
                         </div>
-                        <span className="font-medium">{formatNumber(tweet.retweet_count)}</span>
+                        <div className="flex items-center gap-2 hover:text-green-600 transition-colors">
+                          <Repeat2 className="w-4 h-4" />
+                          <span className="text-sm font-medium">{formatNumber(tweet.quote_count)}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Eye className="w-4 h-4" />
+                          <span className="text-sm font-medium">{formatNumber(tweet.view_count)}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                )
+              })}
             </div>
           )}
         </div>

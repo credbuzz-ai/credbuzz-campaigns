@@ -163,9 +163,9 @@ export default async function ProfilePage({ params }: { params: { profileName: s
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex min-h-screen gap-8">
+      <div className="flex items-start">
         {/* Main Content */}
-        <div className="flex-1 py-8 pl-8 lg:pl-12">
+        <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
           <div className="max-w-4xl mx-auto">
             {/* Profile Header */}
             <div className="card-pastel !bg-slate-300 mb-8 p-6 rounded-xl">
@@ -198,22 +198,19 @@ export default async function ProfilePage({ params }: { params: { profileName: s
             <div className="mt-8">
               <MarketCapDistribution authorHandle={profile.author_handle} />
             </div>
+
+            {/* Followers Overview Section */}
+            <div className="mt-8 mb-8">
+              <FollowersOverview authorHandle={profile.author_handle} />
+            </div>
           </div>
         </div>
 
-        {/* Smart Feed Sidebar - Full Height with matching padding */}
-        <div className="py-8 pr-8 lg:pr-12">
+        {/* Smart Feed Sidebar - Matches main content height */}
+        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-start sticky top-8">
           <SmartFeed authorHandle={profile.author_handle} />
         </div>
       </div>
-
-      {/* Followers Overview Section - Now full width below the above content */}
-      <div className="mt-8 py-8 px-8 lg:px-12">
-        <FollowersOverview authorHandle={profile.author_handle} />
-      </div>
-
-      {/* Additional bottom spacing to ensure smart feed extends fully (or for page bottom) */}
-      <div className="h-32"></div>
     </div>
   )
 }
