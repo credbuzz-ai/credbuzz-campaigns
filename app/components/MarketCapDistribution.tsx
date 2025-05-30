@@ -89,16 +89,16 @@ const TIME_PERIODS = [
 ]
 
 // Constants
-const CHART_WIDTH = 820
-const CHART_HEIGHT = 240
-const ICON_SIZE = 25
+const CHART_WIDTH = 850
+const CHART_HEIGHT = 180
+const ICON_SIZE = 24
 const ICON_SPACING = 2
 const MAX_ICONS_PER_SEGMENT = 36
-const MAX_ROWS_PER_SEGMENT = 6
+const MAX_ROWS_PER_SEGMENT = 7
 const COLUMNS_PER_SEGMENT = 5
 const SEGMENT_HEIGHT = 3
-const BAR_Y_POSITION = 180
-const VERTICAL_STACK_OFFSET = 20 // Reduced from ICON_SIZE to create overlap
+const BAR_Y_POSITION = 140
+const VERTICAL_STACK_OFFSET = 16
 
 // Utility functions
 const formatMarketCap = (value: number) => {
@@ -139,6 +139,13 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       const data = await fetchWithRetry<ApiResponse>(
         `https://api.cred.buzz/user/first-call-marketcap?author_handle=${authorHandle}&interval=${interval}`
       )
+
+      // Handle case where API returns successful response but no data
+      if (!data.result) {
+        setMarketCapData(null)
+        setError(data.message || 'No market cap data found for this author')
+        return
+      }
 
       setMarketCapData(data.result)
     } catch (err) {
@@ -245,7 +252,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         const rowStartX = startX + (availableWidth - totalRowWidth) / 2
         
         const x = rowStartX + col * (ICON_SIZE + ICON_SPACING)
-        const y = BAR_Y_POSITION - 30 - (row * VERTICAL_STACK_OFFSET)
+        const y = BAR_Y_POSITION - 25 - (row * VERTICAL_STACK_OFFSET)
 
         // Create icon group with higher z-index for front rows
         const iconGroup = g.append("g")
@@ -261,8 +268,8 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
           .attr("r", ICON_SIZE / 2)
           .attr("fill", token.icon ? "transparent" : segment.color)
           .attr("stroke", "rgba(255,255,255,0.9)")
-          .attr("stroke-width", 2)
-          .style("filter", `drop-shadow(0 ${2 + row * 2}px ${4 + row * 2}px rgba(0,0,0,${0.15 + row * 0.05}))`)
+          .attr("stroke-width", 1.5)
+          .style("filter", `drop-shadow(0 ${1 + row * 1.5}px ${2 + row * 1.5}px rgba(0,0,0,${0.12 + row * 0.03}))`)
 
         // Add token icon or symbol
         if (token.icon) {
@@ -323,26 +330,26 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       // Add overflow indicator if needed
       const overflowCount = segment.allTokens.length - MAX_ICONS_PER_SEGMENT
       if (overflowCount > 0) {
-        const overflowX = segment.x + segment.width - 25
-        const overflowY = BAR_Y_POSITION - 75
+        const overflowX = segment.x + segment.width - 20
+        const overflowY = BAR_Y_POSITION - 50
 
         const overflowGroup = g.append("g")
           .attr("transform", `translate(${overflowX}, ${overflowY})`)
 
         overflowGroup.append("circle")
-          .attr("cx", 12)
-          .attr("cy", 12)
-          .attr("r", 12)
+          .attr("cx", 10)
+          .attr("cy", 10)
+          .attr("r", 10)
           .attr("fill", "#4b5563")
-          .style("filter", "drop-shadow(0 2px 8px rgba(0,0,0,0.2))")
+          .style("filter", "drop-shadow(0 1px 4px rgba(0,0,0,0.15))")
 
         overflowGroup.append("text")
-          .attr("x", 12)
-          .attr("y", 12)
+          .attr("x", 10)
+          .attr("y", 10)
           .attr("text-anchor", "middle")
           .attr("dominant-baseline", "central")
           .attr("fill", "white")
-          .attr("font-size", "10px")
+          .attr("font-size", "9px")
           .attr("font-weight", "bold")
           .text(`+${overflowCount}`)
           .append("title")
@@ -353,7 +360,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
     // Add labels
     const labelGroup = g.append("g")
       .attr("class", "labels")
-      .attr("transform", `translate(0, ${BAR_Y_POSITION + 30})`)
+      .attr("transform", `translate(0, ${BAR_Y_POSITION + 20})`)
 
     segmentData.forEach((segment, index) => {
       const labelX = segment.x + segment.width / 2
@@ -362,16 +369,16 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         .attr("x", labelX)
         .attr("y", 0)
         .attr("text-anchor", "middle")
-        .attr("font-size", "14px")
+        .attr("font-size", "13px")
         .attr("font-weight", "600")
         .attr("fill", "#1f2937")
         .text(segment.label)
 
       labelGroup.append("text")
         .attr("x", labelX)
-        .attr("y", 16)
+        .attr("y", 14)
         .attr("text-anchor", "middle")
-        .attr("font-size", "12px")
+        .attr("font-size", "11px")
         .attr("fill", "#6b7280")
         .text(segment.range)
     })
@@ -385,44 +392,41 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
   // Loading and error states
   if (loading) {
     return (
-      <div className="card-pastel bg-white">
-        <div className="flex items-center justify-center space-x-3">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-400"></div>
-          <div className="text-lg text-gray-800 dark:text-gray-100">Loading market cap distribution...</div>
+      <div className="card-pastel bg-white p-4">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">First Call Market Cap Distribution</h3>
+          
+          {/* Time Period Selector */}
+          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            {TIME_PERIODS.map((period) => (
+              <button
+                key={period.value}
+                onClick={() => handleTimePeriodChange(period.value)}
+                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+                  timePeriod === period.value
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                }`}
+              >
+                {period.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-    )
-  }
 
-  if (error) {
-    return (
-      <div className="card-pastel bg-white">
-        <div className="text-center">
-          <div className="text-red-500 text-lg font-semibold mb-2">Error Loading Data</div>
-          <div className="text-gray-600 dark:text-gray-300">{error}</div>
-          <button
-            onClick={() => fetchData(timePeriod)}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Retry
-          </button>
+        <div className="flex items-center justify-center space-x-3 py-12">
+          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
+          <div className="text-base text-gray-800 dark:text-gray-100">Loading market cap distribution...</div>
         </div>
-      </div>
-    )
-  }
-
-  if (!marketCapData) {
-    return (
-      <div className="card-pastel bg-white">
-        <div className="text-center text-gray-600 dark:text-gray-300">No market cap data available</div>
       </div>
     )
   }
 
   return (
-    <div className="card-pastel bg-white">
+    <div className="card-pastel bg-white p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">First Call Market Cap Distribution</h3>
         
         {/* Time Period Selector */}
@@ -431,7 +435,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
             <button
               key={period.value}
               onClick={() => handleTimePeriodChange(period.value)}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
                 timePeriod === period.value
                   ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -443,28 +447,54 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="flex flex-col sm:flex-row gap-4 text-sm mb-8">
-        <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
-          <span className="text-gray-600 dark:text-gray-400">Avg. call market cap:</span>
-          <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">{formatMarketCap(marketCapData.overall_avg_marketcap)}</span>
+      {/* Error State */}
+      {error && (
+        <div className="text-center py-12">
+          <div className="text-red-500 text-base font-semibold mb-2">Error Loading Data</div>
+          <div className="text-gray-600 dark:text-gray-300 mb-3 text-sm">{error}</div>
+          <button
+            onClick={() => fetchData(timePeriod)}
+            className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Retry
+          </button>
         </div>
-        <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
-          <span className="text-gray-600 dark:text-gray-400">Median call market cap:</span>
-          <span className="text-green-600 dark:text-green-400 font-bold ml-2">{formatMarketCap(marketCapData.overall_median_marketcap)}</span>
-        </div>
-      </div>
+      )}
 
-      {/* D3 Chart */}
-      <div className="w-full overflow-x-auto">
-        <svg 
-          ref={svgRef} 
-          width={CHART_WIDTH} 
-          height={CHART_HEIGHT}
-          className="w-full"
-          style={{ minHeight: "240px" }}
-        />
-      </div>
+      {/* No Data State */}
+      {!error && !marketCapData && (
+        <div className="text-center py-12">
+          <div className="text-gray-600 dark:text-gray-300 text-sm">No market cap data available</div>
+        </div>
+      )}
+
+      {/* Stats and Chart - Only show when we have data */}
+      {marketCapData && !error && (
+        <>
+          {/* Stats */}
+          <div className="flex flex-col sm:flex-row gap-3 text-sm mb-4">
+            <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
+              <span className="text-gray-600 dark:text-gray-400">Avg. call market cap:</span>
+              <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">{formatMarketCap(marketCapData.overall_avg_marketcap)}</span>
+            </div>
+            <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
+              <span className="text-gray-600 dark:text-gray-400">Median call market cap:</span>
+              <span className="text-green-600 dark:text-green-400 font-bold ml-2">{formatMarketCap(marketCapData.overall_median_marketcap)}</span>
+            </div>
+          </div>
+
+          {/* D3 Chart */}
+          <div className="w-full overflow-x-auto">
+            <svg 
+              ref={svgRef} 
+              width={CHART_WIDTH} 
+              height={CHART_HEIGHT}
+              className="w-full"
+              style={{ minHeight: "180px" }}
+            />
+          </div>
+        </>
+      )}
     </div>
   )
 }

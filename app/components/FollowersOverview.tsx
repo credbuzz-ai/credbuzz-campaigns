@@ -719,12 +719,6 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
       {/* Header */}
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Followers Overview</h3>
-        <div className="flex items-center gap-2 mt-1">
-          <p className="text-sm text-gray-500">
-            Top {limit} by {sortBy === 'smart_followers' ? 'Smart Followers' : 'Total Followers'}
-            {selectedTagForFilter && <span className="ml-2">(filtered by: {selectedTagForFilter})</span>} 
-          </p>
-        </div>
       </div>
         
       {/* Controls */}

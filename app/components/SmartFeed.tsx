@@ -307,23 +307,23 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
       {/* Smart Feed Container with controlled height */}
       <div className="bg-gray-100 rounded-2xl flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]">
         {/* Header */}
-        <div className="p-6 flex-shrink-0">
+        <div className="p-4 sm:p-6 flex-shrink-0">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Sparkles className="w-6 h-6 text-gray-700" />
-              <h2 className="text-2xl font-bold text-gray-900">Smart Feed</h2>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Smart Feed</h2>
             </div>
             <div className="relative">
               <button 
                 onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-full transition-colors"
+                className="flex items-center gap-1 sm:gap-2 bg-gray-200 hover:bg-gray-300 px-3 sm:px-4 py-2 rounded-full transition-colors"
               >
-                <span className="text-sm font-medium text-gray-700">{getSortLabel()}</span>
-                <ChevronDown className={`w-4 h-4 text-gray-600 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+                <span className="text-xs sm:text-sm font-medium text-gray-700">{getSortLabel()}</span>
+                <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-600 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
               </button>
               
               {showSortDropdown && (
-                <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 py-2 min-w-[180px] z-10">
+                <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 py-2 min-w-[160px] sm:min-w-[180px] z-10">
                   {sortOptions.map((option) => (
                     <button
                       key={option.value}
@@ -331,7 +331,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                         setSortBy(option.value)
                         setShowSortDropdown(false)
                       }}
-                      className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                      className={`w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm hover:bg-gray-50 transition-colors ${
                         sortBy === option.value 
                           ? 'text-blue-600 font-medium bg-blue-50' 
                           : 'text-gray-700'
@@ -347,40 +347,40 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
         </div>
 
         {/* Feed Content with controlled scrolling */}
-        <div className="flex-1 overflow-y-auto px-6 pb-6">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6">
           {loading ? (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl p-6 animate-pulse">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                <div key={i} className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 animate-pulse">
+                  <div className="flex items-start gap-3 mb-3 sm:mb-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex-shrink-0"></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
+                      <div className="h-2 sm:h-3 bg-gray-200 rounded w-1/4"></div>
                     </div>
-                    <div className="h-3 bg-gray-200 rounded w-16"></div>
+                    <div className="h-2 sm:h-3 bg-gray-200 rounded w-12 sm:w-16"></div>
                   </div>
-                  <div className="space-y-2 mb-4">
-                    <div className="h-4 bg-gray-200 rounded"></div>
-                    <div className="h-4 bg-gray-200 rounded w-4/5"></div>
+                  <div className="space-y-2 mb-3 sm:mb-4">
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded"></div>
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-4/5"></div>
                   </div>
-                  <div className="flex items-center gap-6">
-                    <div className="h-4 bg-gray-200 rounded w-12"></div>
-                    <div className="h-4 bg-gray-200 rounded w-12"></div>
-                    <div className="h-4 bg-gray-200 rounded w-12"></div>
-                    <div className="h-4 bg-gray-200 rounded w-16"></div>
+                  <div className="flex items-center gap-3 sm:gap-6">
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-8 sm:w-12"></div>
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-8 sm:w-12"></div>
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-8 sm:w-12"></div>
+                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-12 sm:w-16"></div>
                   </div>
                 </div>
               ))}
             </div>
           ) : error ? (
-            <div className="text-center py-8">
-              <div className="bg-white rounded-2xl p-6">
-                <p className="text-red-600 text-sm mb-3">{retryCount > 0 ? `${error}` : error}</p>
+            <div className="text-center py-6 sm:py-8">
+              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6">
+                <p className="text-red-600 text-xs sm:text-sm mb-3">{retryCount > 0 ? `${error}` : error}</p>
                 <button
                   onClick={() => fetchTweets()}
                   disabled={retryCount > 0}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                     retryCount > 0
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-red-100 hover:bg-red-200 text-red-700"
@@ -391,14 +391,14 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
               </div>
             </div>
           ) : tweets.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="bg-white rounded-2xl p-8">
-                <MessageCircle className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500">No tweets found</p>
+            <div className="text-center py-6 sm:py-8">
+              <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8">
+                <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm sm:text-base">No tweets found</p>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {tweets.map((tweet, index) => {
                 const isExpanded = expandedTweets.has(tweet.tweet_id)
                 const needsTruncation = tweet.body && tweet.body.length > 200
@@ -414,39 +414,39 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                     rel="noopener noreferrer"
                     className="block"
                   >
-                    <div className="bg-white rounded-2xl p-6 hover:bg-gray-50 transition-colors border border-gray-100">
+                    <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:bg-gray-50 transition-all duration-200 border border-gray-100 hover:border-gray-200 hover:shadow-sm">
                       {/* Tweet Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-start gap-3">
+                      <div className="flex items-start justify-between mb-3 sm:mb-4">
+                        <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
                           <img
                             src={tweet.profile_image_url || "/placeholder.svg?height=48&width=48"}
                             alt={getDisplayHandle(tweet.author_handle)}
-                            className="w-12 h-12 rounded-full"
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0 ring-2 ring-gray-100"
                             onError={(e) => {
                               e.currentTarget.src = "/placeholder.svg?height=48&width=48"
                             }}
                           />
-                          <div>
+                          <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1">
-                              <span className="font-bold text-gray-900">
+                              <span className="font-semibold text-gray-900 text-sm sm:text-base truncate">
                                 {getDisplayHandle(tweet.author_handle)}
                               </span>
                               {tweet.tweet_category === "influencer" && (
-                                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
                                   <span className="text-white text-xs">✓</span>
                                 </div>
                               )}
                             </div>
-                            <span className="text-gray-500 text-sm">@{getDisplayHandle(tweet.author_handle)}</span>
+                            <span className="text-gray-500 text-xs sm:text-sm truncate">@{getDisplayHandle(tweet.author_handle)}</span>
                           </div>
                         </div>
-                        <span className="text-gray-500 text-sm">{formatDate(tweet.tweet_create_time)}</span>
+                        <span className="text-gray-400 text-xs sm:text-sm flex-shrink-0 ml-2 font-medium">{formatDate(tweet.tweet_create_time)}</span>
                       </div>
 
                       {/* Tweet Content */}
                       <div className="mb-4">
                         <p
-                          className="text-gray-900 text-base leading-relaxed"
+                          className="text-gray-800 text-sm leading-relaxed break-words"
                           dangerouslySetInnerHTML={{ __html: highlightTokens(displayText) }}
                         />
                         {needsTruncation && (
@@ -456,7 +456,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                               e.stopPropagation()
                               toggleTweetExpansion(tweet.tweet_id)
                             }}
-                            className="text-gray-500 text-sm mt-2 hover:text-gray-700 transition-colors flex items-center gap-1"
+                            className="text-gray-500 text-xs mt-2 hover:text-gray-700 transition-colors flex items-center gap-1 font-medium"
                           >
                             <span>{isExpanded ? "View less" : "View more"}</span>
                             <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
@@ -465,26 +465,26 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                       </div>
 
                       {/* Engagement Metrics */}
-                      <div className="flex items-center gap-6 text-gray-500">
-                        <div className="flex items-center gap-2 hover:text-blue-600 transition-colors">
-                          <Zap className="w-4 h-4" />
-                          <span className="text-sm font-medium">{formatNumber(tweet.retweet_count)}</span>
+                      <div className="flex items-center gap-4 sm:gap-6 text-gray-400 overflow-x-auto pt-2 border-t border-gray-50">
+                        <div className="flex items-center gap-1 sm:gap-2 hover:text-blue-500 transition-colors flex-shrink-0 cursor-pointer">
+                          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.retweet_count)}</span>
                         </div>
-                        <div className="flex items-center gap-2 hover:text-red-600 transition-colors">
-                          <Heart className="w-4 h-4" />
-                          <span className="text-sm font-medium">{formatNumber(tweet.like_count)}</span>
+                        <div className="flex items-center gap-1 sm:gap-2 hover:text-red-500 transition-colors flex-shrink-0 cursor-pointer">
+                          <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.like_count)}</span>
                         </div>
-                        <div className="flex items-center gap-2 hover:text-blue-600 transition-colors">
-                          <MessageCircle className="w-4 h-4" />
-                          <span className="text-sm font-medium">{formatNumber(tweet.reply_count)}</span>
+                        <div className="flex items-center gap-1 sm:gap-2 hover:text-blue-500 transition-colors flex-shrink-0 cursor-pointer">
+                          <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.reply_count)}</span>
                         </div>
-                        <div className="flex items-center gap-2 hover:text-green-600 transition-colors">
-                          <Repeat2 className="w-4 h-4" />
-                          <span className="text-sm font-medium">{formatNumber(tweet.quote_count)}</span>
+                        <div className="flex items-center gap-1 sm:gap-2 hover:text-green-500 transition-colors flex-shrink-0 cursor-pointer">
+                          <Repeat2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.quote_count)}</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Eye className="w-4 h-4" />
-                          <span className="text-sm font-medium">{formatNumber(tweet.view_count)}</span>
+                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-auto">
+                          <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.view_count)}</span>
                         </div>
                       </div>
                     </div>
