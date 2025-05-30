@@ -250,7 +250,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
 
     const width = 600
     const height = 400
-    const margin = 20
+    const margin = 10
 
     svg.attr("width", width).attr("height", height)
 
@@ -262,22 +262,22 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
       .sort((a, b) => (b.value || 0) - (a.value || 0))
 
     const pack = d3.pack<HierarchyNode>()
-      .size([width - margin * 2, height - margin * 2])
-      .padding(3)
+      .size([width - margin, height - margin])
+      .padding(1)
 
     const packedRoot = pack(root)
 
-    // Create main container group
+    // Create main container group with smaller margin
     const container = svg.append("g")
-      .attr("transform", `translate(${margin}, ${margin})`)
+      .attr("transform", `translate(${margin/2}, ${margin/2})`)
 
     // Create zoomable group
     const zoomGroup = container.append("g")
       .attr("class", "zoom-group")
 
-    // Create zoom behavior
+    // Create zoom behavior with better scale range for larger bubbles
     const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 3]) // Allow zoom from 50% to 300%
+      .scaleExtent([0.3, 4])
       .on("zoom", (event) => {
         zoomGroup.attr("transform", event.transform)
       })
@@ -392,16 +392,84 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
       .attr("class", "token")
       .attr("transform", d => `translate(${d.x}, ${d.y})`)
 
+    // Create circle backgrounds
     tokenNodes.append("circle")
       .attr("r", d => d.r!)
       .attr("fill", d => {
         const narrative = d.parent?.data.narrative || "other"
         return narrativeColors[narrative] || "#6B7280"
       })
+      .attr("fill-opacity", 0.2)
       .attr("stroke", "white")
       .attr("stroke-width", 1)
       .style("cursor", "pointer")
       .style("transition", "all 0.2s ease")
+
+    // Add token icons
+    tokenNodes.each(function(d) {
+      const node = d3.select(this)
+      const iconUrl = d.data.icon
+
+      if (iconUrl && iconUrl.trim() !== "") {
+        // Create a clip path for circular image
+        const clipId = `clip-${d.data.symbol}-${Math.random().toString(36).substr(2, 9)}`
+        
+        svg.append("defs").append("clipPath")
+          .attr("id", clipId)
+          .append("circle")
+          .attr("r", d.r! - 2) // Slightly smaller than the background circle
+          .attr("cx", 0)
+          .attr("cy", 0)
+
+        // Add the image
+        node.append("image")
+          .attr("href", iconUrl)
+          .attr("x", -d.r! + 4)
+          .attr("y", -d.r! + 4)
+          .attr("width", (d.r! - 4) * 2)
+          .attr("height", (d.r! - 4) * 2)
+          .attr("clip-path", `url(#${clipId})`)
+          .style("cursor", "pointer")
+          .on("error", function() {
+            // If image fails to load, show fallback
+            d3.select(this).remove()
+            showTokenFallback(node, d)
+          })
+      } else {
+        // No icon available, show fallback
+        showTokenFallback(node, d)
+      }
+    })
+
+    // Function to show fallback token representation
+    function showTokenFallback(node: any, d: d3.HierarchyCircularNode<HierarchyNode>) {
+      node.append("circle")
+        .attr("r", d.r! - 4)
+        .attr("fill", () => {
+          const narrative = d.parent?.data.narrative || "other"
+          return narrativeColors[narrative] || "#6B7280"
+        })
+        .attr("stroke", "white")
+        .attr("stroke-width", 1)
+        .style("cursor", "pointer")
+
+      // Add token symbol text
+      node.append("text")
+        .attr("text-anchor", "middle")
+        .attr("dy", "0.35em")
+        .attr("font-size", Math.min(d.r! / 2.5, 10))
+        .attr("font-weight", "600")
+        .attr("fill", "white")
+        .style("pointer-events", "none")
+        .style("text-shadow", "1px 1px 1px rgba(0,0,0,0.7)")
+        .text(() => {
+          const symbol = d.data.symbol || ""
+          return d.r! > 15 ? symbol.toUpperCase() : ""
+        })
+    }
+
+    // Add hover effects to all token nodes
+    tokenNodes
       .on("mouseover", function(event, d) {
         setHoveredToken(d.data.symbol || null)
         
@@ -409,8 +477,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         d3.select(this)
           .transition()
           .duration(150)
-          .attr("r", (d.r! * 1.2))
-          .attr("stroke-width", 2)
+          .attr("transform", `translate(${d.x}, ${d.y}) scale(1.2)`)
           .style("filter", "brightness(1.2) drop-shadow(0 2px 4px rgba(0,0,0,0.3))")
 
         // Find the original token data to get narratives
@@ -453,8 +520,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         d3.select(this)
           .transition()
           .duration(150)
-          .attr("r", function(d: any) { return d.r! })
-          .attr("stroke-width", 1)
+          .attr("transform", function(d: any) { return `translate(${d.x}, ${d.y}) scale(1)` })
           .style("filter", "none")
 
         tooltip.style("visibility", "hidden")
@@ -464,36 +530,17 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         d3.select(this)
           .transition()
           .duration(100)
-          .attr("r", (d.r! * 0.8))
+          .attr("transform", `translate(${d.x}, ${d.y}) scale(0.9)`)
           .transition()
           .duration(100)
-          .attr("r", d.r!)
+          .attr("transform", `translate(${d.x}, ${d.y}) scale(1)`)
       })
 
     // Add subtle pulsing animation to token circles
-    tokenNodes.selectAll("circle")
+    tokenNodes
       .style("opacity", 0)
       .transition()
       .delay((d, i) => i * 50) // Stagger the appearance
-      .duration(500)
-      .style("opacity", 1)
-
-    // Add token labels for larger circles
-    tokenNodes.append("text")
-      .attr("text-anchor", "middle")
-      .attr("dy", "0.3em")
-      .attr("font-size", d => Math.min(d.r! / 2.5, 10))
-      .attr("font-weight", "500")
-      .attr("fill", "white")
-      .style("pointer-events", "none")
-      .style("text-shadow", "1px 1px 1px rgba(0,0,0,0.7)")
-      .style("opacity", 0)
-      .text(d => {
-        const symbol = d.data.symbol || ""
-        return d.r! > 15 ? symbol.toUpperCase() : ""
-      })
-      .transition()
-      .delay((d, i) => i * 50 + 300)
       .duration(500)
       .style("opacity", 1)
 
@@ -600,23 +647,23 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="text-center p-4 bg-blue-50 rounded-xl">
-          <Hash className="w-5 h-5 text-blue-600 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-gray-900">{data.unique_token_count}</div>
-          <div className="text-sm text-gray-600">Unique Tokens</div>
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="text-center p-2 bg-blue-50 rounded-lg">
+          <Hash className="w-4 h-4 text-blue-600 mx-auto mb-1" />
+          <div className="text-lg font-bold text-gray-900">{data.unique_token_count}</div>
+          <div className="text-xs text-gray-600">Unique Tokens</div>
         </div>
-        <div className="text-center p-4 bg-green-50 rounded-xl">
-          <TrendingUp className="w-5 h-5 text-green-600 mx-auto mb-2" />
-          <div className="text-2xl font-bold text-gray-900">{data.total_mentions}</div>
-          <div className="text-sm text-gray-600">Total Mentions</div>
+        <div className="text-center p-2 bg-green-50 rounded-lg">
+          <TrendingUp className="w-4 h-4 text-green-600 mx-auto mb-1" />
+          <div className="text-lg font-bold text-gray-900">{data.total_mentions}</div>
+          <div className="text-xs text-gray-600">Total Mentions</div>
         </div>
-        <div className="text-center p-4 bg-orange-50 rounded-xl">
-          <Coins className="w-5 h-5 text-orange-600 mx-auto mb-2" />
-          <div className="text-lg font-bold text-gray-900 uppercase">
+        <div className="text-center p-2 bg-orange-50 rounded-lg">
+          <Coins className="w-4 h-4 text-orange-600 mx-auto mb-1" />
+          <div className="text-sm font-bold text-gray-900 uppercase">
             {data.most_mentioned_token ? `$${data.most_mentioned_token.symbol}` : "N/A"}
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-xs text-gray-600">
             {data.most_mentioned_token ? `${data.most_mentioned_token.mention_count} mentions` : "-"}
           </div>
         </div>
