@@ -414,15 +414,15 @@ const FollowersBubbleMap = ({
         style={{ 
           width: containerDimensions.width, 
           height: containerDimensions.height,
-          padding: '24px'
+          padding: '10px'
         }}
       >
         <svg 
           ref={svgRef} 
           className="block rounded-full" 
           style={{ 
-            width: containerDimensions.width - 48, 
-            height: containerDimensions.height - 48 
+            width: containerDimensions.width - 20, 
+            height: containerDimensions.height - 20 
           }} 
         />
       </div>
