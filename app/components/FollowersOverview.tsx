@@ -85,7 +85,7 @@ const formatNumber = (num: number): string => {
   return num.toString()
 }
 
-const getBubbleSize = (count: number, maxCount: number, minSize: number = 20, maxSize: number = 150): number => {
+const getBubbleSize = (count: number, maxCount: number, minSize: number = 10, maxSize: number = 80): number => {
   if (maxCount === 0) return minSize
   // Use linear scale for more drastic size difference
   const normalized = count / maxCount
@@ -414,15 +414,15 @@ const FollowersBubbleMap = ({
         style={{ 
           width: containerDimensions.width, 
           height: containerDimensions.height,
-          padding: '24px'
+          padding: '10px'
         }}
       >
         <svg 
           ref={svgRef} 
           className="block rounded-full" 
           style={{ 
-            width: containerDimensions.width - 48, 
-            height: containerDimensions.height - 48 
+            width: containerDimensions.width - 20, 
+            height: containerDimensions.height - 20 
           }} 
         />
       </div>
@@ -719,12 +719,6 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
       {/* Header */}
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Followers Overview</h3>
-        <div className="flex items-center gap-2 mt-1">
-          <p className="text-sm text-gray-500">
-            Top {limit} by {sortBy === 'smart_followers' ? 'Smart Followers' : 'Total Followers'}
-            {selectedTagForFilter && <span className="ml-2">(filtered by: {selectedTagForFilter})</span>} 
-          </p>
-        </div>
       </div>
         
       {/* Controls */}
