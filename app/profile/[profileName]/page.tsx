@@ -4,20 +4,25 @@ import { ProfileCharts } from "../../components/ProfileCharts"
 import SmartFeed from "../../components/SmartFeed"
 import MarketCapDistribution from "../../components/MarketCapDistribution"
 import TokenOverview from "../../components/TokenOverview"
+import JobManager from "../../components/JobManager"
 import Link from "next/link"
+import { API_BASE_URL } from '../../../lib/constants'
 
 async function fetchUserProfile(authorHandle: string, attempt = 0): Promise<UserProfileResponse | null> {
   const MAX_RETRIES = 3
   const RETRY_DELAY = 1000
+  
+  // Use absolute URL for server-side fetch
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
   try {
-    const response = await fetch(`https://api.cred.buzz/user/get-user-profile?handle=${authorHandle}`, {
+    const response = await fetch(`${baseUrl}/api/user/get-user-profile?handle=${authorHandle}`, {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
       cache: "no-store",
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(10000),
     })
 
     if (response.ok) {
@@ -43,15 +48,18 @@ async function fetchUserProfile(authorHandle: string, attempt = 0): Promise<User
 async function fetchAuthorDetails(authorHandle: string, attempt = 0): Promise<AuthorDetailsResponse | null> {
   const MAX_RETRIES = 3
   const RETRY_DELAY = 1000
+  
+  // Use absolute URL for server-side fetch
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
 
   try {
-    const response = await fetch(`https://api.cred.buzz/user/author-handle-details?author_handle=${authorHandle}`, {
+    const response = await fetch(`${baseUrl}/api/user/author-handle-details?author_handle=${authorHandle}`, {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
       cache: "no-store",
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(10000),
     })
 
     if (response.ok) {
@@ -146,7 +154,7 @@ function formatAccountCreatedDate(dateString?: string): string {
 }
 
 export default async function ProfilePage({ params }: { params: { profileName: string } }) {
-  const profileName = params.profileName;
+  const { profileName } = await params
 
   if (!profileName) {
     redirect('/profile/eliz883');
@@ -197,6 +205,11 @@ export default async function ProfilePage({ params }: { params: { profileName: s
             {/* Market Cap Distribution */}
             <div className="mt-8">
               <MarketCapDistribution authorHandle={profile.author_handle} />
+            </div>
+
+            {/* Job Manager - Influencer Matchmaking */}
+            <div className="mt-8">
+              <JobManager projectHandle={profile.author_handle} />
             </div>
 
             {/* Token Overview Section */}

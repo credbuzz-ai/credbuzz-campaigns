@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import * as d3 from "d3" // Import D3
 import { useRouter } from "next/navigation"
+import { API_BASE_URL } from '../../lib/constants'
 
 // Type definitions
 interface Follower {
@@ -673,7 +674,7 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
       try {
         const sortParam = sortBy === 'followers_count' ? 'followers_count_desc' : 'smart_followers_count_desc';
         const data = await fetchWithRetry<ApiResponse>(
-          `https://api.cred.buzz/user/author-handle-followers?author_handle=${authorHandle}&sort_by=${sortParam}&limit=${limit}&start=0`
+          `${API_BASE_URL}/user/author-handle-followers?author_handle=${authorHandle}&sort_by=${sortParam}&limit=${limit}&start=0`
         );
         if (data.result && Array.isArray(data.result.followings)) {
           setFollowers(data.result.followings);

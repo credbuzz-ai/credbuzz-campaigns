@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Sparkles, Heart, MessageCircle, Repeat2, Eye, TrendingUp, TrendingDown, ChevronDown, Zap } from "lucide-react"
 import type { Tweet, TopTweetsResponse } from "../types"
 import Link from "next/link"
+import { API_BASE_URL } from '../../lib/constants'
 
 interface SmartFeedProps {
   authorHandle?: string
@@ -43,7 +44,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
     setError(null)
     try {
       const response = await fetch(
-        `https://api.cred.buzz/user/get-top-tweets?author_handle=${authorHandle}&interval=${interval}&sort_by=${sortBy}&limit=100`,
+        `${API_BASE_URL}/user/get-top-tweets?author_handle=${authorHandle}&interval=${interval}&sort_by=${sortBy}&limit=100`,
         {
           headers: {
             Accept: "application/json",

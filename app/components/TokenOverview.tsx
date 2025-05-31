@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Coins, TrendingUp, Hash, Calendar, DollarSign } from "lucide-react"
 import * as d3 from "d3"
 import type { TokenOverviewResponse, TokenData } from "../types"
+import { API_BASE_URL } from '../../lib/constants'
 
 interface TokenOverviewProps {
   authorHandle: string
@@ -65,7 +66,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
     setError(null)
     try {
       const response = await fetch(
-        `https://api.cred.buzz/user/author-token-overview?author_handle=${authorHandle}&interval=${interval}`,
+        `${API_BASE_URL}/user/author-token-overview?author_handle=${authorHandle}&interval=${interval}`,
         {
           headers: {
             Accept: "application/json",

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import * as d3 from "d3"
+import { API_BASE_URL } from '../../lib/constants'
 
 // Type definitions
 interface Token {
@@ -137,7 +138,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       setError(null)
       
       const data = await fetchWithRetry<ApiResponse>(
-        `https://api.cred.buzz/user/first-call-marketcap?author_handle=${authorHandle}&interval=${interval}`
+        `${API_BASE_URL}/user/first-call-marketcap?author_handle=${authorHandle}&interval=${interval}`
       )
 
       // Handle case where API returns successful response but no data
