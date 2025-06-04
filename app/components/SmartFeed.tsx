@@ -24,7 +24,7 @@ const sortOptions = [
   { value: "like_count_desc" as SortBy, label: "Most Liked" },
   { value: "retweet_count_desc" as SortBy, label: "Most Shared" },
   { value: "reply_count_desc" as SortBy, label: "Most Discussed" },
-  { value: "tweet_create_time_desc" as SortBy, label: "Most Recent" },
+  { value: "tweet_create_time_asc" as SortBy, label: "Most Recent" },
 ]
 
 export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) {

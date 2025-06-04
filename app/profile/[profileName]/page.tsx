@@ -4,7 +4,7 @@ import { ProfileCharts } from "../../components/ProfileCharts"
 import SmartFeed from "../../components/SmartFeed"
 import MarketCapDistribution from "../../components/MarketCapDistribution"
 import TokenOverview from "../../components/TokenOverview"
-import JobManager from "../../components/JobManager"
+import InfluencerMatchMaking from "../../components/InfluencerMatchmaking"
 import Link from "next/link"
 import { API_BASE_URL } from '../../../lib/constants'
 
@@ -207,14 +207,14 @@ export default async function ProfilePage({ params }: { params: { profileName: s
               <MarketCapDistribution authorHandle={profile.author_handle} />
             </div>
 
-            {/* Job Manager - Influencer Matchmaking */}
+            {/* Token Overview Section */}
             <div className="mt-8">
-              <JobManager projectHandle={profile.author_handle} />
+              <TokenOverview authorHandle={profile.author_handle} />
             </div>
 
-            {/* Token Overview Section */}
+            {/* Job Manager - Influencer Matchmaking */}
             <div className="mt-8 mb-8">
-              <TokenOverview authorHandle={profile.author_handle} />
+              <InfluencerMatchMaking projectHandle={profile.author_handle} />
             </div>
           </div>
         </div>
