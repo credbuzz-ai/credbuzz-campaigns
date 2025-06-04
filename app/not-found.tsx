@@ -14,7 +14,7 @@ export default function NotFound() {
           <p className="text-gray-600 mb-8">The profile you're looking for doesn't exist or may have been removed.</p>
 
           <div className="space-y-4">
-            <Link href="/profile/eliz883" className="btn-primary w-full inline-flex items-center justify-center">
+            <Link href="/kols/eliz883" className="btn-primary w-full inline-flex items-center justify-center">
               View Sample Profile
             </Link>
 

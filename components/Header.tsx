@@ -22,22 +22,22 @@ export default function Header() {
 
           <nav className="hidden md:flex items-center space-x-8">
             <Link
-              href="/"
-              className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
-            >
-              Home
-            </Link>
-            <Link
               href="/buzz-board"
               className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
             >
               Buzz Board
             </Link>
             <Link
-              href="/profile/"
+              href="/kols"
               className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
             >
-              Profiles
+              KOLs
+            </Link>
+            <Link
+              href="/projects"
+              className="text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
+            >
+              Projects
             </Link>
             <button
               onClick={toggleTheme}
@@ -61,14 +61,14 @@ export default function Header() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-200/50 dark:border-gray-700/50">
             <div className="flex flex-col space-y-4">
-              <Link href="/" className="text-gray-700 dark:text-gray-300">
-                Home
-              </Link>
               <Link href="/buzz-board" className="text-gray-700 dark:text-gray-300">
                 Buzz Board
               </Link>
-              <Link href="/profile/" className="text-gray-700 dark:text-gray-300">
-                Profiles
+              <Link href="/kols" className="text-gray-700 dark:text-gray-300">
+                KOLs
+              </Link>
+              <Link href="/projects" className="text-gray-700 dark:text-gray-300">
+                Projects
               </Link>
               <div className="flex items-center justify-between">
                 <span className="text-gray-700 dark:text-gray-300">Theme</span>

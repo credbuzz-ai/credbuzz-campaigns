@@ -237,7 +237,7 @@ const FollowersBubbleMap = ({
               d3.select(event.currentTarget as SVGGElement).select("circle").style("filter", "drop-shadow(0 2px 6px rgba(0,0,0,0.1))");
             })
             .on("click", (event: MouseEvent, d: D3Node) => {
-              router.push(`/profile/${d.follower.handle}`);
+              router.push(`/kols/${d.follower.handle}`);
             })
             .call(drag(simulationRef.current!));
 
