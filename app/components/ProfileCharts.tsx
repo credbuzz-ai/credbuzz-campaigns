@@ -147,7 +147,7 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
     })
 
     // Dimensions
-    const margin = { top: 40, right: 20, bottom: 25, left: 60 }
+    const margin = { top: 40, right: 20, bottom: 60, left: 60 }
     const cellSize = 31
     const width = 24 * cellSize + margin.left + margin.right
     const height = 7 * cellSize + margin.top + margin.bottom
@@ -245,9 +245,9 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
           .attr("stroke-width", 1)
       })
 
-    // Add legend
+    // Add legend - positioned below the heatmap
     const legend = svg.append("g")
-      .attr("transform", `translate(${width - 200}, ${height - 30})`)
+      .attr("transform", `translate(${margin.left + (24 * cellSize - 100) / 2}, ${height - 35})`)
 
     // Create gradient definition for legend
     const legendGradient = defs.append("linearGradient")

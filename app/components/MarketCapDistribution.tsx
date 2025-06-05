@@ -212,8 +212,8 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       .style("position", "absolute")
       .style("visibility", "hidden")
       .style("background", "#1f2937")
-      .style("border", "1px solid #374151")
-      .style("color", "white")
+      .style("border", "1px solid #00D992")
+      .style("color", "#f3f4f6")
       .style("padding", "12px 16px")
       .style("border-radius", "12px")
       .style("font-size", "14px")
@@ -353,8 +353,8 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
 
             tooltip.style("visibility", "visible")
               .html(`
-                <div style="font-weight: bold; color: white; margin-bottom: 4px;">${token.symbol.toUpperCase()}</div>
-                <div style="color: #d1d5db;">Market Cap: <span style="color: #10b981; font-weight: 600;">${formatMarketCap(token.marketcap)}</span></div>
+                <div style="font-weight: bold; color: #f3f4f6; margin-bottom: 4px;">${token.symbol.toUpperCase()}</div>
+                <div style="color: #9ca3af;">Market Cap: <span style="color: #00D992; font-weight: 600;">${formatMarketCap(token.marketcap)}</span></div>
               `)
           })
           .on("mousemove", function(event) {
@@ -420,7 +420,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         .attr("text-anchor", "middle")
         .attr("font-size", "14px")
         .attr("font-weight", "700")
-        .attr("fill", "#ffffff")
+        .attr("fill", "#f3f4f6")
         .style("text-shadow", "0 1px 3px rgba(0,0,0,0.7)")
         .text(segment.label)
 
@@ -431,7 +431,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         .attr("text-anchor", "middle")
         .attr("font-size", "12px")
         .attr("font-weight", "500")
-        .attr("fill", "#d1d5db")
+        .attr("fill", "#9ca3af")
         .style("text-shadow", "0 1px 2px rgba(0,0,0,0.5)")
         .text(segment.range)
     })

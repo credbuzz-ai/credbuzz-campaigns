@@ -39,15 +39,15 @@ interface D3Node extends d3.SimulationNodeDatum {
   fy?: number | null
 }
 
-// Color scheme for tags - Updated for TrendSage theme
+// Color scheme for tags - Updated for TrendSage theme with distinctive colors
 const TAG_COLORS = {
-  influencer: "#00D992",
-  project: "#00B578", 
-  project_member: "#00F5A8",
-  project_coin: "#ff7300",
-  project_main: "#0088fe",
-  venture_capital: "#ff69b4",
-  unknown: "#808080"
+  influencer: "#00D992",      // Primary TrendSage green
+  project: "#3B82F6",         // Blue for projects
+  project_member: "#8B5CF6",  // Purple for project members
+  project_coin: "#F59E0B",    // Amber/orange for project coins
+  project_main: "#06B6D4",    // Cyan for main projects
+  venture_capital: "#EC4899", // Pink for VCs
+  unknown: "#6B7280"          // Gray for unknown
 }
 
 // Constants for physics container - make it responsive and larger
