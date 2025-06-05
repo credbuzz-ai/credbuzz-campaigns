@@ -92,7 +92,7 @@ const TIME_PERIODS = [
 
 // Constants
 const CHART_WIDTH = 850
-const CHART_HEIGHT = 180
+const CHART_HEIGHT = 200
 const ICON_SIZE = 24
 const ICON_SPACING = 2
 const MAX_ICONS_PER_SEGMENT = 36
@@ -267,7 +267,7 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       .attr("height", backgroundHeight)
       .attr("fill", (d, i) => `url(#gradient-${i})`)
 
-    // Create segmented bar
+    // Create segmented bar with proper alignment
     const segments = g.selectAll(".segment")
       .data(segmentData)
       .enter().append("rect")
@@ -277,10 +277,14 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       .attr("width", d => d.width)
       .attr("height", SEGMENT_HEIGHT)
       .attr("fill", d => d.color)
-      .attr("rx", (d, i) => {
-        if (i === 0 || i === segmentData.length - 1) return 6
-        return 0
-      })
+
+    // Add rounded corners only to first and last segments
+    segments.filter((d, i) => i === 0)
+      .attr("rx", 6)
+      .attr("ry", 6)
+    segments.filter((d, i) => i === segmentData.length - 1)
+      .attr("rx", 6)
+      .attr("ry", 6)
 
     // Create token icons
     segmentData.forEach((segment, segmentIndex) => {
@@ -404,26 +408,31 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
     // Add labels
     const labelGroup = g.append("g")
       .attr("class", "labels")
-      .attr("transform", `translate(0, ${BAR_Y_POSITION + 20})`)
+      .attr("transform", `translate(0, ${BAR_Y_POSITION + 25})`)
 
     segmentData.forEach((segment, index) => {
       const labelX = segment.x + segment.width / 2
 
+      // Add main label with shadow for better readability
       labelGroup.append("text")
         .attr("x", labelX)
         .attr("y", 0)
         .attr("text-anchor", "middle")
-        .attr("font-size", "13px")
-        .attr("font-weight", "600")
-        .attr("fill", "#1f2937")
+        .attr("font-size", "14px")
+        .attr("font-weight", "700")
+        .attr("fill", "#ffffff")
+        .style("text-shadow", "0 1px 3px rgba(0,0,0,0.7)")
         .text(segment.label)
 
+      // Add range label with better contrast
       labelGroup.append("text")
         .attr("x", labelX)
-        .attr("y", 14)
+        .attr("y", 18)
         .attr("text-anchor", "middle")
-        .attr("font-size", "11px")
-        .attr("fill", "#6b7280")
+        .attr("font-size", "12px")
+        .attr("font-weight", "500")
+        .attr("fill", "#d1d5db")
+        .style("text-shadow", "0 1px 2px rgba(0,0,0,0.5)")
         .text(segment.range)
     })
 
@@ -521,46 +530,31 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
       </div>
 
       {/* Market Cap Summary */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
-          <div className="text-sm text-gray-400 mb-1">Average Market Cap</div>
-          <div className="text-lg font-semibold text-[#00D992]">
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <div className="bg-gray-700/50 p-2 rounded-lg border border-gray-600">
+          <div className="text-xs text-gray-400 mb-0.5">Average Market Cap</div>
+          <div className="text-sm font-semibold text-[#00D992]">
             {formatMarketCap(marketCapData.overall_avg_marketcap)}
           </div>
         </div>
-        <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
-          <div className="text-sm text-gray-400 mb-1">Median Market Cap</div>
-          <div className="text-lg font-semibold text-[#00D992]">
+        <div className="bg-gray-700/50 p-2 rounded-lg border border-gray-600">
+          <div className="text-xs text-gray-400 mb-0.5">Median Market Cap</div>
+          <div className="text-sm font-semibold text-[#00D992]">
             {formatMarketCap(marketCapData.overall_median_marketcap)}
           </div>
         </div>
       </div>
 
       {/* Chart Container */}
-      <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+      <div className="bg-gray-800/50 rounded-lg mb-4">
         <svg 
           ref={svgRef} 
           width={CHART_WIDTH} 
           height={CHART_HEIGHT}
+          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
           className="w-full h-auto"
           style={{ maxWidth: '100%', height: 'auto' }}
         />
-      </div>
-
-      {/* Legend */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-        {MARKET_CAP_SEGMENTS.map(segment => (
-          <div key={segment.key} className="flex items-center gap-2 p-2 bg-gray-700/30 rounded-lg">
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: segment.color }}
-            />
-            <div className="min-w-0 flex-1">
-              <div className="text-xs font-medium text-gray-200 truncate">{segment.label}</div>
-              <div className="text-xs text-gray-400">{segment.range}</div>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   )

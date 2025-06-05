@@ -68,9 +68,9 @@ interface InfluencerMatchMakingProps {
 }
 
 const getScoreColor = (score: number) => {
-  if (score >= 4) return 'text-green-600'
-  if (score >= 3) return 'text-yellow-600'
-  return 'text-red-600'
+  if (score >= 4) return 'text-green-400'
+  if (score >= 3) return 'text-yellow-400'
+  return 'text-red-400'
 }
 
 export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatchMakingProps) {
@@ -281,11 +281,11 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'processing': return 'bg-blue-100 text-blue-800'
-      case 'completed': return 'bg-green-100 text-green-800'
-      case 'failed': return 'bg-red-100 text-red-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'pending': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+      case 'processing': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+      case 'completed': return 'bg-green-500/20 text-green-400 border-green-500/30'
+      case 'failed': return 'bg-red-500/20 text-red-400 border-red-500/30'
+      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
     }
   }
 
@@ -318,23 +318,23 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
   // Show loading state while checking
   if (isCheckingResults) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="card-trendsage">
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-600 mr-2" />
-          <span className="text-sm sm:text-base text-gray-700">Checking for existing results...</span>
+          <Loader2 className="h-6 w-6 animate-spin text-[#00D992] mr-2" />
+          <span className="text-sm sm:text-base text-gray-300">Checking for existing results...</span>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm">
-      <div className="p-6 border-b border-gray-200">
+    <div className="card-trendsage">
+      <div className="p-6 border-b border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
-                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-100 flex items-center gap-2 sm:gap-3">
+                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-[#00D992]" />
                 Influencer Matchmaking
               </h2>
               {showResults && (
@@ -342,14 +342,14 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
                   onClick={checkExistingResultsAndJobStatus}
                   variant="outline"
                   size="sm"
-                  className="text-gray-700 border-gray-200 hover:bg-gray-50"
+                  className="text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-gray-100"
                 >
                   <RefreshCcw className="h-4 w-4" />
                 </Button>
               )}
             </div>
             <div className="flex items-center justify-between mt-1">
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-base text-gray-400">
                 {showResults && results 
                   ? `${results.pagination.showing_count} matches found` 
                   : 'Find the perfect influencers to promote your project using AI-powered analysis'
@@ -359,10 +359,10 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
               {/* Filters */}
               {showResults && (
                 <div className="flex items-center gap-3">
-                  <span className="text-xs sm:text-sm font-medium text-gray-700">Filters:</span>
+                  <span className="text-xs sm:text-sm font-medium text-gray-300">Filters:</span>
                   
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-gray-600">Min Cred Score</label>
+                    <label className="text-xs text-gray-400">Min Cred Score</label>
                     <input
                       type="number"
                       min="0"
@@ -370,20 +370,20 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
                       step="0.1"
                       value={minCredScore || ''}
                       onChange={(e) => setMinCredScore(e.target.value ? parseFloat(e.target.value) : null)}
-                      className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-16 px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-[#00D992] text-gray-100"
                       placeholder="0-5"
                     />
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <label className="text-xs text-gray-600">Min Synergy</label>
+                    <label className="text-xs text-gray-400">Min Synergy</label>
                     <input
                       type="number"
                       min="1"
                       max="5"
                       value={minSynergyRating || ''}
                       onChange={(e) => setMinSynergyRating(e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-16 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-16 px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-[#00D992] text-gray-100"
                       placeholder="1-5"
                     />
                   </div>
@@ -391,7 +391,7 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
                   {(minCredScore !== null || minSynergyRating !== null) && (
                     <button
                       onClick={clearFilters}
-                      className="text-xs text-gray-500 hover:text-red-600 transition-colors"
+                      className="text-xs text-gray-400 hover:text-red-400 transition-colors"
                     >
                       Clear
                     </button>
@@ -406,20 +406,20 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
       <div className="p-6 space-y-4">
         {/* Error Display */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-red-800 text-xs sm:text-sm">{error}</p>
+          <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3">
+            <p className="text-red-400 text-xs sm:text-sm">{error}</p>
           </div>
         )}
 
         {/* Existing Results */}
         {existingResults && !showResults && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle className="h-5 w-5 text-green-400" />
                 <div>
-                  <p className="font-semibold text-sm sm:text-base text-green-800">Analysis Complete!</p>
-                  <p className="text-xs sm:text-sm text-green-700">
+                  <p className="font-semibold text-sm sm:text-base text-green-400">Analysis Complete!</p>
+                  <p className="text-xs sm:text-sm text-green-300">
                     Found {existingResults.pagination.showing_count} influencer matches
                   </p>
                 </div>
@@ -437,7 +437,7 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
                   disabled={isCreating}
                   variant="outline"
                   size="sm"
-                  className="border-green-300 text-green-700 hover:bg-green-50 text-xs sm:text-sm"
+                  className="border-green-500/30 text-green-400 hover:bg-green-500/20 text-xs sm:text-sm"
                 >
                   {isCreating ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -453,14 +453,14 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
 
         {/* Job Status */}
         {currentJob && !existingResults && (
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Badge className={getStatusColor(currentJob.status)}>
+                <Badge className={`${getStatusColor(currentJob.status)} border`}>
                   {getStatusIcon(currentJob.status)}
                   <span className="ml-1 capitalize">{currentJob.status}</span>
                 </Badge>
-                <span className="text-sm text-gray-500">Job ID: {currentJob.id}</span>
+                <span className="text-sm text-gray-400">Job ID: {currentJob.id}</span>
               </div>
               <div className="flex gap-2">
                 {currentJob.status === 'completed' && (
@@ -468,7 +468,7 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
                     onClick={() => setShowResults(true)}
                     size="sm"
                     variant="outline"
-                    className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                    className="bg-green-500/20 border-green-500/30 text-green-400 hover:bg-green-500/30"
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     View Results
@@ -479,7 +479,7 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
                     onClick={retryJob}
                     size="sm"
                     variant="outline"
-                    className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                    className="bg-red-500/20 border-red-500/30 text-red-400 hover:bg-red-500/30"
                   >
                     <RotateCcw className="h-4 w-4 mr-1" />
                     Retry
@@ -490,23 +490,23 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
 
             {/* Status Information */}
             {currentJob.status_info && (
-              <div className="bg-gray-100 rounded-lg p-3 mb-3">
-                <p className="text-xs sm:text-sm text-gray-700 mb-2">{currentJob.status_info.message}</p>
+              <div className="bg-gray-700 rounded-lg p-3 mb-3">
+                <p className="text-xs sm:text-sm text-gray-300 mb-2">{currentJob.status_info.message}</p>
                 
                 {currentJob.status_info.estimated_start_time && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-400">
                     <strong>Estimated start:</strong> {currentJob.status_info.estimated_start_time}
                   </p>
                 )}
                 
                 {currentJob.status_info.elapsed_time_minutes && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-400">
                     <strong>Elapsed time:</strong> {currentJob.status_info.elapsed_time_minutes} minutes
                   </p>
                 )}
                 
                 {currentJob.status_info.estimated_completion && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-gray-400">
                     <strong>Estimated completion:</strong> {currentJob.status_info.estimated_completion}
                   </p>
                 )}
@@ -515,13 +515,13 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
 
             {/* Error Message */}
             {currentJob.status === 'failed' && currentJob.error_message && (
-              <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-800 text-xs sm:text-sm">{currentJob.error_message}</p>
+              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                <p className="text-red-400 text-xs sm:text-sm">{currentJob.error_message}</p>
               </div>
             )}
 
             {/* Created Time */}
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-400">
               Created {formatTimeAgo(currentJob.created_at)}
             </p>
           </div>
@@ -534,7 +534,7 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
               <Button
                 onClick={createJob}
                 disabled={isCreating}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 bg-[#00D992] hover:bg-[#00C484] text-gray-900"
               >
                 {isCreating ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -549,12 +549,12 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
 
         {/* Info Section */}
         {!currentJob && !existingResults && !showResults && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3 text-xs sm:text-sm text-blue-800">
+          <div className="bg-[#00D992]/20 border border-[#00D992]/30 rounded-lg p-4">
+            <div className="flex items-start gap-3 text-xs sm:text-sm text-[#00D992]">
               <Target className="h-4 w-4 mt-0.5" />
               <div>
-                <p className="font-semibold text-sm sm:text-base mb-1">What happens during analysis:</p>
-                <ul className="list-disc list-inside space-y-1 text-xs text-blue-700">
+                <p className="font-semibold text-sm sm:text-base mb-1 text-gray-100">What happens during analysis:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs text-gray-300">
                   <li>AI analyzes thousands of potential influencer matches</li>
                   <li>Evaluates audience overlap, engagement quality, and brand alignment</li>
                   <li>Generates comprehensive match scores and recommendations</li>
@@ -572,16 +572,16 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
             <div className="max-h-[60vh] overflow-y-auto">
               {resultsLoading ? (
                 <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-                  <span className="ml-2 text-sm sm:text-base text-gray-600">Loading results...</span>
+                  <Loader2 className="w-8 h-8 animate-spin text-[#00D992]" />
+                  <span className="ml-2 text-sm sm:text-base text-gray-300">Loading results...</span>
                 </div>
               ) : resultsError ? (
                 <div className="text-center py-12">
-                  <div className="text-red-500 font-semibold text-sm sm:text-base mb-2">Error Loading Results</div>
-                  <div className="text-gray-600 text-xs sm:text-sm mb-4">{resultsError}</div>
+                  <div className="text-red-400 font-semibold text-sm sm:text-base mb-2">Error Loading Results</div>
+                  <div className="text-gray-400 text-xs sm:text-sm mb-4">{resultsError}</div>
                   <button
                     onClick={fetchResults}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs sm:text-sm"
+                    className="px-4 py-2 bg-[#00D992] text-gray-900 rounded-lg hover:bg-[#00C484] transition-colors text-xs sm:text-sm"
                   >
                     Retry
                   </button>
@@ -589,13 +589,13 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
               ) : !results || results.matches.length === 0 ? (
                 <div className="text-center py-12">
                   <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">No matches found</h3>
-                  <p className="text-sm sm:text-base text-gray-600">Try adjusting your filter criteria.</p>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-100 mb-2">No matches found</h3>
+                  <p className="text-sm sm:text-base text-gray-400">Try adjusting your filter criteria.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {results.matches.map((influencer: InfluencerMatch) => (
-                    <div key={influencer.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div key={influencer.id} className="border border-gray-700 bg-gray-800 rounded-lg p-4 hover:shadow-lg hover:border-[#00D992]/30 transition-all">
                       <div className="flex items-start gap-4">
                         {/* Main Content */}
                         <div className="flex-1">
@@ -603,7 +603,7 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 
-                                  className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                                  className="font-semibold text-gray-100 cursor-pointer hover:text-[#00D992] transition-colors"
                                   onClick={() => window.open(`https://twitter.com/${influencer.influencer_handle}`, '_blank')}
                                 >
                                   @{influencer.influencer_handle}
@@ -616,30 +616,30 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
                           <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm mb-3">
                             <div className="flex items-center gap-1">
                               <Star className="h-3 w-3 text-gray-400" />
-                              <span className="text-gray-600">Cred Score:</span>
+                              <span className="text-gray-400">Cred Score:</span>
                               <span className={`font-semibold ${getScoreColor(influencer.cred_score)}`}>
                                 {influencer.cred_score.toFixed(1)}/5
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
                               <TrendingUp className="h-3 w-3 text-gray-400" />
-                              <span className="text-gray-600">Synergy:</span>
-                              <span className="font-semibold text-blue-600">{influencer.synergy_rating_to_project}/5</span>
+                              <span className="text-gray-400">Synergy:</span>
+                              <span className="font-semibold text-[#00D992]">{influencer.synergy_rating_to_project}/5</span>
                             </div>
                           </div>
 
                           {/* Tokens */}
                           {influencer.keywords_from_tweets.length > 0 && (
                             <div className="mb-3">
-                              <p className="text-xs text-gray-500 mb-1">Related Tokens:</p>
+                              <p className="text-xs text-gray-400 mb-1">Related Tokens:</p>
                               <div className="flex flex-wrap gap-1">
                                 {influencer.keywords_from_tweets.slice(0, 5).map((keyword: string, idx: number) => (
-                                  <span key={idx} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                                  <span key={idx} className="px-2 py-1 bg-[#00D992]/20 text-[#00D992] text-xs rounded border border-[#00D992]/30">
                                     {keyword}
                                   </span>
                                 ))}
                                 {influencer.keywords_from_tweets.length > 5 && (
-                                  <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded">
+                                  <span className="px-2 py-1 bg-gray-700 text-gray-400 text-xs rounded border border-gray-600">
                                     +{influencer.keywords_from_tweets.length - 5} more
                                   </span>
                                 )}
@@ -649,17 +649,17 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
 
                           {/* Synergy Rationale */}
                           {influencer.synergy_rationale && (
-                            <div className="mb-3 p-3 bg-blue-50 rounded-lg">
-                              <p className="text-xs text-blue-600 font-semibold mb-1">Why this match works:</p>
-                              <p className="text-xs sm:text-sm text-blue-800">{influencer.synergy_rationale}</p>
+                            <div className="mb-3 p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+                              <p className="text-xs text-blue-400 font-semibold mb-1">Why this match works:</p>
+                              <p className="text-xs sm:text-sm text-blue-300">{influencer.synergy_rationale}</p>
                             </div>
                           )}
 
                           {/* Marketing Angle */}
                           {influencer.recommended_marketing_angle && (
-                            <div className="p-3 bg-green-50 rounded-lg">
-                              <p className="text-xs text-green-600 font-semibold mb-1">Recommended approach:</p>
-                              <p className="text-xs sm:text-sm text-green-800">{influencer.recommended_marketing_angle}</p>
+                            <div className="p-3 bg-green-500/20 border border-green-500/30 rounded-lg">
+                              <p className="text-xs text-green-400 font-semibold mb-1">Recommended approach:</p>
+                              <p className="text-xs sm:text-sm text-green-300">{influencer.recommended_marketing_angle}</p>
                             </div>
                           )}
                         </div>
@@ -671,9 +671,9 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
 
               {/* Pagination */}
               {results?.pagination && results.pagination.total_count && results.pagination.total_count > pageSize && (
-                <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="mt-6 pt-4 border-t border-gray-700">
                   <div className="flex items-center justify-between">
-                    <div className="text-xs sm:text-sm text-gray-600">
+                    <div className="text-xs sm:text-sm text-gray-400">
                       {results.pagination.showing_results}
                     </div>
 
@@ -681,19 +681,19 @@ export default function InfluencerMatchMaking({ projectHandle }: InfluencerMatch
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={!results.pagination.has_previous}
-                        className="px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1 text-xs sm:text-sm border border-gray-600 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Previous
                       </button>
 
-                      <span className="px-3 py-1 text-xs sm:text-sm">
+                      <span className="px-3 py-1 text-xs sm:text-sm text-gray-300">
                         Page {results.pagination.page}
                       </span>
 
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={!results.pagination.has_next}
-                        className="px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-3 py-1 text-xs sm:text-sm border border-gray-600 bg-gray-700 text-gray-300 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Next
                       </button>

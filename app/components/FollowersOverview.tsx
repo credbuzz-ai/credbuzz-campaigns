@@ -243,7 +243,10 @@ const FollowersBubbleMap = ({
 
           group.append("circle")
             .attr("r", (d: D3Node) => d.radius)
-            .attr("fill", "white")
+            .attr("fill", (d: D3Node) => {
+              const primaryTag = d.follower.tags[0] || 'unknown';
+              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
+            })
             .style("stroke-width", OUTER_BORDER_WIDTH) // width of the border
             .style("stroke", (d: D3Node) => {
               const primaryTag = d.follower.tags[0] || 'unknown';
@@ -298,6 +301,10 @@ const FollowersBubbleMap = ({
           update.select<SVGCircleElement>("circle:not(.outer-sharp-border)") // Ensure we don't select the new border circle here
             .transition().duration(300)
             .attr("r", (d: D3Node) => d.radius)
+            .attr("fill", (d: D3Node) => {
+              const primaryTag = d.follower.tags[0] || 'unknown';
+              return TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;
+            })
             .style("stroke", (d: D3Node) => {
               const primaryTag = d.follower.tags[0] || 'unknown';
               const colorHex = TAG_COLORS[primaryTag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown;

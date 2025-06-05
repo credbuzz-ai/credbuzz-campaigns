@@ -312,7 +312,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         const narrative = d.data.narrative || "other"
         return narrativeColors[narrative] || "#6B7280"
       })
-      .attr("fill-opacity", 0.3)
+      .attr("fill-opacity", 0.8)
       .attr("stroke", d => {
         const narrative = d.data.narrative || "other"
         return narrativeColors[narrative] || "#6B7280"
@@ -328,7 +328,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         d3.select(this)
           .transition()
           .duration(200)
-          .attr("fill-opacity", 0.6)
+          .attr("fill-opacity", 1.0)
           .attr("stroke-width", 3)
           .style("filter", "drop-shadow(0 4px 8px rgba(0,0,0,0.2))")
         
@@ -356,7 +356,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         d3.select(this)
           .transition()
           .duration(200)
-          .attr("fill-opacity", 0.3)
+          .attr("fill-opacity", 0.8)
           .attr("stroke-width", 2)
           .style("filter", "none")
         
@@ -400,9 +400,9 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         const narrative = d.parent?.data.narrative || "other"
         return narrativeColors[narrative] || "#6B7280"
       })
-      .attr("fill-opacity", 0.2)
+      .attr("fill-opacity", 0.9)
       .attr("stroke", "white")
-      .attr("stroke-width", 1)
+      .attr("stroke-width", 2)
       .style("cursor", "pointer")
       .style("transition", "all 0.2s ease")
 
@@ -450,8 +450,9 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           const narrative = d.parent?.data.narrative || "other"
           return narrativeColors[narrative] || "#6B7280"
         })
+        .attr("fill-opacity", 0.9)
         .attr("stroke", "white")
-        .attr("stroke-width", 1)
+        .attr("stroke-width", 2)
         .style("cursor", "pointer")
 
       // Add token symbol text
@@ -580,15 +581,15 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
 
   if (loading) {
     return (
-      <div className="card-pastel !bg-white p-6">
+      <div className="card-trendsage">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
+          <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
           <div className="grid grid-cols-3 gap-4 mb-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-20 bg-gray-200 rounded"></div>
+              <div key={i} className="h-20 bg-gray-700 rounded"></div>
             ))}
           </div>
-          <div className="h-96 bg-gray-200 rounded"></div>
+          <div className="h-96 bg-gray-700 rounded"></div>
         </div>
       </div>
     )
@@ -600,17 +601,17 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
 
   if (error || !data) {
     return (
-      <div className="card-pastel !bg-white p-6">
+      <div className="card-trendsage">
         <div className="text-center">
           <Coins className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-500 mb-3">{retryCount > 0 ? `${error}` : error || "No token data available"}</p>
+          <p className="text-gray-300 mb-3">{retryCount > 0 ? `${error}` : error || "No token data available"}</p>
           <button
             onClick={() => fetchTokenData()}
             disabled={retryCount > 0}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               retryCount > 0
-                ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
+                : "bg-gray-700 hover:bg-gray-600 text-gray-100"
             }`}
           >
             {retryCount > 0 ? "Retrying..." : "Retry"}
@@ -621,24 +622,24 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
   }
 
   return (
-    <div className="card-pastel !bg-white p-6">
+    <div className="card-trendsage">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-xl">
-            <Coins className="w-5 h-5 text-blue-600" />
+          <div className="p-2 bg-[#00D992]/20 rounded-xl">
+            <Coins className="w-5 h-5 text-[#00D992]" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Token Overview</h3>
+          <h3 className="text-lg font-semibold text-gray-100">Token Overview</h3>
         </div>
 
         {/* Interval Selector */}
-        <div className="flex bg-gray-100 rounded-lg p-1">
+        <div className="flex bg-gray-700 rounded-lg p-1">
           {intervalOptions.map((option) => (
             <button
               key={option.value}
               onClick={() => setInterval(option.value)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-                interval === option.value ? "bg-white text-gray-900 shadow-sm" : "text-gray-600 hover:text-gray-900"
+                interval === option.value ? "bg-[#00D992] text-gray-900" : "text-gray-300 hover:text-gray-100"
               }`}
             >
               {option.label}
@@ -649,22 +650,22 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="text-center p-2 bg-blue-50 rounded-lg">
-          <Hash className="w-4 h-4 text-blue-600 mx-auto mb-1" />
-          <div className="text-lg font-bold text-gray-900">{data.unique_token_count}</div>
-          <div className="text-xs text-gray-600">Unique Tokens</div>
+        <div className="text-center p-2 bg-[#00D992]/20 rounded-lg border border-[#00D992]/30">
+          <Hash className="w-4 h-4 text-[#00D992] mx-auto mb-1" />
+          <div className="text-lg font-bold text-gray-100">{data.unique_token_count}</div>
+          <div className="text-xs text-gray-400">Unique Tokens</div>
         </div>
-        <div className="text-center p-2 bg-green-50 rounded-lg">
-          <TrendingUp className="w-4 h-4 text-green-600 mx-auto mb-1" />
-          <div className="text-lg font-bold text-gray-900">{data.total_mentions}</div>
-          <div className="text-xs text-gray-600">Total Mentions</div>
+        <div className="text-center p-2 bg-green-500/20 rounded-lg border border-green-500/30">
+          <TrendingUp className="w-4 h-4 text-green-400 mx-auto mb-1" />
+          <div className="text-lg font-bold text-gray-100">{data.total_mentions}</div>
+          <div className="text-xs text-gray-400">Total Mentions</div>
         </div>
-        <div className="text-center p-2 bg-orange-50 rounded-lg">
-          <Coins className="w-4 h-4 text-orange-600 mx-auto mb-1" />
-          <div className="text-sm font-bold text-gray-900 uppercase">
+        <div className="text-center p-2 bg-orange-500/20 rounded-lg border border-orange-500/30">
+          <Coins className="w-4 h-4 text-orange-400 mx-auto mb-1" />
+          <div className="text-sm font-bold text-gray-100 uppercase">
             {data.most_mentioned_token ? `$${data.most_mentioned_token.symbol}` : "N/A"}
           </div>
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-gray-400">
             {data.most_mentioned_token ? `${data.most_mentioned_token.mention_count} mentions` : "-"}
           </div>
         </div>
@@ -672,8 +673,8 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
 
       {/* Circular Packing Visualization */}
       <div className="mb-6">
-        <h4 className="text-md font-semibold text-gray-900 mb-3">Token Narratives Map</h4>
-        <div className="flex flex-col lg:flex-row gap-6 bg-gray-50 rounded-xl p-4">
+        <h4 className="text-md font-semibold text-gray-100 mb-3">Token Narratives Map</h4>
+        <div className="flex flex-col lg:flex-row gap-6 bg-gray-800 rounded-xl p-4 border border-gray-700">
           {/* Visualization Container */}
           <div className="flex-1 overflow-x-auto">
             <svg ref={svgRef} className="w-full" style={{ minHeight: "400px" }}></svg>
@@ -682,11 +683,11 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           {/* Legend on the right side */}
           <div className="lg:w-48 lg:flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <h5 className="text-sm font-semibold text-gray-900">Narrative Legend</h5>
+              <h5 className="text-sm font-semibold text-gray-100">Narrative Legend</h5>
               {selectedNarrative && (
                 <button
                   onClick={() => setSelectedNarrative(null)}
-                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                  className="text-xs text-[#00D992] hover:text-[#00C484] underline"
                 >
                   Show All
                 </button>
@@ -719,9 +720,9 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
                         key={narrative}
                       className={`flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer transition-all duration-200 ${
                         isSelected 
-                          ? 'bg-white shadow-sm ring-2 ring-blue-200' 
+                          ? 'bg-gray-700 shadow-sm ring-2 ring-[#00D992]/50' 
                           : hasTokens 
-                            ? 'hover:bg-white/50' 
+                            ? 'hover:bg-gray-700/50' 
                             : 'opacity-50 cursor-not-allowed'
                       }`}
                       onClick={() => {
@@ -735,7 +736,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
                         style={{ backgroundColor: color }}
                       ></div>
                       <span className={`text-xs capitalize leading-tight ${
-                        isSelected ? 'text-gray-900 font-medium' : 'text-gray-600'
+                        isSelected ? 'text-gray-100 font-medium' : 'text-gray-300'
                       }`}>
                         {narrative.replace("-", " ")}
                       </span>
@@ -761,7 +762,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
                   return (
                     <button
                       onClick={() => setShowAllLegends(!showAllLegends)}
-                      className="flex items-center gap-1 py-1 px-2 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors duration-200 mt-1"
+                      className="flex items-center gap-1 py-1 px-2 text-xs text-[#00D992] hover:text-[#00C484] hover:bg-gray-700/50 rounded-md transition-colors duration-200 mt-1"
                     >
                       <span>{showAllLegends ? 'Show less...' : `See more... (+${totalNarratives - 6})`}</span>
                     </button>
@@ -772,7 +773,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
             </div>
           </div>
         </div>
-        <div className="mt-2 text-xs text-gray-500 text-center">
+        <div className="mt-2 text-xs text-gray-400 text-center">
           Click on narrative bubbles to highlight • Hover over tokens for details • Bubble size represents mentions
         </div>
       </div>
