@@ -1,26 +1,27 @@
-import type React from "react"
-import type { Metadata } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import Header from "@/components/Header"
+import Header from "@/components/Header";
+import PrivyProvider from "@/components/PrivyProvider";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import type React from "react";
+import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "TrendSage - Web3 KOL Marketplace",
   description: "Connecting brands with influential crypto voices",
-  generator: 'v0.dev',
+  generator: "v0.dev",
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/logo-green.svg',
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/logo-green.svg",
   },
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en" className="dark">
@@ -30,9 +31,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/logo-green.svg" />
       </head>
       <body className={`${inter.className} bg-gray-900 min-h-screen`}>
-        <Header />
-        <main>{children}</main>
+        <PrivyProvider>
+          <Header />
+          <main>{children}</main>
+        </PrivyProvider>
       </body>
     </html>
-  )
+  );
 }
