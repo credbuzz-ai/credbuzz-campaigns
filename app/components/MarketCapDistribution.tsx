@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import * as d3 from "d3"
 import { API_BASE_URL } from '../../lib/constants'
+import { TrendingUp } from "lucide-react"
 
 // Type definitions
 interface Token {
@@ -432,56 +433,85 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
     }
   }, [marketCapData, loading])
 
-  // Loading and error states
+  // Loading state
   if (loading) {
     return (
-      <div className="card-pastel bg-white p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">First Call Market Cap Distribution</h3>
-          
-          {/* Time Period Selector */}
-          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-            {TIME_PERIODS.map((period) => (
-              <button
-                key={period.value}
-                onClick={() => handleTimePeriodChange(period.value)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-                  timePeriod === period.value
-                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
-                }`}
-              >
-                {period.label}
-              </button>
-            ))}
+      <div className="card-trendsage">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-[#00D992]" />
+            <h3 className="text-lg font-semibold text-gray-100">Market Cap Distribution</h3>
           </div>
         </div>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992] mx-auto mb-3"></div>
+            <p className="text-gray-300 text-sm">Loading market cap data...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-        <div className="flex items-center justify-center space-x-3 py-12">
-          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
-          <div className="text-base text-gray-800 dark:text-gray-100">Loading market cap distribution...</div>
+  // Error state
+  if (error) {
+    return (
+      <div className="card-trendsage">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-[#00D992]" />
+            <h3 className="text-lg font-semibold text-gray-100">Market Cap Distribution</h3>
+          </div>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-red-400 text-sm mb-4">{error}</p>
+          <button
+            onClick={() => fetchData(timePeriod)}
+            className="btn-primary"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // No data state
+  if (!marketCapData) {
+    return (
+      <div className="card-trendsage">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-[#00D992]" />
+            <h3 className="text-lg font-semibold text-gray-100">Market Cap Distribution</h3>
+          </div>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-gray-400 text-sm">No market cap data available</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="card-pastel bg-white p-4">
+    <div className="card-trendsage">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">First Call Market Cap Distribution</h3>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-[#00D992]" />
+          <h3 className="text-lg font-semibold text-gray-100">Market Cap Distribution</h3>
+        </div>
         
-        {/* Time Period Selector */}
-        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          {TIME_PERIODS.map((period) => (
+        {/* Time Period Filter */}
+        <div className="flex bg-gray-700 rounded-lg p-1">
+          {TIME_PERIODS.map(period => (
             <button
               key={period.value}
               onClick={() => handleTimePeriodChange(period.value)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
                 timePeriod === period.value
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                  ? 'bg-[#00D992] text-gray-900'
+                  : 'text-gray-300 hover:text-[#00D992] hover:bg-gray-600'
               }`}
             >
               {period.label}
@@ -490,54 +520,48 @@ export default function MarketCapDistribution({ authorHandle }: { authorHandle: 
         </div>
       </div>
 
-      {/* Error State */}
-      {error && (
-        <div className="text-center py-12">
-          <div className="text-red-500 text-base font-semibold mb-2">Error Loading Data</div>
-          <div className="text-gray-600 dark:text-gray-300 mb-3 text-sm">{error}</div>
-          <button
-            onClick={() => fetchData(timePeriod)}
-            className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* No Data State */}
-      {!error && !marketCapData && (
-        <div className="text-center py-12">
-          <div className="text-gray-600 dark:text-gray-300 text-sm">No market cap data available</div>
-        </div>
-      )}
-
-      {/* Stats and Chart - Only show when we have data */}
-      {marketCapData && !error && (
-        <>
-          {/* Stats */}
-          <div className="flex flex-col sm:flex-row gap-3 text-sm mb-4">
-            <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
-              <span className="text-gray-600 dark:text-gray-400">Avg. call market cap:</span>
-              <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">{formatMarketCap(marketCapData.overall_avg_marketcap)}</span>
-            </div>
-            <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600">
-              <span className="text-gray-600 dark:text-gray-400">Median call market cap:</span>
-              <span className="text-green-600 dark:text-green-400 font-bold ml-2">{formatMarketCap(marketCapData.overall_median_marketcap)}</span>
-            </div>
+      {/* Market Cap Summary */}
+      <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+          <div className="text-sm text-gray-400 mb-1">Average Market Cap</div>
+          <div className="text-lg font-semibold text-[#00D992]">
+            {formatMarketCap(marketCapData.overall_avg_marketcap)}
           </div>
+        </div>
+        <div className="bg-gray-700/50 p-4 rounded-lg border border-gray-600">
+          <div className="text-sm text-gray-400 mb-1">Median Market Cap</div>
+          <div className="text-lg font-semibold text-[#00D992]">
+            {formatMarketCap(marketCapData.overall_median_marketcap)}
+          </div>
+        </div>
+      </div>
 
-          {/* D3 Chart */}
-          <div className="w-full overflow-x-auto">
-            <svg 
-              ref={svgRef} 
-              width={CHART_WIDTH} 
-              height={CHART_HEIGHT}
-              className="w-full"
-              style={{ minHeight: "180px" }}
+      {/* Chart Container */}
+      <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+        <svg 
+          ref={svgRef} 
+          width={CHART_WIDTH} 
+          height={CHART_HEIGHT}
+          className="w-full h-auto"
+          style={{ maxWidth: '100%', height: 'auto' }}
+        />
+      </div>
+
+      {/* Legend */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+        {MARKET_CAP_SEGMENTS.map(segment => (
+          <div key={segment.key} className="flex items-center gap-2 p-2 bg-gray-700/30 rounded-lg">
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: segment.color }}
             />
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-medium text-gray-200 truncate">{segment.label}</div>
+              <div className="text-xs text-gray-400">{segment.range}</div>
+            </div>
           </div>
-        </>
-      )}
+        ))}
+      </div>
     </div>
   )
 }

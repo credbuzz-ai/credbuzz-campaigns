@@ -3,14 +3,18 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import Header from "@/components/Header"
-import { ThemeProvider } from "@/components/ThemeProvider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "CredBuzz - Web3 KOL Marketplace",
-  description: "AI-powered decentralized marketplace connecting brands with web3 influencers",
-    generator: 'v0.dev'
+  title: "TrendSage - Web3 KOL Marketplace",
+  description: "Connecting brands with influential crypto voices",
+  generator: 'v0.dev',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/logo-green.svg',
+  },
 }
 
 export default function RootLayout({
@@ -19,12 +23,15 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-pastel-cream dark:bg-gray-900 min-h-screen`}>
-        <ThemeProvider>
-          <Header />
-          <main>{children}</main>
-        </ThemeProvider>
+    <html lang="en" className="dark">
+      <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" href="/logo-green.svg" type="image/svg+xml" />
+        <link rel="apple-touch-icon" href="/logo-green.svg" />
+      </head>
+      <body className={`${inter.className} bg-gray-900 min-h-screen`}>
+        <Header />
+        <main>{children}</main>
       </body>
     </html>
   )

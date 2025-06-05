@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Sparkles, Heart, MessageCircle, Repeat2, Eye, TrendingUp, TrendingDown, ChevronDown, Zap } from "lucide-react"
+import { Sparkles, Heart, MessageCircle, Repeat2, Eye, TrendingUp, TrendingDown, ChevronDown, Zap, Hash } from "lucide-react"
 import type { Tweet, TopTweetsResponse } from "../types"
 import Link from "next/link"
 import { API_BASE_URL } from '../../lib/constants'
@@ -304,198 +304,189 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
   }
 
   return (
-    <div className="w-full flex flex-col">
-      {/* Smart Feed Container with controlled height */}
-      <div className="bg-gray-100 rounded-2xl flex flex-col h-[calc(100vh-4rem)] max-h-[calc(100vh-4rem)]">
-        {/* Header */}
-        <div className="p-4 sm:p-6 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Smart Feed</h2>
-            </div>
-            <div className="relative">
-              <button 
-                onClick={() => setShowSortDropdown(!showSortDropdown)}
-                className="flex items-center gap-1 sm:gap-2 bg-gray-200 hover:bg-gray-300 px-3 sm:px-4 py-2 rounded-full transition-colors"
+    <div className="card-trendsage sticky top-8">
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-[#00D992]" />
+          <h2 className="text-lg font-semibold text-gray-100">Smart Feed</h2>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          {/* Interval Filter */}
+          <div className="flex bg-gray-700 rounded-lg p-1">
+            {intervalOptions.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setInterval(value)}
+                className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
+                  interval === value
+                    ? "bg-[#00D992] text-gray-900"
+                    : "text-gray-300 hover:text-[#00D992] hover:bg-gray-600"
+                }`}
               >
-                <span className="text-xs sm:text-sm font-medium text-gray-700">{getSortLabel()}</span>
-                <ChevronDown className={`w-3 h-3 sm:w-4 sm:h-4 text-gray-600 transition-transform ${showSortDropdown ? 'rotate-180' : ''}`} />
+                {label}
               </button>
-              
-              {showSortDropdown && (
-                <div className="absolute right-0 top-full mt-2 bg-white rounded-xl shadow-lg border border-gray-200 py-2 min-w-[160px] sm:min-w-[180px] z-10">
-                  {sortOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => {
-                        setSortBy(option.value)
-                        setShowSortDropdown(false)
-                      }}
-                      className={`w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm hover:bg-gray-50 transition-colors ${
-                        sortBy === option.value 
-                          ? 'text-blue-600 font-medium bg-blue-50' 
-                          : 'text-gray-700'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            ))}
+          </div>
+
+          {/* Sort Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-700 border border-gray-600 rounded-lg text-gray-300 hover:text-[#00D992] hover:border-[#00D992]/50 transition-colors"
+            >
+              {getSortLabel()}
+              <ChevronDown className="w-3 h-3" />
+            </button>
+            
+            {showSortDropdown && (
+              <div className="absolute right-0 top-full mt-1 z-10 bg-gray-800 border border-gray-700 rounded-lg shadow-lg min-w-[150px]">
+                {sortOptions.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => {
+                      setSortBy(value)
+                      setShowSortDropdown(false)
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-700 transition-colors ${
+                      sortBy === value
+                        ? "text-[#00D992] bg-gray-700"
+                        : "text-gray-300"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+      </div>
 
-        {/* Feed Content with controlled scrolling */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6">
-          {loading ? (
-            <div className="space-y-3 sm:space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 animate-pulse">
-                  <div className="flex items-start gap-3 mb-3 sm:mb-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-200 rounded-full flex-shrink-0"></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="h-3 sm:h-4 bg-gray-200 rounded w-1/3 mb-2"></div>
-                      <div className="h-2 sm:h-3 bg-gray-200 rounded w-1/4"></div>
-                    </div>
-                    <div className="h-2 sm:h-3 bg-gray-200 rounded w-12 sm:w-16"></div>
+      {/* Error handling */}
+      {error && retryCount === 0 && (
+        <div className="mb-4 p-3 bg-red-900/20 border border-red-600/30 rounded-lg">
+          <p className="text-red-400 text-xs">{error}</p>
+        </div>
+      )}
+
+      {/* Retry status */}
+      {retryCount > 0 && (
+        <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+          <p className="text-yellow-400 text-xs">{error}</p>
+        </div>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="border border-gray-700 rounded-lg p-4 animate-pulse">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+                  <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Tweet list */}
+      <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
+        {tweets.map((tweet, index) => {
+          const isExpanded = expandedTweets.has(tweet.tweet_id)
+          const shouldTruncate = tweet.body.length > 200
+          const displayText = isExpanded || !shouldTruncate 
+            ? tweet.body 
+            : truncateText(tweet.body)
+
+          return (
+            <div
+              key={`${tweet.tweet_id}-${index}`}
+              className="border border-gray-700 rounded-lg p-4 hover:border-[#00D992]/30 transition-colors group"
+            >
+              {/* Tweet header */}
+              <div className="flex items-start gap-3 mb-3">
+                <img
+                  src={tweet.profile_image_url}
+                  alt={`@${tweet.author_handle}`}
+                  className="w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
+                  onError={(e) => {
+                    e.currentTarget.src = "/placeholder.svg?height=40&width=40"
+                  }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-gray-100 text-sm truncate">
+                      {getDisplayHandle(tweet.author_handle)}
+                    </span>
+                    {tweet.sentiment !== null && getSentimentIcon(tweet.sentiment)}
                   </div>
-                  <div className="space-y-2 mb-3 sm:mb-4">
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded"></div>
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-4/5"></div>
-                  </div>
-                  <div className="flex items-center gap-3 sm:gap-6">
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-8 sm:w-12"></div>
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-8 sm:w-12"></div>
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-8 sm:w-12"></div>
-                    <div className="h-3 sm:h-4 bg-gray-200 rounded w-12 sm:w-16"></div>
+                  <div className="text-xs text-gray-400">
+                    {formatDate(tweet.tweet_create_time)}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : error ? (
-            <div className="text-center py-6 sm:py-8">
-              <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6">
-                <p className="text-red-600 text-xs sm:text-sm mb-3">{retryCount > 0 ? `${error}` : error}</p>
-                <button
-                  onClick={() => fetchTweets()}
-                  disabled={retryCount > 0}
-                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
-                    retryCount > 0
-                      ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                      : "bg-red-100 hover:bg-red-200 text-red-700"
-                  }`}
-                >
-                  {retryCount > 0 ? "Retrying..." : "Retry"}
-                </button>
               </div>
-            </div>
-          ) : tweets.length === 0 ? (
-            <div className="text-center py-6 sm:py-8">
-              <div className="bg-white rounded-xl sm:rounded-2xl p-6 sm:p-8">
-                <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm sm:text-base">No tweets found</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3 sm:space-y-4">
-              {tweets.map((tweet, index) => {
-                const isExpanded = expandedTweets.has(tweet.tweet_id)
-                const needsTruncation = tweet.body && tweet.body.length > 200
-                const displayText = needsTruncation && !isExpanded 
-                  ? truncateText(tweet.body || "", 200) + "..."
-                  : tweet.body || ""
 
-                return (
-                  <Link
-                    key={tweet.tweet_id}
-                    href={`https://twitter.com/${tweet.author_handle}/status/${tweet.tweet_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
+              {/* Tweet content */}
+              <div className="mb-3">
+                <p className="text-gray-300 text-sm leading-relaxed">
+                  {highlightTokens(displayText)}
+                </p>
+                {shouldTruncate && (
+                  <button
+                    onClick={() => toggleTweetExpansion(tweet.tweet_id)}
+                    className="text-[#00D992] text-xs hover:text-[#00C484] transition-colors mt-1"
                   >
-                    <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 hover:bg-gray-50 transition-all duration-200 border border-gray-100 hover:border-gray-200 hover:shadow-sm">
-                      {/* Tweet Header */}
-                      <div className="flex items-start justify-between mb-3 sm:mb-4">
-                        <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
-                          <img
-                            src={tweet.profile_image_url || "/placeholder.svg?height=48&width=48"}
-                            alt={getDisplayHandle(tweet.author_handle)}
-                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex-shrink-0 ring-2 ring-gray-100"
-                            onError={(e) => {
-                              e.currentTarget.src = "/placeholder.svg?height=48&width=48"
-                            }}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1">
-                              <span className="font-semibold text-gray-900 text-sm sm:text-base truncate">
-                                {getDisplayHandle(tweet.author_handle)}
-                              </span>
-                              {tweet.tweet_category === "influencer" && (
-                                <div className="w-3 h-3 sm:w-4 sm:h-4 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                                  <span className="text-white text-xs">✓</span>
-                                </div>
-                              )}
-                            </div>
-                            <span className="text-gray-500 text-xs sm:text-sm truncate">@{getDisplayHandle(tweet.author_handle)}</span>
-                          </div>
-                        </div>
-                        <span className="text-gray-400 text-xs sm:text-sm flex-shrink-0 ml-2 font-medium">{formatDate(tweet.tweet_create_time)}</span>
-                      </div>
+                    {isExpanded ? "Show less" : "Show more"}
+                  </button>
+                )}
+              </div>
 
-                      {/* Tweet Content */}
-                      <div className="mb-4">
-                        <p
-                          className="text-gray-800 text-sm leading-relaxed break-words"
-                          dangerouslySetInnerHTML={{ __html: highlightTokens(displayText) }}
-                        />
-                        {needsTruncation && (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              toggleTweetExpansion(tweet.tweet_id)
-                            }}
-                            className="text-gray-500 text-xs mt-2 hover:text-gray-700 transition-colors flex items-center gap-1 font-medium"
-                          >
-                            <span>{isExpanded ? "View less" : "View more"}</span>
-                            <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                          </button>
-                        )}
-                      </div>
+              {/* Tweet category */}
+              {tweet.tweet_category && (
+                <div className="mb-3">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#00D992]/20 text-[#00D992] border border-[#00D992]/30">
+                    <Hash className="w-3 h-3 mr-1" />
+                    {tweet.tweet_category}
+                  </span>
+                </div>
+              )}
 
-                      {/* Engagement Metrics */}
-                      <div className="flex items-center gap-4 sm:gap-6 text-gray-400 overflow-x-auto pt-2 border-t border-gray-50">
-                        <div className="flex items-center gap-1 sm:gap-2 hover:text-blue-500 transition-colors flex-shrink-0 cursor-pointer">
-                          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.retweet_count)}</span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2 hover:text-red-500 transition-colors flex-shrink-0 cursor-pointer">
-                          <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.like_count)}</span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2 hover:text-blue-500 transition-colors flex-shrink-0 cursor-pointer">
-                          <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.reply_count)}</span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2 hover:text-green-500 transition-colors flex-shrink-0 cursor-pointer">
-                          <Repeat2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.quote_count)}</span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-auto">
-                          <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          <span className="text-xs sm:text-sm font-medium">{formatNumber(tweet.view_count)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Link>
-                )
-              })}
+              {/* Tweet metrics */}
+              <div className="flex items-center gap-4 text-xs text-gray-400">
+                <div className="flex items-center gap-1">
+                  <Eye className="w-3 h-3" />
+                  <span>{formatNumber(tweet.view_count)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Heart className="w-3 h-3" />
+                  <span>{formatNumber(tweet.like_count)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <MessageCircle className="w-3 h-3" />
+                  <span>{formatNumber(tweet.reply_count)}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Repeat2 className="w-3 h-3" />
+                  <span>{formatNumber(tweet.retweet_count)}</span>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
+          )
+        })}
       </div>
+
+      {/* Empty state */}
+      {!loading && tweets.length === 0 && (
+        <div className="text-center py-8">
+          <Sparkles className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+          <p className="text-gray-400 text-sm">No tweets found for this time period</p>
+        </div>
+      )}
     </div>
   )
 }

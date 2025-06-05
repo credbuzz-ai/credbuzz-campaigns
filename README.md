@@ -1,20 +1,24 @@
-# credbuzz-campaigns
+# trendsage-campaigns
 
-*Automatically synced with your [v0.dev](https://v0.dev) deployments*
+TrendSage Campaigns - Web3 KOL Marketplace
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/credbuzzs-projects/v0-credbuzz-campaigns)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.dev-black?style=for-the-badge)](https://v0.dev/chat/projects/qgfofCWiArw)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/trendsages-projects/v0-trendsage-campaigns)
+
+## Features
+
+- **KOL Discovery**: Advanced search and filtering for crypto Key Opinion Leaders
+- **Campaign Management**: Create and manage influencer marketing campaigns  
+- **Analytics Dashboard**: Real-time performance tracking and insights
+- **Web3 Integration**: Blockchain-based transparency and smart contracts
+
+## Deployment
+
+**[https://vercel.com/trendsages-projects/v0-trendsage-campaigns](https://vercel.com/trendsages-projects/v0-trendsage-campaigns)**
 
 ## Overview
 
 This repository will stay in sync with your deployed chats on [v0.dev](https://v0.dev).
 Any changes you make to your deployed app will be automatically pushed to this repository from [v0.dev](https://v0.dev).
-
-## Deployment
-
-Your project is live at:
-
-**[https://vercel.com/credbuzzs-projects/v0-credbuzz-campaigns](https://vercel.com/credbuzzs-projects/v0-credbuzz-campaigns)**
 
 ## Build your app
 

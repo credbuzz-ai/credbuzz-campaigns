@@ -20,67 +20,67 @@ body {
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
+    --primary: 152 100% 42.5%; /* TrendSage Green */
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
     --muted: 0 0% 96.1%;
     --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 152 100% 42.5%; /* TrendSage Green */
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    --ring: 152 100% 42.5%; /* TrendSage Green */
+    --chart-1: 152 100% 42.5%; /* TrendSage Green */
+    --chart-2: 152 80% 35%;
+    --chart-3: 152 60% 28%;
+    --chart-4: 152 40% 21%;
+    --chart-5: 152 20% 14%;
     --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 152 100% 42.5%; /* TrendSage Green */
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-accent: 152 20% 95%;
+    --sidebar-accent-foreground: 152 100% 42.5%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 152 100% 42.5%; /* TrendSage Green */
   }
   .dark {
-    --background: 0 0% 3.9%;
+    --background: 220 27% 5%; /* Dark gray-900 */
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 220 20% 8%; /* Dark gray-800 */
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 220 20% 8%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
+    --primary: 152 100% 42.5%; /* TrendSage Green */
+    --primary-foreground: 220 27% 5%;
+    --secondary: 220 20% 12%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
+    --muted: 220 20% 12%;
     --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 152 100% 42.5%; /* TrendSage Green */
+    --accent-foreground: 220 27% 5%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
+    --border: 220 15% 25%; /* gray-700 */
+    --input: 220 20% 12%;
+    --ring: 152 100% 42.5%; /* TrendSage Green */
+    --chart-1: 152 100% 42.5%; /* TrendSage Green */
+    --chart-2: 152 80% 35%;
+    --chart-3: 152 60% 28%;
+    --chart-4: 152 40% 21%;
+    --chart-5: 152 20% 14%;
+    --sidebar-background: 220 20% 8%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-primary: 152 100% 42.5%; /* TrendSage Green */
+    --sidebar-primary-foreground: 220 27% 5%;
+    --sidebar-accent: 220 20% 12%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-border: 220 15% 25%;
+    --sidebar-ring: 152 100% 42.5%; /* TrendSage Green */
   }
 
   html {
@@ -88,7 +88,7 @@ body {
   }
 
   body {
-    @apply text-gray-800;
+    @apply text-gray-100;
   }
 }
 
@@ -102,46 +102,61 @@ body {
 }
 
 @layer components {
-  .card-pastel {
-    @apply rounded-2xl p-8 shadow-sm border border-white/20 backdrop-blur-sm 
-         dark:border-gray-600/50 dark:shadow-lg;
+  .card-trendsage {
+    @apply rounded-xl p-6 shadow-sm border border-gray-700 bg-gray-800 
+         backdrop-blur-sm hover:border-[#00D992]/30 transition-colors;
   }
 
   .btn-primary {
-    @apply bg-gray-800 dark:bg-gray-100 text-white dark:text-gray-900 
-         px-6 py-3 rounded-xl font-medium 
-         hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors;
+    @apply bg-[#00D992] text-gray-900 
+         px-6 py-3 rounded-xl font-semibold 
+         hover:bg-[#00C484] active:bg-[#00B578] transition-all duration-200
+         shadow-lg hover:shadow-xl hover:shadow-[#00D992]/25;
   }
 
   .btn-secondary {
-    @apply bg-white/80 dark:bg-gray-700 text-gray-800 dark:text-gray-100 
-         px-6 py-3 rounded-xl font-medium 
-         hover:bg-white dark:hover:bg-gray-600 transition-colors 
-         border border-gray-200 dark:border-gray-600;
+    @apply bg-gray-800 text-gray-100 border border-[#00D992]/30
+         px-6 py-3 rounded-xl font-semibold 
+         hover:bg-gray-700 hover:border-[#00D992]/50 transition-all duration-200
+         shadow-md hover:shadow-lg;
   }
 
-  /* Pastel card backgrounds for dark mode */
-  .bg-pastel-beige {
-    @apply dark:bg-gray-800;
+  .accent-trendsage {
+    @apply text-[#00D992];
   }
 
-  .bg-pastel-mint {
-    @apply dark:bg-gray-700;
+  .bg-trendsage {
+    @apply bg-[#00D992];
   }
 
-  .bg-pastel-lavender {
-    @apply dark:bg-gray-800;
+  .border-trendsage {
+    @apply border-[#00D992];
   }
 
-  .bg-pastel-peach {
-    @apply dark:bg-gray-700;
+  .ring-trendsage {
+    @apply ring-[#00D992];
   }
 
-  .bg-pastel-sage {
-    @apply dark:bg-gray-800;
+  .focus-trendsage {
+    @apply focus:ring-2 focus:ring-[#00D992] focus:border-[#00D992];
   }
 
-  .bg-pastel-cream {
-    @apply dark:bg-gray-900;
-  }
+  /* Remove old pastel classes - no longer needed */
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-[#00D992] rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-[#00C484];
 }

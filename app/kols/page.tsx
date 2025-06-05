@@ -78,9 +78,9 @@ export default function KOLsPage() {
   }
 
   const getScoreColor = (score: number) => {
-    if (score >= 4.5) return 'text-green-600'
-    if (score >= 4.0) return 'text-yellow-600'
-    return 'text-red-600'
+    if (score >= 4.5) return 'text-[#00D992]'
+    if (score >= 4.0) return 'text-yellow-400'
+    return 'text-red-400'
   }
 
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE)
@@ -94,33 +94,33 @@ export default function KOLsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <Users className="w-6 h-6 text-gray-700" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">KOL Leaderboard</h1>
+            <Users className="w-6 h-6 text-[#00D992]" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-100">KOL Leaderboard</h1>
           </div>
-          <p className="text-sm sm:text-base text-gray-600">
+          <p className="text-sm sm:text-base text-gray-400">
             Top-performing Key Opinion Leaders ranked by their credibility scores
           </p>
         </div>
 
         {/* Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="card-trendsage">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-sm sm:text-base text-gray-600">Loading KOLs...</span>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
+              <span className="ml-3 text-sm sm:text-base text-gray-300">Loading KOLs...</span>
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <div className="text-red-500 font-semibold text-sm sm:text-base mb-2">Error Loading KOLs</div>
-              <div className="text-gray-600 text-xs sm:text-sm mb-4">{error}</div>
+              <div className="text-red-400 font-semibold text-sm sm:text-base mb-2">Error Loading KOLs</div>
+              <div className="text-gray-400 text-xs sm:text-sm mb-4">{error}</div>
               <button
                 onClick={() => fetchKOLs(currentPage)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs sm:text-sm"
+                className="btn-primary"
               >
                 Retry
               </button>
@@ -128,9 +128,9 @@ export default function KOLsPage() {
           ) : (
             <>
               {/* Table Header */}
-              <div className="px-6 py-4 border-b border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-700">
                 <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-400">
                     Showing {startItem}-{endItem} of {formatNumber(totalItems)} KOLs
                   </div>
                   <div className="text-xs text-gray-500">
@@ -142,34 +142,34 @@ export default function KOLsPage() {
               {/* Table */}
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-gray-700">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Rank
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         KOL
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Score
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Followers
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Smart Followers
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Avg Views
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-gray-800 divide-y divide-gray-700">
                     {kols.map((kol, index) => {
                       const rank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1
                       return (
-                        <tr key={kol.author_handle} className="hover:bg-gray-50 transition-colors">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <tr key={kol.author_handle} className="hover:bg-gray-700 transition-colors group">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">
                             #{rank}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -177,7 +177,7 @@ export default function KOLsPage() {
                               <img
                                 src={kol.profile_image_url}
                                 alt={kol.name}
-                                className="w-10 h-10 rounded-full mr-3"
+                                className="w-10 h-10 rounded-full mr-3 ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
                                 onError={(e) => {
                                   e.currentTarget.src = "/placeholder.svg?height=40&width=40"
                                 }}
@@ -185,7 +185,7 @@ export default function KOLsPage() {
                               <div>
                                 <Link
                                   href={`/kols/${kol.author_handle}`}
-                                  className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                                  className="text-sm font-medium text-gray-200 hover:text-[#00D992] transition-colors"
                                 >
                                   {kol.name}
                                 </Link>
@@ -201,14 +201,14 @@ export default function KOLsPage() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
                             {formatNumber(kol.followers)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
                             {formatNumber(kol.smart_followers)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center text-sm text-gray-900">
+                            <div className="flex items-center text-sm text-gray-200">
                               <Eye className="w-4 h-4 text-gray-400 mr-1" />
                               {formatNumber(kol.avg_views)}
                             </div>
@@ -221,9 +221,9 @@ export default function KOLsPage() {
               </div>
 
               {/* Pagination */}
-              <div className="px-6 py-4 border-t border-gray-200">
+              <div className="px-6 py-4 border-t border-gray-700">
                 <div className="flex items-center justify-between">
-                  <div className="text-xs sm:text-sm text-gray-600">
+                  <div className="text-xs sm:text-sm text-gray-400">
                     Showing {startItem}-{endItem} of {formatNumber(totalItems)} results
                   </div>
 
@@ -231,7 +231,7 @@ export default function KOLsPage() {
                     <button
                       onClick={() => handlePageChange(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="flex items-center px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center px-3 py-1 text-xs sm:text-sm border border-gray-600 rounded hover:bg-gray-700 hover:border-[#00D992]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-300"
                     >
                       <ChevronLeft className="w-4 h-4 mr-1" />
                       Previous
@@ -257,8 +257,8 @@ export default function KOLsPage() {
                             onClick={() => handlePageChange(pageNum)}
                             className={`px-3 py-1 text-xs sm:text-sm border rounded transition-colors ${
                               currentPage === pageNum
-                                ? 'bg-blue-500 text-white border-blue-500'
-                                : 'border-gray-300 hover:bg-gray-50'
+                                ? 'bg-[#00D992] text-gray-900 border-[#00D992]'
+                                : 'border-gray-600 hover:bg-gray-700 hover:border-[#00D992]/50 text-gray-300'
                             }`}
                           >
                             {pageNum}
@@ -270,7 +270,7 @@ export default function KOLsPage() {
                     <button
                       onClick={() => handlePageChange(currentPage + 1)}
                       disabled={currentPage === totalPages}
-                      className="flex items-center px-3 py-1 text-xs sm:text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center px-3 py-1 text-xs sm:text-sm border border-gray-600 rounded hover:bg-gray-700 hover:border-[#00D992]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-300"
                     >
                       Next
                       <ChevronRight className="w-4 h-4 ml-1" />

@@ -39,11 +39,11 @@ interface D3Node extends d3.SimulationNodeDatum {
   fy?: number | null
 }
 
-// Color scheme for tags
+// Color scheme for tags - Updated for TrendSage theme
 const TAG_COLORS = {
-  influencer: "#8884d8",
-  project: "#82ca9d", 
-  project_member: "#ffc658",
+  influencer: "#00D992",
+  project: "#00B578", 
+  project_member: "#00F5A8",
   project_coin: "#ff7300",
   project_main: "#0088fe",
   venture_capital: "#ff69b4",
@@ -98,26 +98,26 @@ const getBubbleSize = (count: number, maxCount: number, minSize: number = 10, ma
 // Tooltip component for bubble hover
 const BubbleTooltip = ({ follower }: { follower: Follower }) => {
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50 max-w-xs">
+    <div className="bg-gray-800 border border-[#00D992]/30 rounded-lg shadow-lg p-3 z-50 max-w-xs">
       <div className="flex items-center gap-2 mb-2">
         <img 
           src={follower.profile_image_url} 
           alt={follower.profile_name}
-          className="w-8 h-8 rounded-full"
+          className="w-8 h-8 rounded-full ring-2 ring-[#00D992]/50"
         />
         <div>
-          <p className="font-medium text-gray-900 text-sm">{follower.profile_name}</p>
-          <p className="text-xs text-gray-500">@{follower.handle}</p>
+          <p className="font-medium text-gray-100 text-sm">{follower.profile_name}</p>
+          <p className="text-xs text-gray-400">@{follower.handle}</p>
         </div>
       </div>
       <div className="space-y-1 text-xs">
-        <p><span className="font-medium">Followers:</span> {formatNumber(follower.followers_count)}</p>
-        <p><span className="font-medium">Smart Followers:</span> {formatNumber(follower.smart_followers)}</p>
+        <p className="text-gray-300"><span className="font-medium text-[#00D992]">Followers:</span> {formatNumber(follower.followers_count)}</p>
+        <p className="text-gray-300"><span className="font-medium text-[#00D992]">Smart Followers:</span> {formatNumber(follower.smart_followers)}</p>
         <div className="flex flex-wrap gap-1 mt-2">
           {follower.tags.map((tag, index) => (
             <span 
               key={index}
-              className="px-2 py-1 rounded-full text-xs font-medium text-white"
+              className="px-2 py-1 rounded-full text-xs font-medium text-gray-900"
               style={{ backgroundColor: TAG_COLORS[tag as keyof typeof TAG_COLORS] || TAG_COLORS.unknown }}
             >
               {tag.replace('_', ' ')}
@@ -384,11 +384,11 @@ const FollowersBubbleMap = ({
   if (loading && followers.length === 0 && !selectedTagForFilter) { 
     const loaderHeight = containerDimensions.height > 0 ? containerDimensions.height : CONTAINER_HEIGHT;
     return (
-      <div className="bg-gray-50 rounded-lg border border-gray-200 p-6 flex items-center justify-center" style={{ height: loaderHeight }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-500">Loading followers...</p>
+      <div className="card-trendsage">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-100">Followers Overview</h3>
         </div>
+        <div className="p-6 text-center text-gray-300">Loading followers overview...</div>
       </div>
     );
   }
@@ -396,13 +396,11 @@ const FollowersBubbleMap = ({
   // State when a filter is active but results in no followers
   if (!loading && selectedTagForFilter && followersToDisplayCount === 0) {
     return (
-      <div 
-        className="bg-gray-50 rounded-lg border border-gray-200 p-6 flex items-center justify-center"
-        style={{ height: containerDimensions.height || CONTAINER_HEIGHT }} 
-      >
-        <p className="text-gray-500 text-center">
-            No followers match the selected tag: "{selectedTagForFilter}".
-        </p>
+      <div className="card-trendsage">
+        <div className="mb-4">
+          <h3 className="text-lg font-semibold text-gray-100">Followers Overview</h3>
+        </div>
+        <div className="p-6 text-center text-gray-300">No followers match the selected tag: "{selectedTagForFilter}".</div>
       </div>
     );
   }
@@ -555,8 +553,8 @@ const TagsDistributionChart = ({
     return (
       <div className="w-full h-full flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-          <p className="text-gray-500 text-xs">Loading...</p>
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00D992] mx-auto mb-2"></div>
+          <p className="text-gray-400 text-xs">Loading...</p>
         </div>
       </div>
     );
@@ -572,7 +570,7 @@ const TagsDistributionChart = ({
   if (Object.keys(tagCounts).length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <p className="text-xs text-gray-500">No tags</p>
+        <p className="text-xs text-gray-400">No tags</p>
       </div>
     );
   }
@@ -589,11 +587,11 @@ const TagsDistributionChart = ({
             transform: 'translateY(-100%)',
           }}
         >
-          <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
-            <p className="font-medium text-xs">{hoveredSegment.tag}</p>
-            <p className="text-xs text-gray-600">Count: {hoveredSegment.data.value}</p>
+          <div className="bg-gray-800 border border-[#00D992]/30 rounded-lg shadow-lg p-2">
+            <p className="font-medium text-xs text-gray-100">{hoveredSegment.tag}</p>
+            <p className="text-xs text-gray-300">Count: {hoveredSegment.data.value}</p>
             {followers.length > 0 && (
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-gray-300">
                 {((hoveredSegment.data.value / followers.length) * 100).toFixed(1)}%
               </p>
             )}
@@ -695,45 +693,45 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
   // Loading and error states
   if (loading && followers.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="card-trendsage">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Followers Overview</h3>
+          <h3 className="text-lg font-semibold text-gray-100">Followers Overview</h3>
         </div>
-        <div className="p-6 text-center">Loading followers overview...</div>
+        <div className="p-6 text-center text-gray-300">Loading followers overview...</div>
       </div>
     )
   }
 
   if (error && !loading) { // Show error only if not actively loading new data
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+      <div className="card-trendsage">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Followers Overview</h3>
+          <h3 className="text-lg font-semibold text-gray-100">Followers Overview</h3>
         </div>
-        <div className="p-6 text-center text-red-500">Error: {error}</div>
+        <div className="p-6 text-center text-red-400">Error: {error}</div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-sm">
+    <div className="card-trendsage">
       {/* Header */}
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Followers Overview</h3>
+        <h3 className="text-lg font-semibold text-gray-100">Followers Overview</h3>
       </div>
         
       {/* Controls */}
       <div className="flex flex-wrap gap-4 items-center mb-6">
         {/* Sort By Toggle */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Sort by:</label>
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <label className="text-sm font-medium text-gray-300">Sort by:</label>
+          <div className="flex bg-gray-700 rounded-lg p-1">
             <button
               onClick={() => setSortBy('smart_followers')}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                 sortBy === 'smart_followers' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-[#00D992] text-gray-900' 
+                  : 'text-gray-300 hover:text-gray-100'
               }`}
             >
               Smart Followers
@@ -742,8 +740,8 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
               onClick={() => setSortBy('followers_count')}
               className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                 sortBy === 'followers_count' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-[#00D992] text-gray-900' 
+                  : 'text-gray-300 hover:text-gray-100'
               }`}
             >
               Total Followers
@@ -753,16 +751,16 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
 
         {/* Limit Toggle */}
         <div className="flex items-center gap-2">
-          <label className="text-sm font-medium text-gray-700">Show:</label>
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <label className="text-sm font-medium text-gray-300">Show:</label>
+          <div className="flex bg-gray-700 rounded-lg p-1">
             {([20, 50, 100] as const).map((num) => (
               <button
                 key={num}
                 onClick={() => setLimit(num)}
                 className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                   limit === num 
-                    ? 'bg-blue-600 text-white' 
-                    : 'text-gray-600 hover:text-gray-900'
+                    ? 'bg-[#00D992] text-gray-900' 
+                    : 'text-gray-300 hover:text-gray-100'
                 }`}
               >
                 Top {num}
@@ -785,16 +783,16 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
           {/* Bottom Right Tags Distribution Chart - positioned relative to bubble map */}
           <div className="absolute bottom-0 right-0">
             { (loading && followers.length === 0) ? ( 
-               <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center">
+               <div className="w-48 h-48 bg-gray-800 rounded-full shadow-lg border border-gray-700 flex items-center justify-center">
                   <div className="text-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                    <p className="text-gray-500 text-xs">Loading...</p>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00D992] mx-auto mb-2"></div>
+                    <p className="text-gray-400 text-xs">Loading...</p>
                   </div>
                 </div>
             ) : followers.length > 0 ? (
-              <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 relative flex items-center justify-center">
+              <div className="w-48 h-48 bg-gray-800 rounded-full shadow-lg border border-gray-700 relative flex items-center justify-center">
                 <div className="absolute top-2 left-0 right-0 text-center z-10">
-                  <h5 className="text-xs font-medium text-gray-700">Tags</h5>
+                  <h5 className="text-xs font-medium text-gray-300">Tags</h5>
                 </div>
                 <div className="w-40 h-40 flex items-center justify-center">
                   <TagsDistributionChart 
@@ -808,7 +806,7 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
                   <div className="absolute bottom-2 left-0 right-0 text-center z-10">
                     <button 
                       onClick={() => setSelectedTagForFilter(null)}
-                      className="px-2 py-1 bg-blue-500 text-white rounded-md text-xs hover:bg-blue-600 transition-colors"
+                      className="px-2 py-1 bg-[#00D992] text-gray-900 rounded-md text-xs hover:bg-[#00C484] transition-colors"
                     >
                       Clear
                     </button>
@@ -816,8 +814,8 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
                 )}
               </div>
             ) : !loading && followers.length === 0 && !error ? ( 
-              <div className="w-48 h-48 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center">
-                <p className="text-gray-500 text-xs text-center px-4">No data</p>
+              <div className="w-48 h-48 bg-gray-800 rounded-full shadow-lg border border-gray-700 flex items-center justify-center">
+                <p className="text-gray-400 text-xs text-center px-4">No data</p>
               </div>
             ) : null 
             }
@@ -830,7 +828,7 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
         {Object.entries(TAG_COLORS).map(([tag, color]) => (
           <div key={tag} className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-            <span className="text-xs font-medium text-gray-600">{tag.replace('_', ' ')}</span>
+            <span className="text-xs font-medium text-gray-300">{tag.replace('_', ' ')}</span>
           </div>
         ))}
       </div>

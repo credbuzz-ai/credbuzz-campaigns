@@ -170,13 +170,13 @@ export default async function ProfilePage({ params }: { params: { profileName: s
   const accountCreatedText = formatAccountCreatedDate(profile.account_created_at)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       <div className="flex items-start">
         {/* Main Content */}
         <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
           <div className="max-w-4xl mx-auto">
             {/* Profile Header */}
-            <div className="card-pastel !bg-slate-300 mb-8 p-6 rounded-xl">
+            <div className="card-trendsage group mb-8">
               <div className="flex flex-col sm:flex-row items-start gap-6">
                 <Link 
                   href={`https://twitter.com/${profile.author_handle}`}
@@ -187,14 +187,14 @@ export default async function ProfilePage({ params }: { params: { profileName: s
                   <img
                     src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
                     alt={profile.name}
-                    className="w-24 h-24 rounded-2xl object-cover"
+                    className="w-24 h-24 rounded-2xl object-cover ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
                   />
                 </Link>
                 <div className="flex-1">
-                  <h1 className="text-2xl font-bold text-gray-800 mb-1">{profile.name}</h1>
-                  <p className="text-lg text-gray-600 mb-1">@{profile.author_handle}</p>
+                  <h1 className="text-2xl font-bold text-gray-100 mb-1 group-hover:text-[#00D992] transition-colors">{profile.name}</h1>
+                  <p className="text-lg text-gray-400 mb-1">@{profile.author_handle}</p>
                   {accountCreatedText && <p className="text-xs text-gray-500 mb-3">{accountCreatedText}</p>}
-                  {profile.bio && <p className="text-sm text-gray-700 leading-snug">{profile.bio}</p>}
+                  {profile.bio && <p className="text-sm text-gray-300 leading-snug">{profile.bio}</p>}
                 </div>
               </div>
             </div>

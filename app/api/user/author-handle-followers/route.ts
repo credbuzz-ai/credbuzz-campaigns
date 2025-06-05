@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const EXTERNAL_API_BASE = process.env.NEXT_PUBLIC_CREDBUZZ_API_URL || 'https://api.cred.buzz'
+const EXTERNAL_API_BASE = process.env.NEXT_PUBLIC_TRENDSAGE_API_URL || process.env.NEXT_PUBLIC_CREDBUZZ_API_URL || 'https://api.cred.buzz'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams

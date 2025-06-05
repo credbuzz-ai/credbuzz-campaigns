@@ -47,9 +47,9 @@ function CustomTooltip({ active, payload, metricType }: TooltipProps<number, str
     }
 
     return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-50">
-        <p className="text-sm font-medium text-gray-900">{formattedValue}</p>
-        <p className="text-xs text-gray-500">{formattedDate}</p>
+      <div className="bg-gray-800 border border-[#00D992]/30 rounded-lg shadow-lg p-3 z-50">
+        <p className="text-sm font-medium text-gray-100">{formattedValue}</p>
+        <p className="text-xs text-gray-400">{formattedDate}</p>
       </div>
     )
   }
@@ -57,7 +57,7 @@ function CustomTooltip({ active, payload, metricType }: TooltipProps<number, str
   return null
 }
 
-function MetricChart({ title, value, change, isPositive, data, color = "#22c55e", metricType }: MetricChartProps) {
+function MetricChart({ title, value, change, isPositive, data, color = "#00D992", metricType }: MetricChartProps) {
   // Scale the data to make trends more visible
   const values = data.map((d) => d.value ?? 0); // Default to 0 if undefined
   const minValue = Math.min(...values)
@@ -79,13 +79,13 @@ function MetricChart({ title, value, change, isPositive, data, color = "#22c55e"
         }))
 
   return (
-    <div className="card-pastel !bg-white p-4 rounded-lg shadow-sm">
+    <div className="card-trendsage group">
       <div className="mb-3">
-        <h3 className="text-sm font-medium text-gray-500 mb-1">{title}</h3>
+        <h3 className="text-sm font-medium text-gray-400 mb-1">{title}</h3>
         <div className="flex items-end gap-2">
-          <span className="text-2xl font-bold text-gray-900">{value}</span>
+          <span className="text-2xl font-bold text-gray-100">{value}</span>
           <div
-            className={`flex items-center gap-1 text-xs font-medium ${isPositive ? "text-green-600" : "text-red-600"}`}
+            className={`flex items-center gap-1 text-xs font-medium ${isPositive ? "text-[#00D992]" : "text-red-400"}`}
           >
             {isPositive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
             {change}
@@ -97,7 +97,7 @@ function MetricChart({ title, value, change, isPositive, data, color = "#22c55e"
           <LineChart data={scaledData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
             <Tooltip
               content={<CustomTooltip metricType={metricType} />}
-              cursor={{ stroke: "#e5e7eb", strokeWidth: 1 }}
+              cursor={{ stroke: "#374151", strokeWidth: 1 }}
               position={{ x: undefined, y: undefined }}
               coordinate={{ x: 0, y: 0 }}
               isAnimationActive={false}
@@ -113,7 +113,7 @@ function MetricChart({ title, value, change, isPositive, data, color = "#22c55e"
                 r: 4,
                 stroke: isPositive ? color : "#ef4444",
                 strokeWidth: 2,
-                fill: "white",
+                fill: "#1f2937",
               }}
             />
           </LineChart>
@@ -154,10 +154,14 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
 
     svg.attr("width", width).attr("height", height)
 
-    // Color scale
+    // Create defs for gradients
+    const defs = svg.append("defs")
+
+    // Color scale - Using TrendSage green
     const maxTweets = d3.max(heatmapData, d => d.tweets) || 4
-    const colorScale = d3.scaleSequential(d3.interpolateGreens)
+    const colorScale = d3.scaleLinear<string>()
       .domain([0, maxTweets])
+      .range(["#1f2937", "#00D992"])
 
     // Create main group
     const g = svg.append("g")
@@ -168,14 +172,15 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
       .attr("class", "heatmap-tooltip")
       .style("position", "absolute")
       .style("visibility", "hidden")
-      .style("background", "rgba(0, 0, 0, 0.8)")
-      .style("color", "white")
+      .style("background", "#1f2937")
+      .style("color", "#f3f4f6")
+      .style("border", "1px solid #00D992")
       .style("padding", "8px 12px")
       .style("border-radius", "6px")
       .style("font-size", "12px")
       .style("pointer-events", "none")
       .style("z-index", "1000")
-      .style("box-shadow", "0 4px 12px rgba(0,0,0,0.2)")
+      .style("box-shadow", "0 4px 12px rgba(0,217,146,0.2)")
 
     // Add hour labels (top)
     g.selectAll(".hour-label")
@@ -186,7 +191,7 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
       .attr("y", -10)
       .attr("text-anchor", "middle")
       .attr("font-size", "12px")
-      .attr("fill", "#6b7280")
+      .attr("fill", "#9ca3af")
       .text(d => `${d.toString().padStart(2, '0')}:00`)
 
     // Add day labels (left)
@@ -199,128 +204,109 @@ function ActivityHeatmap({ activityData }: { activityData: UserProfileResponse["
       .attr("text-anchor", "end")
       .attr("dominant-baseline", "middle")
       .attr("font-size", "12px")
-      .attr("fill", "#6b7280")
-      .text(d => d.substring(0, 3)) // Shortened day names
+      .attr("fill", "#9ca3af")
+      .text(d => d.slice(0, 3))
 
-    // Create heatmap cells
-    const cells = g.selectAll(".cell")
+    // Add cells
+    g.selectAll(".hour-cell")
       .data(heatmapData)
       .enter().append("rect")
-      .attr("class", "cell")
+      .attr("class", "hour-cell")
       .attr("x", d => d.hour * cellSize + 1)
       .attr("y", d => d.dayIndex * cellSize + 1)
       .attr("width", cellSize - 2)
       .attr("height", cellSize - 2)
       .attr("rx", 3)
-      .attr("ry", 3)
-      .attr("fill", d => d.tweets === 0 ? "#f3f4f6" : colorScale(d.tweets))
-      .attr("stroke", "white")
+      .attr("fill", d => colorScale(d.tweets))
+      .attr("stroke", "#374151")
       .attr("stroke-width", 1)
       .style("cursor", "pointer")
-
-    // Add hover effects
-    cells
-      .on("mouseover", function(event, d) {
-        d3.select(this)
-          .transition()
-          .duration(150)
-          .attr("stroke", "#374151")
-          .attr("stroke-width", 2)
-          .style("filter", "brightness(1.1)")
-
+      .on("mouseover", (event, d) => {
         tooltip.style("visibility", "visible")
           .html(`
-            <div style="font-weight: 600; margin-bottom: 4px;">${d.day}</div>
-            <div style="margin-bottom: 2px;">${d.hour.toString().padStart(2, '0')}:00 UTC</div>
-            <div style="color: #a3e635;">${d.tweets.toFixed(1)} avg tweets</div>
+            <div>
+              <strong>${d.day}</strong><br/>
+              ${d.hour.toString().padStart(2, '0')}:00<br/>
+              ${d.tweets.toFixed(1)} avg tweets
+            </div>
           `)
+        d3.select(event.currentTarget)
+          .attr("stroke", "#00D992")
+          .attr("stroke-width", 2)
       })
-      .on("mousemove", function(event) {
-        tooltip
+      .on("mousemove", (event) => {
+        tooltip.style("top", (event.pageY - 60) + "px")
           .style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 10) + "px")
       })
-      .on("mouseout", function() {
-        d3.select(this)
-          .transition()
-          .duration(150)
-          .attr("stroke", "white")
-          .attr("stroke-width", 1)
-          .style("filter", "none")
-
+      .on("mouseout", (event) => {
         tooltip.style("visibility", "hidden")
+        d3.select(event.currentTarget)
+          .attr("stroke", "#374151")
+          .attr("stroke-width", 1)
       })
-
-    // Add entrance animation
-    cells
-      .style("opacity", 0)
-      .transition()
-      .delay((d, i) => i * 3)
-      .duration(400)
-      .style("opacity", 1)
 
     // Add legend
-    const legendWidth = 250
-    const legendHeight = 12
-    const legendMargin = 10
+    const legend = svg.append("g")
+      .attr("transform", `translate(${width - 200}, ${height - 30})`)
 
-    const legendGroup = svg.append("g")
-      .attr("transform", `translate(${width - legendWidth - margin.right}, ${height - margin.bottom + legendMargin})`)
-
-    // Create legend gradient
-    const defs = svg.append("defs")
-    const gradient = defs.append("linearGradient")
+    // Create gradient definition for legend
+    const legendGradient = defs.append("linearGradient")
       .attr("id", "legend-gradient")
       .attr("x1", "0%")
       .attr("x2", "100%")
       .attr("y1", "0%")
       .attr("y2", "0%")
 
-    gradient.selectAll("stop")
-      .data(d3.range(0, 1.1, 0.1))
-      .enter().append("stop")
-      .attr("offset", d => `${d * 100}%`)
-      .attr("stop-color", d => colorScale(d * maxTweets))
+    legendGradient.append("stop")
+      .attr("offset", "0%")
+      .attr("stop-color", "#1f2937")
 
-    // Legend rectangle
-    legendGroup.append("rect")
-      .attr("width", legendWidth)
-      .attr("height", legendHeight)
-      .attr("fill", "url(#legend-gradient)")
-      .attr("rx", 2)
+    legendGradient.append("stop")
+      .attr("offset", "100%")
+      .attr("stop-color", "#00D992")
 
-    // Legend labels
-    legendGroup.append("text")
+    // Add gradient bar
+    legend.append("rect")
       .attr("x", 0)
-      .attr("y", legendHeight + 15)
-      .attr("text-anchor", "start")
+      .attr("y", 0)
+      .attr("width", 100)
+      .attr("height", 8)
+      .attr("rx", 4)
+      .attr("fill", "url(#legend-gradient)")
+      .attr("stroke", "#374151")
+      .attr("stroke-width", 0.5)
+
+    // Add "Less" label
+    legend.append("text")
+      .attr("x", -5)
+      .attr("y", 4)
       .attr("font-size", "10px")
-      .attr("fill", "#6b7280")
+      .attr("fill", "#9ca3af")
+      .attr("text-anchor", "end")
+      .attr("dominant-baseline", "middle")
       .text("Less")
 
-    legendGroup.append("text")
-      .attr("x", legendWidth)
-      .attr("y", legendHeight + 15)
-      .attr("text-anchor", "end")
+    // Add "More" label
+    legend.append("text")
+      .attr("x", 105)
+      .attr("y", 4)
       .attr("font-size", "10px")
-      .attr("fill", "#6b7280")
+      .attr("fill", "#9ca3af")
+      .attr("text-anchor", "start")
+      .attr("dominant-baseline", "middle")
       .text("More")
 
     // Cleanup function
     return () => {
-      tooltip.remove()
+      d3.select("body").selectAll(".heatmap-tooltip").remove()
     }
   }, [activityData])
 
   return (
-    <div className="card-pastel !bg-white p-3">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-lg font-semibold text-gray-900">Activity Heatmap</h3>
-        <p className="text-xs text-gray-500">All times in UTC</p>
-      </div>
-
-      <div className="w-full overflow-x-auto">
-        <svg ref={svgRef} className="w-full" style={{ minHeight: "300px" }}></svg>
+    <div className="card-trendsage">
+      <h3 className="text-lg font-semibold text-gray-100 mb-4">Activity Heatmap</h3>
+      <div className="overflow-auto">
+        <svg ref={svgRef} className="min-w-[800px]" />
       </div>
     </div>
   )
@@ -335,81 +321,96 @@ export function ProfileCharts({
   activityData: UserProfileResponse["result"]["activity_data"]
   authorHandle: string
 }) {
-  if (!chartData.length) return null
+  const [selectedMetric, setSelectedMetric] = useState<"followers" | "smart_followers" | "mindshare">("followers")
 
-  // Get last 30 data points (or all if less than 30)
-  const last30Days = chartData.slice(-30)
+  // Calculate metrics for chart cards
+  const calculateMetric = (metricType: "followers" | "smart_followers" | "mindshare") => {
+    const currentValue = chartData[chartData.length - 1]
+    const previousValue = chartData[chartData.length - 2]
 
-  // Generate chart data for each metric with original values and dates
-  const followersData: ChartDataPoint[] = last30Days.map((point) => ({
-    ...point, // Spread existing properties
-    value: point.followers_count,
-    originalValue: point.followers_count,
+    let current: number, previous: number, formatted: string
+
+    switch (metricType) {
+      case "followers":
+        current = currentValue.followers_count
+        previous = previousValue?.followers_count || current
+        formatted = current >= 1000000 ? `${(current / 1000000).toFixed(1)}M` : `${(current / 1000).toFixed(1)}K`
+        break
+      case "smart_followers":
+        current = currentValue.smart_followers_count
+        previous = previousValue?.smart_followers_count || current
+        formatted = current >= 1000000 ? `${(current / 1000000).toFixed(1)}M` : `${(current / 1000).toFixed(1)}K`
+        break
+      case "mindshare":
+        current = currentValue.mindshare
+        previous = previousValue?.mindshare || current
+        formatted = current.toFixed(4)
+        break
+    }
+
+    const change = previous === 0 ? 0 : ((current - previous) / previous) * 100
+    const isPositive = change >= 0
+
+    return {
+      value: formatted,
+      change: `${isPositive ? "+" : ""}${change.toFixed(1)}%`,
+      isPositive,
+      current,
+      previous,
+    }
+  }
+
+  const followersData = chartData.map((d) => ({
+    ...d,
+    value: d.followers_count,
+    originalValue: d.followers_count,
   }))
-  const smartFollowersData: ChartDataPoint[] = last30Days.map((point) => ({
-    ...point, // Spread existing properties
-    value: point.smart_followers_count,
-    originalValue: point.smart_followers_count,
-  }))
-  const mindshareData: ChartDataPoint[] = last30Days.map((point) => ({
-    ...point, // Spread existing properties
-    value: point.mindshare,
-    originalValue: point.mindshare,
+
+  const smartFollowersData = chartData.map((d) => ({
+    ...d,
+    value: d.smart_followers_count,
+    originalValue: d.smart_followers_count,
   }))
 
-  // Calculate 30-day changes (using last vs 30 days ago)
-  const followersChange =
-    last30Days.length > 1
-      ? ((last30Days[last30Days.length - 1].followers_count - last30Days[0].followers_count) /
-          last30Days[0].followers_count) *
-        100
-      : 0
+  const mindshareData = chartData.map((d) => ({
+    ...d,
+    value: d.mindshare * 10000, // Scale for visibility
+    originalValue: d.mindshare,
+  }))
 
-  const smartFollowersChange =
-    last30Days.length > 1
-      ? ((last30Days[last30Days.length - 1].smart_followers_count - last30Days[0].smart_followers_count) /
-          last30Days[0].smart_followers_count) *
-        100
-      : 0
-
-  const mindshareChange =
-    last30Days.length > 1
-      ? ((last30Days[last30Days.length - 1].mindshare - last30Days[0].mindshare) / last30Days[0].mindshare) * 100
-      : 0
-
-  const currentData = last30Days[last30Days.length - 1]
+  const followersMetric = calculateMetric("followers")
+  const smartFollowersMetric = calculateMetric("smart_followers")
+  const mindshareMetric = calculateMetric("mindshare")
 
   return (
     <div className="space-y-6">
-      {/* Metric Charts Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Metric Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <MetricChart
-          title="Total Followers"
-          value={currentData.followers_count.toLocaleString()}
-          change={`${followersChange >= 0 ? "+" : ""}${followersChange.toFixed(1)}% (30D)`}
-          isPositive={followersChange >= 0}
+          title="Followers"
+          value={followersMetric.value}
+          change={followersMetric.change}
+          isPositive={followersMetric.isPositive}
           data={followersData}
-          color="#3b82f6"
+          color="#00D992"
           metricType="followers"
         />
-
         <MetricChart
           title="Smart Followers"
-          value={currentData.smart_followers_count.toLocaleString()}
-          change={`${smartFollowersChange >= 0 ? "+" : ""}${smartFollowersChange.toFixed(1)}% (30D)`}
-          isPositive={smartFollowersChange >= 0}
+          value={smartFollowersMetric.value}
+          change={smartFollowersMetric.change}
+          isPositive={smartFollowersMetric.isPositive}
           data={smartFollowersData}
-          color="#22c55e"
+          color="#00D992"
           metricType="smart_followers"
         />
-
         <MetricChart
-          title="Mindshare Score"
-          value={currentData.mindshare.toFixed(1)}
-          change={`${mindshareChange >= 0 ? "+" : ""}${mindshareChange.toFixed(1)}% (30D)`}
-          isPositive={mindshareChange >= 0}
+          title="Mindshare"
+          value={mindshareMetric.value}
+          change={mindshareMetric.change}
+          isPositive={mindshareMetric.isPositive}
           data={mindshareData}
-          color="#f59e0b"
+          color="#00D992"
           metricType="mindshare"
         />
       </div>
@@ -418,12 +419,11 @@ export function ProfileCharts({
       <FollowersOverview authorHandle={authorHandle} />
 
       {/* Activity Heatmap */}
-      {activityData.daily_activity.length > 0 && <ActivityHeatmap activityData={activityData} />}
+      <ActivityHeatmap activityData={activityData} />
     </div>
   )
 }
 
-// Keep the old exports for backward compatibility but mark as deprecated
 export function GrowthChart({ data }: { data: ChartDataPoint[] }) {
   return null // Deprecated - use ProfileCharts instead
 }
