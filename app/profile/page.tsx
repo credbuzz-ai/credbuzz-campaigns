@@ -28,7 +28,14 @@ export default function ProfilePage() {
   }
 
   if (!authenticated || !user) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00D992] mx-auto mb-4"></div>
+          <p className="text-gray-300">Redirecting...</p>
+        </div>
+      </div>
+    );
   }
 
   const twitterUser = user.twitter;
@@ -72,29 +79,29 @@ export default function ProfilePage() {
                       @{twitterUser.username}
                     </p>
                   )}
-                  {twitterUser?.description && (
+                  {(twitterUser as any)?.description && (
                     <p className="text-gray-400 leading-relaxed">
-                      {twitterUser.description}
+                      {(twitterUser as any).description}
                     </p>
                   )}
                 </div>
               </div>
 
               {/* Twitter Stats */}
-              {(twitterUser?.numFollowers || twitterUser?.numFollowing) && (
+              {((twitterUser as any)?.numFollowers || (twitterUser as any)?.numFollowing) && (
                 <div className="flex gap-6 mb-6 pb-6 border-b border-gray-700/50">
-                  {twitterUser.numFollowers && (
+                  {(twitterUser as any).numFollowers && (
                     <div className="text-center">
                       <div className="text-2xl font-bold text-[#00D992]">
-                        {twitterUser.numFollowers.toLocaleString()}
+                        {(twitterUser as any).numFollowers.toLocaleString()}
                       </div>
                       <div className="text-sm text-gray-400">Followers</div>
                     </div>
                   )}
-                  {twitterUser.numFollowing && (
+                  {(twitterUser as any).numFollowing && (
                     <div className="text-center">
                       <div className="text-2xl font-bold text-white">
-                        {twitterUser.numFollowing.toLocaleString()}
+                        {(twitterUser as any).numFollowing.toLocaleString()}
                       </div>
                       <div className="text-sm text-gray-400">Following</div>
                     </div>

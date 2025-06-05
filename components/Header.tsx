@@ -11,18 +11,6 @@ export default function Header() {
   const { ready, authenticated, user, login, logout } = usePrivy();
   const router = useRouter();
 
-  // Redirect to profile page after authentication
-  useEffect(() => {
-    if (ready && authenticated && user?.twitter) {
-      // Small delay to ensure the authentication state is fully updated
-      const timer = setTimeout(() => {
-        router.push("/profile");
-      }, 500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [ready, authenticated, user?.twitter, router]);
-
   return (
     <header className="bg-gray-800/90 backdrop-blur-md border-b border-gray-700/50 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -57,7 +45,6 @@ export default function Header() {
             >
               Projects
             </Link>
-            <button className="btn-primary">Connect Wallet</button>
             {ready && !authenticated && (
               <button className="btn-primary" onClick={login}>
                 Connect X
@@ -114,7 +101,6 @@ export default function Header() {
               >
                 Projects
               </Link>
-              <button className="btn-primary w-full">Connect Wallet</button>
               {ready && !authenticated && (
                 <button className="btn-primary w-full" onClick={login}>
                   Connect X
