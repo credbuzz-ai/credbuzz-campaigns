@@ -416,11 +416,18 @@ const FollowersBubbleMap = ({
   return (
     <div className="relative mx-auto" style={{ width: containerDimensions.width, height: containerDimensions.height }}>
       <div 
-        className="bg-gray-50 rounded-full border border-gray-200 relative overflow-hidden shadow-lg mx-auto" 
+        className="bg-gray-800/50 rounded-full border border-gray-700 relative overflow-hidden mx-auto" 
         style={{ 
           width: containerDimensions.width, 
           height: containerDimensions.height,
-          padding: '10px'
+          padding: '10px',
+          boxShadow: `
+            0 0 0 1px rgba(0, 217, 146, 0.1),
+            0 0 20px rgba(0, 217, 146, 0.15),
+            0 0 40px rgba(0, 217, 146, 0.1),
+            0 0 80px rgba(0, 217, 146, 0.05),
+            0 8px 32px rgba(0, 0, 0, 0.12)
+          `
         }}
       >
         <svg 
@@ -790,14 +797,36 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
           {/* Bottom Right Tags Distribution Chart - positioned relative to bubble map */}
           <div className="absolute bottom-0 right-0">
             { (loading && followers.length === 0) ? ( 
-               <div className="w-48 h-48 bg-gray-800 rounded-full shadow-lg border border-gray-700 flex items-center justify-center">
+               <div 
+                 className="w-48 h-48 bg-gray-800 rounded-full border border-gray-700 flex items-center justify-center"
+                 style={{
+                   boxShadow: `
+                     0 0 0 1px rgba(0, 217, 146, 0.1),
+                     0 0 20px rgba(0, 217, 146, 0.15),
+                     0 0 40px rgba(0, 217, 146, 0.1),
+                     0 0 80px rgba(0, 217, 146, 0.05),
+                     0 8px 32px rgba(0, 0, 0, 0.12)
+                   `
+                 }}
+               >
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00D992] mx-auto mb-2"></div>
                     <p className="text-gray-400 text-xs">Loading...</p>
                   </div>
                 </div>
             ) : followers.length > 0 ? (
-              <div className="w-48 h-48 bg-gray-800 rounded-full shadow-lg border border-gray-700 relative flex items-center justify-center">
+              <div 
+                className="w-48 h-48 bg-gray-800 rounded-full border border-gray-700 relative flex items-center justify-center"
+                style={{
+                  boxShadow: `
+                    0 0 0 1px rgba(0, 217, 146, 0.1),
+                    0 0 20px rgba(0, 217, 146, 0.15),
+                    0 0 40px rgba(0, 217, 146, 0.1),
+                    0 0 80px rgba(0, 217, 146, 0.05),
+                    0 8px 32px rgba(0, 0, 0, 0.12)
+                  `
+                }}
+              >
                 <div className="absolute top-2 left-0 right-0 text-center z-10">
                   <h5 className="text-xs font-medium text-gray-300">Tags</h5>
                 </div>
@@ -821,7 +850,18 @@ export default function FollowersOverview({ authorHandle }: { authorHandle: stri
                 )}
               </div>
             ) : !loading && followers.length === 0 && !error ? ( 
-              <div className="w-48 h-48 bg-gray-800 rounded-full shadow-lg border border-gray-700 flex items-center justify-center">
+              <div 
+                className="w-48 h-48 bg-gray-800 rounded-full border border-gray-700 flex items-center justify-center"
+                style={{
+                  boxShadow: `
+                    0 0 0 1px rgba(0, 217, 146, 0.1),
+                    0 0 20px rgba(0, 217, 146, 0.15),
+                    0 0 40px rgba(0, 217, 146, 0.1),
+                    0 0 80px rgba(0, 217, 146, 0.05),
+                    0 8px 32px rgba(0, 0, 0, 0.12)
+                  `
+                }}
+              >
                 <p className="text-gray-400 text-xs text-center px-4">No data</p>
               </div>
             ) : null 
