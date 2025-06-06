@@ -27,12 +27,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useContract } from "@/hooks/useContract";
+import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
 import apiClient from "@/lib/api";
 import { CREDBUZZ_ACCOUNT, OWNER_SOLANA_ADDRESS } from "@/lib/constants";
 import { CollaborateFormData } from "@/lib/types";
-import { useConnectWallet, usePrivy, useWallets } from "@privy-io/react-auth";
+import { useConnectWallet, useWallets } from "@privy-io/react-auth";
 import { ethers } from "ethers";
-import { Send, Wallet } from "lucide-react";
+import { Loader2, Send, Wallet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
@@ -60,7 +61,17 @@ export default function CollaborateDialog({
   influencerHandle,
   children,
 }: CollaborateDialogProps) {
-  const { ready, authenticated } = usePrivy();
+  // Use the new Privy database sync hook
+  const {
+    ready,
+    authenticated,
+    user,
+    login,
+    isProcessing,
+    getDisplayName,
+    getTwitterHandle,
+  } = usePrivyDatabaseSync();
+
   const { wallets } = useWallets();
   const { toast } = useToast();
   const { connectWallet } = useConnectWallet({
@@ -77,7 +88,7 @@ export default function CollaborateDialog({
 
   // Add refs for managing API calls and form data
   const apiCallInProgressRef = useRef(false);
-  const formDataRef = useRef<CollaborateFormData>();
+  const formDataRef = useRef<CollaborateFormData | null>(null);
 
   const form = useForm<CollaborateFormData>({
     defaultValues: {
@@ -117,6 +128,14 @@ export default function CollaborateDialog({
       form.setValue("businessWalletAddr", walletAddress);
     }
   }, [authenticated, walletAddress, form]);
+
+  // Update X account when user is authenticated
+  useEffect(() => {
+    const twitterHandle = getTwitterHandle();
+    if (twitterHandle) {
+      form.setValue("xAccount", `@${twitterHandle}`);
+    }
+  }, [user, getTwitterHandle, form]);
 
   // Check if wallet is connected
   const isWalletConnected = authenticated && walletAddress;
@@ -225,7 +244,7 @@ export default function CollaborateDialog({
       // Convert timestamps back to original format for API
       const requestBody = {
         campaign_id: campaignId,
-        brand_id: "",
+        brand_id: user?.brand_id ?? null,
         business_wallet_addr: data.businessWalletAddr,
         influencer_wallet_addr: data.influencerWalletAddr,
         influencer_solana_address: data.influencerSolanaAddress,
@@ -247,7 +266,6 @@ export default function CollaborateDialog({
       };
 
       console.log("Saving campaign to database:", requestBody);
-      return;
 
       // Make API call to save campaign in database
       const response = await apiClient.post(
@@ -264,7 +282,11 @@ export default function CollaborateDialog({
         // If you have a callback to refresh campaigns list, call it here
         // fetchCampaigns?.();
       } else {
-        throw new Error("Failed to save campaign in database");
+        toast({
+          title: "Error",
+          description: "Failed to save campaign in database",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("API Error:", error);
@@ -305,7 +327,7 @@ export default function CollaborateDialog({
   useEffect(() => {
     const formData = form.getValues();
     formDataRef.current = formData;
-  }, [form.watch()]);
+  }, [form]);
 
   // Handle connect wallet button click
   const handleConnectWallet = async () => {
@@ -315,6 +337,65 @@ export default function CollaborateDialog({
       console.error("Failed to connect wallet:", error);
     }
   };
+
+  // Authentication Connection UI Component
+  const AuthConnectionUI = () => (
+    <div className="text-center py-8 space-y-6">
+      <div className="flex justify-center">
+        <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center">
+          <svg
+            className="w-8 h-8 text-[#00D992]"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+        </div>
+      </div>
+      <div className="space-y-2">
+        <h3 className="text-xl font-semibold text-gray-100">
+          Connect Your X Account
+        </h3>
+        <p className="text-gray-400 text-sm max-w-sm mx-auto">
+          You need to connect your X account to create campaigns and collaborate
+          with influencers.
+        </p>
+      </div>
+      <div className="space-y-3">
+        <Button
+          onClick={login}
+          disabled={isProcessing}
+          className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium h-10 px-6 w-full"
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Setting up account...
+            </>
+          ) : (
+            <>
+              <svg
+                className="w-4 h-4 mr-2"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              Connect X Account
+            </>
+          )}
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setOpen(false)}
+          className="border-gray-600 text-gray-400 hover:bg-gray-800 hover:text-gray-200 h-10 w-full"
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
 
   // Wallet Connection UI Component
   const WalletConnectionUI = () => (
@@ -329,8 +410,8 @@ export default function CollaborateDialog({
           Connect Your Wallet
         </h3>
         <p className="text-gray-400 text-sm max-w-sm mx-auto">
-          You need to connect your wallet to create a new campaign and
-          collaborate with influencers.
+          Welcome, {getDisplayName()}! Now connect your MetaMask wallet to
+          create campaigns.
         </p>
       </div>
       <div className="space-y-3">
@@ -339,7 +420,7 @@ export default function CollaborateDialog({
           className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium h-10 px-6 w-full"
         >
           <Wallet className="h-4 w-4 mr-2" />
-          Connect Wallet
+          Connect MetaMask
         </Button>
         <Button
           type="button"
@@ -372,14 +453,18 @@ export default function CollaborateDialog({
           <p className="text-sm text-gray-400 leading-relaxed">
             {!ready
               ? "Loading..."
+              : !authenticated
+              ? "Connect your X account to create campaigns"
               : !isWalletConnected
-              ? "Connect your MetaMask wallet to create a new KOL promotion campaign"
+              ? "Connect your MetaMask wallet to proceed"
               : "Fill in the details below to create a new KOL promotion campaign"}
           </p>
         </DialogHeader>
 
         {!ready ? (
           <LoadingUI />
+        ) : !authenticated ? (
+          <AuthConnectionUI />
         ) : !isWalletConnected ? (
           <WalletConnectionUI />
         ) : (

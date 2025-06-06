@@ -1,9 +1,8 @@
 "use client";
 
-import { usePrivy } from "@privy-io/react-auth";
+import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
 import { Briefcase, Menu, Power, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 export default function Header() {
@@ -11,16 +10,19 @@ export default function Header() {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileProfileDropdownOpen, setIsMobileProfileDropdownOpen] =
     useState(false);
-  const { ready, authenticated, user, login, logout } = usePrivy();
-  const router = useRouter();
+
+  const {
+    ready,
+    authenticated,
+    user,
+    login,
+    logout,
+    isProcessing,
+    getProfileImage,
+    getDisplayName,
+  } = usePrivyDatabaseSync();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const mobileDropdownRef = useRef<HTMLDivElement>(null);
-
-  // Helper function to get high quality profile image
-  const getHighQualityProfileImage = (url: string | null | undefined) => {
-    if (!url) return "/placeholder.svg?height=32&width=32";
-    return url.replace("_normal", "_400x400");
-  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -80,12 +82,19 @@ export default function Header() {
               Projects
             </Link>
             {ready && !authenticated && (
-              <button className="btn-primary" onClick={login}>
-                Connect X
+              <button
+                className="btn-primary"
+                onClick={login}
+                disabled={isProcessing}
+              >
+                {isProcessing ? "Connecting..." : "Connect X"}
               </button>
             )}
             {ready && authenticated && (
               <div className="flex items-center gap-3">
+                {isProcessing && (
+                  <div className="text-xs text-gray-400">Setting up...</div>
+                )}
                 <div className="relative" ref={dropdownRef}>
                   <button
                     onClick={() =>
@@ -94,9 +103,7 @@ export default function Header() {
                     className="w-8 h-8 rounded-full border-2 border-transparent hover:border-[#00D992]/50 transition-all"
                   >
                     <img
-                      src={getHighQualityProfileImage(
-                        user?.twitter?.profilePictureUrl
-                      )}
+                      src={getProfileImage()}
                       alt="Profile"
                       className="w-full h-full rounded-full object-cover"
                       onError={(e) => {
@@ -107,6 +114,9 @@ export default function Header() {
                   </button>
                   {isProfileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
+                      <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700">
+                        {getDisplayName()}
+                      </div>
                       <Link
                         href="/my-campaigns"
                         onClick={() => setIsProfileDropdownOpen(false)}
@@ -166,8 +176,12 @@ export default function Header() {
                 Projects
               </Link>
               {ready && !authenticated && (
-                <button className="btn-primary w-full" onClick={login}>
-                  Connect X
+                <button
+                  className="btn-primary w-full"
+                  onClick={login}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? "Connecting..." : "Connect X"}
                 </button>
               )}
               {ready && authenticated && (
@@ -182,9 +196,7 @@ export default function Header() {
                       className="w-8 h-8 rounded-full border-2 border-transparent hover:border-[#00D992]/50 transition-all"
                     >
                       <img
-                        src={getHighQualityProfileImage(
-                          user?.twitter?.profilePictureUrl
-                        )}
+                        src={getProfileImage()}
                         alt="Profile"
                         className="w-full h-full rounded-full object-cover"
                         onError={(e) => {
@@ -195,6 +207,9 @@ export default function Header() {
                     </button>
                     {isMobileProfileDropdownOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
+                        <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700">
+                          {getDisplayName()}
+                        </div>
                         <Link
                           href="/my-campaigns"
                           onClick={() => {
