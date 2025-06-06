@@ -9,6 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@chakra-ui/form-control": "^2.2.0",
+    "@chakra-ui/modal": "^2.3.1",
+    "@chakra-ui/react": "^3.19.2",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@hookform/resolvers": "^3.9.1",
     "@privy-io/react-auth": "^2.13.8",
     "@radix-ui/react-accordion": "1.2.2",
@@ -45,6 +50,7 @@
     "d3": "latest",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
+    "framer-motion": "^12.16.0",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "matter-js": "latest",
