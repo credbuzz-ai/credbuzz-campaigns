@@ -264,3 +264,18 @@ export const allowedSolanaTokens: Token[] = [
     decimals: 9,
   },
 ];
+
+export const paymentTokens = [
+  {
+    value: "usdc",
+    label: "USDC",
+    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    decimals: 6,
+  },
+  {
+    value: "usdt",
+    label: "USDT",
+    address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+    decimals: 18,
+  },
+];

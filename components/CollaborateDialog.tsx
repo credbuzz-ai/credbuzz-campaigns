@@ -25,12 +25,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { useContract } from "@/hooks/useContract";
 import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
 import apiClient from "@/lib/api";
 import { CREDBUZZ_ACCOUNT, OWNER_SOLANA_ADDRESS } from "@/lib/constants";
-import { CollaborateFormData } from "@/lib/types";
+import { CollaborateFormData, paymentTokens } from "@/lib/types";
 import { useConnectWallet, useWallets } from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import { Loader2, Send, Wallet } from "lucide-react";
@@ -42,21 +43,6 @@ interface CollaborateDialogProps {
   children: React.ReactNode;
 }
 
-const paymentTokens = [
-  {
-    value: "usdc",
-    label: "USDC",
-    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    decimals: 6,
-  },
-  {
-    value: "usdt",
-    label: "USDT",
-    address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
-    decimals: 18,
-  },
-];
-
 export default function CollaborateDialog({
   influencerHandle,
   children,
@@ -65,19 +51,20 @@ export default function CollaborateDialog({
   const {
     ready,
     authenticated,
-    user,
+    user: privyUser,
     login,
     isProcessing,
     getDisplayName,
     getTwitterHandle,
   } = usePrivyDatabaseSync();
 
+  // Get user data from UserContext
+  const { user, fetchUserData } = useUser();
+
   const { wallets } = useWallets();
   const { toast } = useToast();
   const { connectWallet } = useConnectWallet({
-    onSuccess: (data) => {
-      console.log("Wallet connected:", data);
-    },
+    onSuccess: (data) => {},
     onError: (error) => {
       console.error("Error connecting wallet:", error);
     },
@@ -161,8 +148,6 @@ export default function CollaborateDialog({
   };
 
   const onSubmit = async (data: CollaborateFormData) => {
-    console.log("Form submitted:", data);
-
     if (
       !data.influencerWalletAddr ||
       !data.tokenAmount ||
@@ -196,14 +181,6 @@ export default function CollaborateDialog({
         ethers.parseUnits(data.tokenAmount.toString(), decimals)
       );
 
-      console.log("Blockchain transaction data:", {
-        influencerWallet: data.influencerWalletAddr,
-        amountInWei,
-        promotionEndsTimestamp,
-        offerEndsTimestamp,
-        tokenAddress: data.tokenAddress,
-      });
-
       // 1. First transfer tokens to contract
       await transferToken(data.tokenAddress, amountInWei);
 
@@ -215,8 +192,6 @@ export default function CollaborateDialog({
         offerEndsTimestamp,
         data.tokenAddress
       );
-
-      console.log("Campaign creation transaction:", txHash);
 
       // Don't close dialog here - wait for contract event
       toast({
@@ -241,31 +216,33 @@ export default function CollaborateDialog({
 
       const data = formDataRef.current;
 
-      // Convert timestamps back to original format for API
+      // Convert datetime strings to timestamps for API
+      const offerEndTimestamp = convertToTimestamp(data.offerEnds || "");
+      const promotionEndTimestamp = convertToTimestamp(
+        data.promotionEnds || ""
+      );
+
+      // Build request body to match API schema exactly
       const requestBody = {
         campaign_id: campaignId,
-        brand_id: user?.brand_id ?? null,
-        business_wallet_addr: data.businessWalletAddr,
+        brand_id: user?.brand_id || 0,
+        influencer_user_id: 375, // TODO: change to influencer user id by list-influencer and temp onboarding of the influencer
         influencer_wallet_addr: data.influencerWalletAddr,
         influencer_solana_address: data.influencerSolanaAddress,
-        status: "open",
+        business_solana_address: data.businessSolanaAddress || "",
         project_name: data.projectName,
         description: data.description,
-        influencer_handle: data.influencerHandle,
-        x_account: data.xAccount,
+        x_author_handle: getTwitterHandle(),
         website: data.website,
-        offer_ends: data.offerEnds,
-        promotion_ends: data.promotionEnds,
-        payment_token: data.paymentToken,
-        token_amount: data.tokenAmount,
+        amount: data.tokenAmount,
+        status: "open",
+        offer_end_date: offerEndTimestamp,
+        promotion_end_date: promotionEndTimestamp,
         chain: data.chain,
         counter: 0,
-        campaign_type: data.campaignType,
         token_address: data.tokenAddress,
         token_decimals: data.tokenDecimals,
       };
-
-      console.log("Saving campaign to database:", requestBody);
 
       // Make API call to save campaign in database
       const response = await apiClient.post(
@@ -307,8 +284,6 @@ export default function CollaborateDialog({
     if (!contract) return;
 
     const handleEvent = (campaignId: string, creatorAddress: string) => {
-      console.log("CampaignCreated event:", { campaignId, creatorAddress });
-
       if (apiCallInProgressRef.current) return;
       apiCallInProgressRef.current = true;
 
@@ -325,9 +300,15 @@ export default function CollaborateDialog({
 
   // Update formDataRef when form data changes
   useEffect(() => {
-    const formData = form.getValues();
-    formDataRef.current = formData;
+    const subscription = form.watch((data) => {
+      formDataRef.current = data as CollaborateFormData;
+    });
+    return () => subscription.unsubscribe();
   }, [form]);
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   // Handle connect wallet button click
   const handleConnectWallet = async () => {
