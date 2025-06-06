@@ -1,15 +1,42 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Power } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
+  const [isMobileProfileDropdownOpen, setIsMobileProfileDropdownOpen] = useState(false);
   const { ready, authenticated, user, login, logout } = usePrivy();
   const router = useRouter();
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Helper function to get high quality profile image
+  const getHighQualityProfileImage = (url: string | null | undefined) => {
+    if (!url) return "/placeholder.svg?height=32&width=32";
+    return url.replace("_normal", "_400x400");
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsProfileDropdownOpen(false);
+      }
+      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
+        setIsMobileProfileDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <header className="bg-gray-800/90 backdrop-blur-md border-b border-gray-700/50 sticky top-0 z-50">
@@ -52,18 +79,35 @@ export default function Header() {
             )}
             {ready && authenticated && (
               <div className="flex items-center gap-3">
-                <Link
-                  href="/profile"
-                  className="text-sm text-gray-300 hover:text-[#00D992] transition-colors"
-                >
-                  Welcome, @{user?.twitter?.username || "User"}
-                </Link>
-                <button
-                  className="btn-secondary text-sm px-3 py-1"
-                  onClick={logout}
-                >
-                  Disconnect
-                </button>
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    className="w-8 h-8 rounded-full border-2 border-transparent hover:border-[#00D992]/50 transition-all"
+                  >
+                    <img
+                      src={getHighQualityProfileImage(user?.twitter?.profilePictureUrl)}
+                      alt="Profile"
+                      className="w-full h-full rounded-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.svg?height=32&width=32"
+                      }}
+                    />
+                  </button>
+                  {isProfileDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsProfileDropdownOpen(false);
+                        }}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 hover:text-[#00D992] transition-colors flex items-center gap-2"
+                      >
+                        <Power className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </nav>
@@ -107,16 +151,37 @@ export default function Header() {
                 </button>
               )}
               {ready && authenticated && (
-                <div className="flex flex-col gap-2">
-                  <Link
-                    href="/profile"
-                    className="text-sm text-gray-300 hover:text-[#00D992] transition-colors text-center py-2"
-                  >
-                    Welcome, @{user?.twitter?.username || "User"}
-                  </Link>
-                  <button className="btn-secondary w-full" onClick={logout}>
-                    Disconnect X
-                  </button>
+                <div className="flex justify-center py-2">
+                  <div className="relative" ref={mobileDropdownRef}>
+                    <button
+                      onClick={() => setIsMobileProfileDropdownOpen(!isMobileProfileDropdownOpen)}
+                      className="w-8 h-8 rounded-full border-2 border-transparent hover:border-[#00D992]/50 transition-all"
+                    >
+                      <img
+                        src={getHighQualityProfileImage(user?.twitter?.profilePictureUrl)}
+                        alt="Profile"
+                        className="w-full h-full rounded-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder.svg?height=32&width=32"
+                        }}
+                      />
+                    </button>
+                    {isMobileProfileDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
+                        <button
+                          onClick={() => {
+                            logout();
+                            setIsMobileProfileDropdownOpen(false);
+                            setIsMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 hover:text-[#00D992] transition-colors flex items-center gap-2"
+                        >
+                          <Power className="w-4 h-4" />
+                          Sign out
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
