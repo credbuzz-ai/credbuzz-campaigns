@@ -1,23 +1,37 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Sparkles, Heart, MessageCircle, Repeat2, Eye, TrendingUp, TrendingDown, ChevronDown, Zap, Hash } from "lucide-react"
-import type { Tweet, TopTweetsResponse } from "../types"
-import Link from "next/link"
-import { API_BASE_URL } from '../../lib/constants'
+import {
+  ChevronDown,
+  Eye,
+  Hash,
+  Heart,
+  MessageCircle,
+  Repeat2,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { API_BASE_URL } from "../../lib/constants";
+import type { TopTweetsResponse, Tweet } from "../types";
 
 interface SmartFeedProps {
-  authorHandle?: string
+  authorHandle?: string;
 }
 
-type Interval = "1day" | "7day" | "30day"
-type SortBy = "view_count_desc" | "like_count_desc" | "retweet_count_desc" | "reply_count_desc" | "tweet_create_time_desc"
+type Interval = "1day" | "7day" | "30day";
+type SortBy =
+  | "view_count_desc"
+  | "like_count_desc"
+  | "retweet_count_desc"
+  | "reply_count_desc"
+  | "tweet_create_time_desc";
 
 const intervalOptions = [
   { value: "1day" as Interval, label: "24H" },
   { value: "7day" as Interval, label: "7D" },
   { value: "30day" as Interval, label: "30D" },
-]
+];
 
 const sortOptions = [
   { value: "view_count_desc" as SortBy, label: "Top Views" },
@@ -25,23 +39,25 @@ const sortOptions = [
   { value: "retweet_count_desc" as SortBy, label: "Most Shared" },
   { value: "reply_count_desc" as SortBy, label: "Most Discussed" },
   { value: "tweet_create_time_asc" as SortBy, label: "Most Recent" },
-]
+];
 
-export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) {
-  const [retryCount, setRetryCount] = useState(0)
-  const MAX_RETRIES = 3
-  const RETRY_DELAY = 1000 // 1 second base delay
-  const [tweets, setTweets] = useState<Tweet[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [interval, setInterval] = useState<Interval>("7day")
-  const [sortBy, setSortBy] = useState<SortBy>("view_count_desc")
-  const [expandedTweets, setExpandedTweets] = useState<Set<string>>(new Set())
-  const [showSortDropdown, setShowSortDropdown] = useState(false)
+export default function SmartFeed({
+  authorHandle = "eliz883",
+}: SmartFeedProps) {
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000; // 1 second base delay
+  const [tweets, setTweets] = useState<Tweet[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [interval, setInterval] = useState<Interval>("7day");
+  const [sortBy, setSortBy] = useState<SortBy>("view_count_desc");
+  const [expandedTweets, setExpandedTweets] = useState<Set<string>>(new Set());
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
 
   const fetchTweets = async (attempt = 0) => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
       const response = await fetch(
         `${API_BASE_URL}/user/get-top-tweets?author_handle=${authorHandle}&interval=${interval}&sort_by=${sortBy}&limit=100`,
@@ -52,11 +68,11 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           },
           cache: "no-store",
           signal: AbortSignal.timeout(5000), // 5 second timeout
-        },
-      )
+        }
+      );
 
       if (response.ok) {
-        const data = (await response.json()) as TopTweetsResponse
+        const data = (await response.json()) as TopTweetsResponse;
         if (data.result && Array.isArray(data.result)) {
           const sanitizedTweets = data.result.map((tweet) => ({
             ...tweet,
@@ -66,34 +82,34 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
             reply_count: tweet.reply_count || 0,
             retweet_count: tweet.retweet_count || 0,
             sentiment: tweet.sentiment,
-            tweet_category: tweet.tweet_category || null
-          }))
-          setTweets(sanitizedTweets)
-          setRetryCount(0) // Reset retry count on success
+            tweet_category: tweet.tweet_category || null,
+          }));
+          setTweets(sanitizedTweets);
+          setRetryCount(0); // Reset retry count on success
         } else {
-          throw new Error("Invalid response format")
+          throw new Error("Invalid response format");
         }
       } else {
-        throw new Error(`API Error: ${response.status}`)
+        throw new Error(`API Error: ${response.status}`);
       }
     } catch (error) {
-      console.error(`Failed to fetch tweets (attempt ${attempt + 1}):`, error)
+      console.error(`Failed to fetch tweets (attempt ${attempt + 1}):`, error);
 
       // Retry logic
       if (attempt < MAX_RETRIES) {
-        const delay = RETRY_DELAY * Math.pow(2, attempt) // Exponential backoff
-        setRetryCount(attempt + 1)
-        setError(`Retrying... (${attempt + 1}/${MAX_RETRIES})`)
+        const delay = RETRY_DELAY * Math.pow(2, attempt); // Exponential backoff
+        setRetryCount(attempt + 1);
+        setError(`Retrying... (${attempt + 1}/${MAX_RETRIES})`);
 
         setTimeout(() => {
-          fetchTweets(attempt + 1)
-        }, delay)
-        return
+          fetchTweets(attempt + 1);
+        }, delay);
+        return;
       }
 
       // Max retries reached, show error and fallback data
-      setError("Failed to fetch tweets")
-      setRetryCount(0)
+      setError("Failed to fetch tweets");
+      setRetryCount(0);
       // Enhanced fallback data for demo
       setTweets([
         {
@@ -108,7 +124,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 97,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.2,
-          tweet_category: "market-analysis"
+          tweet_category: "market-analysis",
         },
         {
           tweet_id: "2",
@@ -122,7 +138,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 234,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.6,
-          tweet_category: "price-action"
+          tweet_category: "price-action",
         },
         {
           tweet_id: "3",
@@ -136,7 +152,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 13,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: null,
-          tweet_category: "community"
+          tweet_category: "community",
         },
         {
           tweet_id: "4",
@@ -150,7 +166,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 48,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.3,
-          tweet_category: "trading-strategy"
+          tweet_category: "trading-strategy",
         },
         {
           tweet_id: "5",
@@ -164,7 +180,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 5,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: null,
-          tweet_category: "trading-strategy"
+          tweet_category: "trading-strategy",
         },
         {
           tweet_id: "6",
@@ -178,7 +194,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 23,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.1,
-          tweet_category: "market-analysis"
+          tweet_category: "market-analysis",
         },
         {
           tweet_id: "7",
@@ -192,7 +208,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 67,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.4,
-          tweet_category: "price-action"
+          tweet_category: "price-action",
         },
         {
           tweet_id: "8",
@@ -206,102 +222,131 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           retweet_count: 78,
           profile_image_url: "/placeholder.svg?height=40&width=40",
           sentiment: 0.7,
-          tweet_category: "ecosystem-news"
+          tweet_category: "ecosystem-news",
         },
-      ])
+      ]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchTweets()
-  }, [interval, sortBy, authorHandle])
+    fetchTweets();
+  }, [interval, sortBy, authorHandle]);
 
   const formatNumber = (num: number | null | undefined): string => {
     if (num === null || num === undefined || isNaN(num)) {
-      return "0"
+      return "0";
     }
 
-    const numValue = Number(num)
-    if (numValue >= 1000000) return `${(numValue / 1000000).toFixed(1)}M`
-    if (numValue >= 1000) return `${(numValue / 1000).toFixed(1)}K`
-    return numValue.toString()
-  }
+    const numValue = Number(num);
+    if (numValue >= 1000000) return `${(numValue / 1000000).toFixed(1)}M`;
+    if (numValue >= 1000) return `${(numValue / 1000).toFixed(1)}K`;
+    return numValue.toString();
+  };
 
   const formatDate = (dateString: string): string => {
     try {
-      const date = new Date(dateString)
+      const date = new Date(dateString);
       if (isNaN(date.getTime())) {
-        return "now"
+        return "now";
       }
 
-      const now = new Date()
-      const diffTime = Math.abs(now.getTime() - date.getTime())
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - date.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-      if (diffDays === 1) return "May 29"
-      if (diffDays === 2) return "May 30"
-      if (diffDays < 7) return `May ${31 - diffDays}`
-      if (diffDays < 30) return `${Math.ceil(diffDays / 7)}w`
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+      if (diffDays === 1) return "May 29";
+      if (diffDays === 2) return "May 30";
+      if (diffDays < 7) return `May ${31 - diffDays}`;
+      if (diffDays < 30) return `${Math.ceil(diffDays / 7)}w`;
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
     } catch (error) {
-      return "now"
+      return "now";
     }
-  }
+  };
 
   const getSentimentIcon = (sentiment: number | null) => {
-    if (sentiment === null || sentiment === undefined) return null
-    if (sentiment > 0.1) return <TrendingUp className="w-3 h-3 text-green-500" />
-    if (sentiment < -0.1) return <TrendingDown className="w-3 h-3 text-red-500" />
-    return null
-  }
+    if (sentiment === null || sentiment === undefined) return null;
+    if (sentiment > 0.1)
+      return <TrendingUp className="w-3 h-3 text-green-500" />;
+    if (sentiment < -0.1)
+      return <TrendingDown className="w-3 h-3 text-red-500" />;
+    return null;
+  };
 
   const extractTokens = (text: string): string[] => {
-    if (!text || typeof text !== "string") return []
-    const tokenRegex = /\$[A-Z]{2,10}/g
-    return text.match(tokenRegex) || []
-  }
+    if (!text || typeof text !== "string") return [];
+    const tokenRegex = /\$[A-Z]{2,10}/g;
+    return text.match(tokenRegex) || [];
+  };
 
   const highlightTokens = (text: string) => {
-    if (!text || typeof text !== "string") return text
+    if (!text || typeof text !== "string") return text;
 
-    const tokens = extractTokens(text)
-    let highlightedText = text
+    const tokens = extractTokens(text);
+    if (tokens.length === 0) return text;
+
+    const parts = [];
+    let lastIndex = 0;
 
     tokens.forEach((token) => {
-      highlightedText = highlightedText.replace(
-        new RegExp(`\\${token}`, "g"),
-        `<span class="text-blue-600 font-semibold">${token}</span>`,
-      )
-    })
+      const index = text.indexOf(token, lastIndex);
+      if (index !== -1) {
+        // Add text before token
+        if (index > lastIndex) {
+          parts.push(text.substring(lastIndex, index));
+        }
+        // Add highlighted token
+        parts.push(
+          <span
+            key={`${token}-${index}`}
+            className="text-blue-600 font-semibold"
+          >
+            {token}
+          </span>
+        );
+        lastIndex = index + token.length;
+      }
+    });
 
-    return highlightedText
-  }
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push(text.substring(lastIndex));
+    }
+
+    return parts.length > 1 ? parts : text;
+  };
 
   const getDisplayHandle = (handle: string) => {
-    if (!handle) return "unknown"
-    return handle.startsWith("@") ? handle.slice(1) : handle
-  }
+    if (!handle) return "unknown";
+    return handle.startsWith("@") ? handle.slice(1) : handle;
+  };
 
   const toggleTweetExpansion = (tweetId: string) => {
-    const newExpanded = new Set(expandedTweets)
+    const newExpanded = new Set(expandedTweets);
     if (newExpanded.has(tweetId)) {
-      newExpanded.delete(tweetId)
+      newExpanded.delete(tweetId);
     } else {
-      newExpanded.add(tweetId)
+      newExpanded.add(tweetId);
     }
-    setExpandedTweets(newExpanded)
-  }
+    setExpandedTweets(newExpanded);
+  };
 
   const truncateText = (text: string, maxLength: number = 200) => {
-    if (text.length <= maxLength) return text
-    return text.substring(0, maxLength)
-  }
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength);
+  };
 
   const getSortLabel = () => {
-    return sortOptions.find(option => option.value === sortBy)?.label || "Top Views"
-  }
+    return (
+      sortOptions.find((option) => option.value === sortBy)?.label ||
+      "Top Views"
+    );
+  };
 
   return (
     <div className="card-trendsage sticky top-8">
@@ -310,7 +355,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
           <Sparkles className="w-5 h-5 text-[#00D992]" />
           <h2 className="text-lg font-semibold text-gray-100">Smart Feed</h2>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Interval Filter */}
           <div className="flex bg-gray-700 rounded-lg p-1">
@@ -338,15 +383,15 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
               {getSortLabel()}
               <ChevronDown className="w-3 h-3" />
             </button>
-            
+
             {showSortDropdown && (
               <div className="absolute right-0 top-full mt-1 z-10 bg-gray-800 border border-gray-700 rounded-lg shadow-lg min-w-[150px]">
                 {sortOptions.map(({ value, label }) => (
                   <button
                     key={value}
                     onClick={() => {
-                      setSortBy(value)
-                      setShowSortDropdown(false)
+                      setSortBy(value);
+                      setShowSortDropdown(false);
                     }}
                     className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-700 transition-colors ${
                       sortBy === value
@@ -381,7 +426,10 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
       {loading && (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="border border-gray-700 rounded-lg p-4 animate-pulse">
+            <div
+              key={i}
+              className="border border-gray-700 rounded-lg p-4 animate-pulse"
+            >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
                 <div className="flex-1 space-y-2">
@@ -397,11 +445,12 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
       {/* Tweet list */}
       <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
         {tweets.map((tweet, index) => {
-          const isExpanded = expandedTweets.has(tweet.tweet_id)
-          const shouldTruncate = tweet.body.length > 200
-          const displayText = isExpanded || !shouldTruncate 
-            ? tweet.body 
-            : truncateText(tweet.body)
+          const isExpanded = expandedTweets.has(tweet.tweet_id);
+          const shouldTruncate = tweet.body.length > 200;
+          const displayText =
+            isExpanded || !shouldTruncate
+              ? tweet.body
+              : truncateText(tweet.body);
 
           return (
             <div
@@ -415,7 +464,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                   alt={`@${tweet.author_handle}`}
                   className="w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
                   onError={(e) => {
-                    e.currentTarget.src = "/placeholder.svg?height=40&width=40"
+                    e.currentTarget.src = "/placeholder.svg?height=40&width=40";
                   }}
                 />
                 <div className="flex-1 min-w-0">
@@ -423,7 +472,8 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                     <span className="font-medium text-gray-100 text-sm truncate">
                       {getDisplayHandle(tweet.author_handle)}
                     </span>
-                    {tweet.sentiment !== null && getSentimentIcon(tweet.sentiment)}
+                    {tweet.sentiment !== null &&
+                      getSentimentIcon(tweet.sentiment)}
                   </div>
                   <div className="text-xs text-gray-400">
                     {formatDate(tweet.tweet_create_time)}
@@ -476,7 +526,7 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
                 </div>
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -484,9 +534,11 @@ export default function SmartFeed({ authorHandle = "eliz883" }: SmartFeedProps) 
       {!loading && tweets.length === 0 && (
         <div className="text-center py-8">
           <Sparkles className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 text-sm">No tweets found for this time period</p>
+          <p className="text-gray-400 text-sm">
+            No tweets found for this time period
+          </p>
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,5 +1,8 @@
 import Header from "@/components/Header";
 import PrivyProvider from "@/components/PrivyProvider";
+import { Toaster } from "@/components/ui/toaster";
+import { SignupProvider } from "@/contexts/CreatorSignupContext";
+import { UserProvider } from "@/contexts/UserContext";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type React from "react";
@@ -32,8 +35,13 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} bg-gray-900 min-h-screen`}>
         <PrivyProvider>
-          <Header />
-          <main>{children}</main>
+          <UserProvider>
+            <SignupProvider>
+              <Header />
+              <main>{children}</main>
+              <Toaster />
+            </SignupProvider>
+          </UserProvider>
         </PrivyProvider>
       </body>
     </html>

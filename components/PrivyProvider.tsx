@@ -16,6 +16,7 @@ export default function PrivyProvider({ children }: PrivyProviderProps) {
           theme: "dark",
           accentColor: "#00D992",
           logo: "/logo-green.svg",
+          walletList: ["metamask"],
         },
         // Configure login methods
         loginMethods: ["twitter"],
