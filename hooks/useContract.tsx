@@ -17,19 +17,16 @@ export const useContract = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [walletProvider, setWalletProvider] =
-    useState<ethers.Eip1193Provider | null>(null);
+    useState<ethers.BrowserProvider | null>(null);
 
   const initContract = async () => {
     try {
       setIsInitializing(true);
       if (walletProvider) {
-        const web3Provider = new ethers.BrowserProvider(
-          walletProvider as unknown as ethers.Eip1193Provider
-        );
+        setProvider(walletProvider);
 
-        setProvider(web3Provider);
+        const contractSigner = await walletProvider.getSigner();
 
-        const contractSigner = await web3Provider.getSigner();
         setSigner(contractSigner);
 
         const contractInstance = new ethers.Contract(
@@ -52,12 +49,14 @@ export const useContract = () => {
   };
 
   useEffect(() => {
-    if (wallets.length > 0 && wallets[0]?.getEthereumProvider() !== null) {
-      setWalletProvider(
-        wallets[0]?.getEthereumProvider() as unknown as ethers.Eip1193Provider
-      );
-      initContract();
-    }
+    const getProvider = async () => {
+      if (wallets.length > 0) {
+        const provider = await wallets[0]?.getEthereumProvider();
+        setWalletProvider(new ethers.BrowserProvider(provider));
+        initContract();
+      }
+    };
+    getProvider();
   }, [wallets]);
 
   // Campaign Functions

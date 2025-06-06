@@ -1,7 +1,7 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { Menu, Power, X } from "lucide-react";
+import { Briefcase, Menu, Power, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -107,6 +107,14 @@ export default function Header() {
                   </button>
                   {isProfileDropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
+                      <Link
+                        href="/my-campaigns"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                        className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 hover:text-[#00D992] transition-colors flex items-center gap-2"
+                      >
+                        <Briefcase className="w-4 h-4" />
+                        My Campaigns
+                      </Link>
                       <button
                         onClick={() => {
                           logout();
@@ -187,6 +195,17 @@ export default function Header() {
                     </button>
                     {isMobileProfileDropdownOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
+                        <Link
+                          href="/my-campaigns"
+                          onClick={() => {
+                            setIsMobileProfileDropdownOpen(false);
+                            setIsMenuOpen(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 hover:text-[#00D992] transition-colors flex items-center gap-2"
+                        >
+                          <Briefcase className="w-4 h-4" />
+                          My Campaigns
+                        </Link>
                         <button
                           onClick={() => {
                             logout();
