@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
 import { usePrivy } from "@privy-io/react-auth";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export const usePrivyDatabaseSync = () => {
   const { ready, authenticated, user: privyUser, login, logout } = usePrivy();
@@ -16,66 +16,106 @@ export const usePrivyDatabaseSync = () => {
   const router = useRouter();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Add a ref to prevent infinite loops
+  const syncAttemptedRef = useRef(false);
+  const syncSuccessRef = useRef(false);
+  const lastUsernameRef = useRef<string | null>(null);
+
   // Handle database sync when Privy user is authenticated
-  useEffect(() => {
-    const syncWithDatabase = async () => {
-      if (
-        !ready ||
-        !authenticated ||
-        !privyUser?.twitter?.username ||
-        isProcessing
-      ) {
-        return;
-      }
+  const syncWithDatabase = useCallback(async () => {
+    if (
+      !ready ||
+      !authenticated ||
+      !privyUser?.twitter?.username ||
+      isProcessing ||
+      syncSuccessRef.current
+    ) {
+      return;
+    }
 
-      setIsProcessing(true);
-      const twitterUsername = privyUser.twitter.username;
+    const twitterUsername = privyUser.twitter.username.toLowerCase(); // Make lowercase for consistency
 
-      try {
-        // Check if user exists in database
-        const response = await apiClient.get(
-          `/auth/check-twitter-handle?account_handle=${twitterUsername}&user_type=brand`
-        );
+    // Check if we've already attempted sync for this username
+    if (
+      syncAttemptedRef.current &&
+      lastUsernameRef.current === twitterUsername
+    ) {
+      return;
+    }
 
-        if (response.status === 200) {
-          // User exists - get token and set user
-          if (response.data.result?.token) {
-            if (typeof window !== "undefined") {
-              localStorage.setItem("token", response.data.result.token);
-            }
-            await fetchUserData();
-            toast({
-              title: "Welcome back!",
-              description: "Successfully connected to your account",
-            });
-            return;
+    syncAttemptedRef.current = true;
+    lastUsernameRef.current = twitterUsername;
+    setIsProcessing(true);
+
+    try {
+      // Check if user exists in database - use lowercase handle
+      const response = await apiClient.get(
+        `/auth/check-twitter-handle?account_handle=${twitterUsername}&user_type=brand`
+      );
+
+      if (response.status === 200) {
+        // User exists - get token and set user
+        if (response.data.result?.token) {
+          if (typeof window !== "undefined") {
+            localStorage.setItem("token", response.data.result.token);
           }
-
-          // New user - handle signup
-          const user_id = await fastSignup(twitterUsername, "brand");
-          if (user_id) {
-            await fetchUserData();
-            toast({
-              title: "Account created!",
-              description: "Your brand account has been set up successfully",
-            });
-            return;
-          }
+          await fetchUserData();
+          syncSuccessRef.current = true; // Mark as successful
+          toast({
+            title: "Welcome back!",
+            description: "Successfully connected to your account",
+          });
+          return;
         }
-      } catch (error) {
-        console.error("Error syncing with database:", error);
-        toast({
-          title: "Failed to sync account",
-          description: "Please try again later",
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessing(false);
-      }
-    };
 
+        // New user - handle signup with lowercase handle
+        const user_id = await fastSignup(twitterUsername, "brand");
+        if (user_id) {
+          await fetchUserData();
+          syncSuccessRef.current = true; // Mark as successful
+          toast({
+            title: "Account created!",
+            description: "Your brand account has been set up successfully",
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error syncing with database:", error);
+      // Reset the attempt flag on error so it can be retried
+      syncAttemptedRef.current = false;
+      lastUsernameRef.current = null;
+      toast({
+        title: "Failed to sync account",
+        description: "Please try again later",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [
+    ready,
+    authenticated,
+    privyUser?.twitter?.username,
+    isProcessing,
+    fetchUserData,
+    fastSignup,
+    toast,
+  ]);
+
+  // Effect with minimal dependencies
+  useEffect(() => {
     syncWithDatabase();
   }, [ready, authenticated, privyUser?.twitter?.username]);
+
+  // Reset refs when user logs out or changes
+  useEffect(() => {
+    if (!authenticated || !privyUser?.twitter?.username) {
+      syncAttemptedRef.current = false;
+      syncSuccessRef.current = false;
+      lastUsernameRef.current = null;
+    }
+  }, [authenticated, privyUser?.twitter?.username]);
 
   // Handle logout
   const handleLogout = async () => {
@@ -84,6 +124,10 @@ export const usePrivyDatabaseSync = () => {
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
       }
+      // Reset sync refs on logout
+      syncAttemptedRef.current = false;
+      syncSuccessRef.current = false;
+      lastUsernameRef.current = null;
       toast({
         title: "Signed out",
         description: "You have been successfully signed out",
@@ -116,10 +160,11 @@ export const usePrivyDatabaseSync = () => {
     return "User";
   };
 
-  // Get twitter handle
+  // Get twitter handle - return lowercase for consistency
   const getTwitterHandle = () => {
-    if (user?.twitter_handle) return user.twitter_handle;
-    if (privyUser?.twitter?.username) return privyUser.twitter.username;
+    if (user?.twitter_handle) return user.twitter_handle.toLowerCase();
+    if (privyUser?.twitter?.username)
+      return privyUser.twitter.username.toLowerCase();
     return null;
   };
 

@@ -166,9 +166,9 @@ export default function CollaborateDialog({
       const response = await apiClient.get("/user/list-influencers");
       const influencers = response.data.result;
 
-      const cleanHandle = influencerHandle.replace("@", "");
+      const cleanHandle = influencerHandle.replace("@", "").toLowerCase(); // Make lowercase
       const existingInfluencer = influencers.find(
-        (inf: Influencer) => inf.twitter_handle === cleanHandle
+        (inf: Influencer) => inf.twitter_handle?.toLowerCase() === cleanHandle // Compare lowercase
       );
 
       if (existingInfluencer) {
