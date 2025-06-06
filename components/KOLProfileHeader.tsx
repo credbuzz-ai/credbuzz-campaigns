@@ -1,9 +1,9 @@
 "use client";
 
-import { usePrivy } from "@privy-io/react-auth";
-
 import CollaborateDialog from "@/components/CollaborateDialog";
 import { Button } from "@/components/ui/button";
+import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 
 interface ProfileData {
@@ -26,21 +26,72 @@ export default function KOLProfileHeader({
   profile,
   accountCreatedText,
 }: KOLProfileHeaderProps) {
-  const { ready, authenticated } = usePrivy();
+  // Use the enhanced Privy database sync hook instead of basic usePrivy
+  const { ready, authenticated, user, isProcessing, login } =
+    usePrivyDatabaseSync();
+
+  // Render collaborate button based on authentication and user state
+  const renderCollaborateButton = () => {
+    if (!ready) {
+      return (
+        <Button
+          disabled
+          className="bg-gray-600 text-gray-300 cursor-not-allowed"
+        >
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          Loading...
+        </Button>
+      );
+    }
+
+    if (!authenticated) {
+      return (
+        <Button
+          onClick={login}
+          disabled={isProcessing}
+          className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium"
+        >
+          {isProcessing ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Connecting...
+            </>
+          ) : (
+            "Connect X to Collaborate"
+          )}
+        </Button>
+      );
+    }
+
+    if (isProcessing) {
+      return (
+        <Button
+          disabled
+          className="bg-gray-600 text-gray-300 cursor-not-allowed"
+        >
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          Setting up account...
+        </Button>
+      );
+    }
+
+    // User is authenticated and account is set up
+    return (
+      <CollaborateDialog influencerHandle={profile.author_handle}>
+        <Button className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium">
+          Collaborate
+        </Button>
+      </CollaborateDialog>
+    );
+  };
 
   return (
     <div className="card-trendsage group mb-8">
       <div className="flex flex-col sm:flex-row items-start gap-6 relative">
-        {/* Collaborate Button - Right top corner, only show if user is authenticated */}
-        {ready && authenticated && (
-          <div className="absolute top-0 right-0">
-            <CollaborateDialog influencerHandle={profile.author_handle}>
-              <Button className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium">
-                Collaborate
-              </Button>
-            </CollaborateDialog>
-          </div>
-        )}
+        {/* Collaborate Button - Right top corner, with enhanced logic */}
+        <div className="absolute top-0 right-0">
+          {renderCollaborateButton()}
+        </div>
 
         <Link
           href={`https://twitter.com/${profile.author_handle}`}

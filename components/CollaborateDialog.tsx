@@ -25,17 +25,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { useSignup } from "@/contexts/CreatorSignupContext";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { useContract } from "@/hooks/useContract";
 import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
 import apiClient from "@/lib/api";
 import { CREDBUZZ_ACCOUNT, OWNER_SOLANA_ADDRESS } from "@/lib/constants";
-import { CollaborateFormData, paymentTokens } from "@/lib/types";
+import { CollaborateFormData, Influencer, paymentTokens } from "@/lib/types";
 import { useConnectWallet, useWallets } from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import { Loader2, Send, Wallet } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 interface CollaborateDialogProps {
@@ -61,6 +62,9 @@ export default function CollaborateDialog({
   // Get user data from UserContext
   const { user, fetchUserData } = useUser();
 
+  // Add signup context for creator temp signup
+  const { fastSignup } = useSignup();
+
   const { wallets } = useWallets();
   const { toast } = useToast();
   const { connectWallet } = useConnectWallet({
@@ -72,6 +76,10 @@ export default function CollaborateDialog({
   const { createNewCampaign, transferToken, contract } = useContract();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Add state for influencer data
+  const [influencerData, setInfluencerData] = useState<Influencer | null>(null);
+  const [isLoadingInfluencer, setIsLoadingInfluencer] = useState(false);
 
   // Add refs for managing API calls and form data
   const apiCallInProgressRef = useRef(false);
@@ -108,6 +116,85 @@ export default function CollaborateDialog({
     (wallet) => wallet.walletClientType === "metamask"
   );
   const walletAddress = metamaskWallet?.address;
+
+  // Function to handle creator temp signup (similar to CreateCampaignForm)
+  const handleCreatorTempSignup = useCallback(
+    async (username: string) => {
+      try {
+        setIsLoadingInfluencer(true);
+        const userId = await fastSignup(username, "creator");
+
+        if (userId) {
+          // Fetch the newly created influencer data
+          const response = await apiClient.get("/user/list-influencers");
+          const influencers = response.data.result;
+
+          const newInfluencer = influencers.find(
+            (inf: Influencer) =>
+              inf.twitter_handle === username.replace("@", "")
+          );
+
+          if (newInfluencer) {
+            setInfluencerData(newInfluencer);
+            toast({
+              title: "Influencer Added",
+              description: `@${username} has been added to the platform`,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error signing up creator:", error);
+        toast({
+          title: "Error",
+          description: "Failed to add influencer to platform",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingInfluencer(false);
+      }
+    },
+    [fastSignup, toast]
+  );
+
+  // Function to fetch or create influencer
+  const fetchOrCreateInfluencer = useCallback(async () => {
+    if (!influencerHandle) return;
+
+    setIsLoadingInfluencer(true);
+    try {
+      // First, try to fetch existing influencers
+      const response = await apiClient.get("/user/list-influencers");
+      const influencers = response.data.result;
+
+      const cleanHandle = influencerHandle.replace("@", "");
+      const existingInfluencer = influencers.find(
+        (inf: Influencer) => inf.twitter_handle === cleanHandle
+      );
+
+      if (existingInfluencer) {
+        setInfluencerData(existingInfluencer);
+      } else {
+        // Influencer doesn't exist, create them
+        await handleCreatorTempSignup(cleanHandle);
+      }
+    } catch (error) {
+      console.error("Error fetching influencers:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load influencer data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingInfluencer(false);
+    }
+  }, [influencerHandle, handleCreatorTempSignup, toast]);
+
+  // Fetch influencer data when dialog opens and user is authenticated
+  useEffect(() => {
+    if (open && authenticated && !isProcessing) {
+      fetchOrCreateInfluencer();
+    }
+  }, [open, authenticated, isProcessing, fetchOrCreateInfluencer]);
 
   // Update business wallet address when MetaMask wallet is connected
   useEffect(() => {
@@ -148,27 +235,71 @@ export default function CollaborateDialog({
   };
 
   const onSubmit = async (data: CollaborateFormData) => {
-    if (
-      !data.influencerWalletAddr ||
-      !data.tokenAmount ||
-      !data.promotionEnds ||
-      !data.offerEnds ||
-      !data.tokenAddress
-    ) {
+    console.log("Form submission data:", data);
+    console.log("Influencer data:", influencerData);
+
+    // Set influencer wallet address if not already set
+    const influencerWalletAddr =
+      influencerData?.wallet_addr ||
+      data.influencerWalletAddr ||
+      CREDBUZZ_ACCOUNT;
+
+    // Validate required fields with specific error messages
+    const missingFields = [];
+
+    if (!influencerWalletAddr) {
+      missingFields.push("Influencer wallet address");
+    }
+    if (!data.tokenAmount || data.tokenAmount <= 0) {
+      missingFields.push("Token amount");
+    }
+    if (!data.promotionEnds) {
+      missingFields.push("Promotion end date");
+    }
+    if (!data.offerEnds) {
+      missingFields.push("Offer end date");
+    }
+    if (!data.tokenAddress) {
+      missingFields.push("Payment token");
+    }
+    if (!data.projectName) {
+      missingFields.push("Project name");
+    }
+
+    if (missingFields.length > 0) {
+      toast({
+        title: "Missing Required Fields",
+        description: `Please fill in: ${missingFields.join(", ")}`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!influencerData) {
       toast({
         title: "Error",
-        description: "All fields are required",
+        description: "Influencer data not loaded. Please try again.",
+        variant: "destructive",
       });
       return;
     }
 
     setIsSubmitting(true);
-    formDataRef.current = data; // Store form data for event handler
+
+    // Update form data with correct influencer wallet address
+    const updatedData = {
+      ...data,
+      influencerWalletAddr,
+    };
+
+    formDataRef.current = updatedData; // Store updated form data for event handler
 
     try {
       // Convert datetime strings to timestamps (seconds)
-      const promotionEndsTimestamp = convertToTimestamp(data.promotionEnds);
-      const offerEndsTimestamp = convertToTimestamp(data.offerEnds);
+      const promotionEndsTimestamp = convertToTimestamp(
+        data.promotionEnds || ""
+      );
+      const offerEndsTimestamp = convertToTimestamp(data.offerEnds || "");
 
       // Find selected token for decimals
       const selectedToken = paymentTokens.find(
@@ -178,19 +309,19 @@ export default function CollaborateDialog({
 
       // Convert amount to wei
       const amountInWei = Number(
-        ethers.parseUnits(data.tokenAmount.toString(), decimals)
+        ethers.parseUnits(data.tokenAmount?.toString() || "0", decimals)
       );
 
       // 1. First transfer tokens to contract
-      await transferToken(data.tokenAddress, amountInWei);
+      await transferToken(data.tokenAddress || "", amountInWei);
 
       // 2. Create campaign on blockchain
       const txHash = await createNewCampaign(
-        data.influencerWalletAddr,
+        influencerWalletAddr,
         amountInWei,
         promotionEndsTimestamp,
         offerEndsTimestamp,
-        data.tokenAddress
+        data.tokenAddress || ""
       );
 
       // Don't close dialog here - wait for contract event
@@ -212,7 +343,7 @@ export default function CollaborateDialog({
   // Handle campaign created event from contract
   const handleCampaignCreated = async (campaignId: string) => {
     try {
-      if (!formDataRef.current) return;
+      if (!formDataRef.current || !influencerData) return;
 
       const data = formDataRef.current;
 
@@ -226,9 +357,11 @@ export default function CollaborateDialog({
       const requestBody = {
         campaign_id: campaignId,
         brand_id: user?.brand_id || 0,
-        influencer_user_id: 375, // TODO: change to influencer user id by list-influencer and temp onboarding of the influencer
-        influencer_wallet_addr: data.influencerWalletAddr,
-        influencer_solana_address: data.influencerSolanaAddress,
+        influencer_user_id: influencerData.user_id, // Use the actual influencer user_id
+        influencer_wallet_addr:
+          influencerData.wallet_addr || data.influencerWalletAddr,
+        influencer_solana_address:
+          influencerData.solana_address || data.influencerSolanaAddress,
         business_solana_address: data.businessSolanaAddress || "",
         project_name: data.projectName,
         description: data.description,
@@ -419,9 +552,34 @@ export default function CollaborateDialog({
   const LoadingUI = () => (
     <div className="text-center py-8">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992] mx-auto mb-4"></div>
-      <p className="text-gray-400">Loading...</p>
+      <p className="text-gray-400">
+        {isLoadingInfluencer ? "Setting up influencer..." : "Loading..."}
+      </p>
     </div>
   );
+
+  // Also update the form to ensure default values are set properly
+  useEffect(() => {
+    if (influencerData) {
+      // Set influencer wallet address when influencer data is loaded
+      form.setValue(
+        "influencerWalletAddr",
+        influencerData.wallet_addr || CREDBUZZ_ACCOUNT
+      );
+      form.setValue(
+        "influencerSolanaAddress",
+        influencerData.solana_address || OWNER_SOLANA_ADDRESS
+      );
+    }
+  }, [influencerData, form]);
+
+  // Set default dates when form loads
+  useEffect(() => {
+    const currentTime = getCurrentDateTime();
+    if (!form.getValues("offerEnds")) {
+      form.setValue("offerEnds", currentTime);
+    }
+  }, [form]);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -438,11 +596,13 @@ export default function CollaborateDialog({
               ? "Connect your X account to create campaigns"
               : !isWalletConnected
               ? "Connect your MetaMask wallet to proceed"
+              : isLoadingInfluencer
+              ? "Setting up influencer account..."
               : "Fill in the details below to create a new KOL promotion campaign"}
           </p>
         </DialogHeader>
 
-        {!ready ? (
+        {!ready || isLoadingInfluencer ? (
           <LoadingUI />
         ) : !authenticated ? (
           <AuthConnectionUI />
@@ -454,6 +614,32 @@ export default function CollaborateDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-4 pt-6"
             >
+              {/* Influencer Handle (Read-only) - Show actual influencer info */}
+              <FormField
+                control={form.control}
+                name="influencerHandle"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      Select Influencer
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={
+                          influencerData
+                            ? `@${influencerData.twitter_handle}`
+                            : field.value
+                        }
+                        disabled
+                        className="bg-gray-700 border-gray-600 text-gray-300 cursor-not-allowed h-9"
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-400 text-xs" />
+                  </FormItem>
+                )}
+              />
+
               {/* Project Name */}
               <FormField
                 control={form.control}
@@ -490,27 +676,6 @@ export default function CollaborateDialog({
                         {...field}
                         placeholder="Describe your collaboration opportunity..."
                         className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] min-h-[80px] resize-none"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-400 text-xs" />
-                  </FormItem>
-                )}
-              />
-
-              {/* Influencer Handle (Read-only) */}
-              <FormField
-                control={form.control}
-                name="influencerHandle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-300 text-sm font-medium">
-                      Select Influencer
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        disabled
-                        className="bg-gray-700 border-gray-600 text-gray-300 cursor-not-allowed h-9"
                       />
                     </FormControl>
                     <FormMessage className="text-red-400 text-xs" />
@@ -566,6 +731,7 @@ export default function CollaborateDialog({
                 <FormField
                   control={form.control}
                   name="offerEnds"
+                  rules={{ required: "Offer end date is required" }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-300 text-sm font-medium">
@@ -577,7 +743,6 @@ export default function CollaborateDialog({
                           type="datetime-local"
                           className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
                           min={getCurrentDateTime()}
-                          value={field.value || getCurrentDateTime()}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400 text-xs" />
@@ -588,6 +753,7 @@ export default function CollaborateDialog({
                 <FormField
                   control={form.control}
                   name="promotionEnds"
+                  rules={{ required: "Promotion end date is required" }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-300 text-sm font-medium">
@@ -626,6 +792,10 @@ export default function CollaborateDialog({
                             (token) => token.value === value
                           );
                           if (selectedToken) {
+                            console.log(
+                              "Setting token address:",
+                              selectedToken.address
+                            );
                             form.setValue(
                               "tokenAddress",
                               selectedToken.address
@@ -636,7 +806,7 @@ export default function CollaborateDialog({
                             );
                           }
                         }}
-                        defaultValue={field.value}
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9">
@@ -663,7 +833,10 @@ export default function CollaborateDialog({
                 <FormField
                   control={form.control}
                   name="tokenAmount"
-                  rules={{ required: "Token amount is required" }}
+                  rules={{
+                    required: "Token amount is required",
+                    min: { value: 0.0001, message: "Minimum amount is 0.0001" },
+                  }}
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-gray-300 text-sm font-medium">
@@ -674,9 +847,13 @@ export default function CollaborateDialog({
                           {...field}
                           type="number"
                           step="0.0001"
-                          min="0"
+                          min="0.0001"
                           placeholder="0.0001"
                           className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            field.onChange(value || 0.0001);
+                          }}
                         />
                       </FormControl>
                       <FormMessage className="text-red-400 text-xs" />
@@ -695,25 +872,14 @@ export default function CollaborateDialog({
                 >
                   Cancel
                 </Button>
-                {!isWalletConnected ? (
-                  <Button
-                    type="button"
-                    onClick={handleConnectWallet}
-                    className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium h-9 px-6"
-                  >
-                    <Wallet className="h-4 w-4 mr-2" />
-                    Connect MetaMask
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium h-9 px-6"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {isSubmitting ? "Creating..." : "Create Campaign"}
-                  </Button>
-                )}
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !influencerData}
+                  className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium h-9 px-6"
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  {isSubmitting ? "Creating..." : "Create Campaign"}
+                </Button>
               </div>
             </form>
           </Form>
