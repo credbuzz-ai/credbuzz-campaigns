@@ -2,9 +2,9 @@
 
 import { usePrivy } from "@privy-io/react-auth";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import CollaborateDialog from "@/components/CollaborateDialog";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface ProfileData {
   name: string;
@@ -22,7 +22,10 @@ interface KOLProfileHeaderProps {
   accountCreatedText: string;
 }
 
-export default function KOLProfileHeader({ profile, accountCreatedText }: KOLProfileHeaderProps) {
+export default function KOLProfileHeader({
+  profile,
+  accountCreatedText,
+}: KOLProfileHeaderProps) {
   const { ready, authenticated } = usePrivy();
 
   return (
@@ -38,20 +41,25 @@ export default function KOLProfileHeader({ profile, accountCreatedText }: KOLPro
             </CollaborateDialog>
           </div>
         )}
-        
-        <Link 
+
+        <Link
           href={`https://twitter.com/${profile.author_handle}`}
           target="_blank"
           rel="noopener noreferrer"
           className="cursor-pointer hover:opacity-80 transition-opacity"
         >
           <img
-            src={profile.profile_image_url || "/placeholder.svg?height=200&width=200"}
+            src={
+              profile.profile_image_url ||
+              "/placeholder.svg?height=200&width=200"
+            }
             alt={profile.name}
             className="w-24 h-24 rounded-2xl object-cover ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
           />
         </Link>
-        <div className="flex-1 pr-32 sm:pr-36"> {/* Add right padding to avoid button overlap */}
+        <div className="flex-1 pr-32 sm:pr-36">
+          {" "}
+          {/* Add right padding to avoid button overlap */}
           <h1 className="text-2xl font-bold text-gray-100 mb-1 group-hover:text-[#00D992] transition-colors">
             {profile.name}
           </h1>
@@ -66,4 +74,4 @@ export default function KOLProfileHeader({ profile, accountCreatedText }: KOLPro
       </div>
     </div>
   );
-} 
+}

@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { Send } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,16 +8,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Form,
   FormControl,
@@ -28,6 +16,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { useConnectWallet } from "@privy-io/react-auth";
+import { Send } from "lucide-react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 interface CollaborateFormData {
   projectName: string;
@@ -47,16 +48,34 @@ interface CollaborateDialogProps {
 }
 
 const paymentTokens = [
-  { value: "usdc", label: "USDC" },
-  { value: "usdt", label: "USDT" },
-  { value: "eth", label: "ETH" },
-  { value: "btc", label: "BTC" },
-  { value: "matic", label: "MATIC" },
+  {
+    value: "usdc",
+    label: "USDC",
+    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    decimals: 6,
+  },
+  {
+    value: "usdt",
+    label: "USDT",
+    address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+    decimals: 18,
+  },
 ];
 
-export default function CollaborateDialog({ influencerHandle, children }: CollaborateDialogProps) {
+export default function CollaborateDialog({
+  influencerHandle,
+  children,
+}: CollaborateDialogProps) {
+  const { connectWallet } = useConnectWallet({
+    onSuccess: (data) => {
+      console.log("Wallet connected:", data);
+    },
+    onError: (error) => {
+      console.error("Error connecting wallet:", error);
+    },
+  });
   const [open, setOpen] = useState(false);
-  
+
   const form = useForm<CollaborateFormData>({
     defaultValues: {
       projectName: "",
@@ -71,17 +90,30 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
     },
   });
 
+  // Watch the offerEnds value to set minimum for promotionEnds
+  const offerEndsValue = form.watch("offerEnds");
+
+  // Get current datetime in the correct format for datetime-local inputs
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    const hours = String(now.getHours()).padStart(2, "0");
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   const onSubmit = (data: CollaborateFormData) => {
     console.log("Form submitted:", data);
     // TODO: Add API call to submit collaboration request
     setOpen(false);
+    connectWallet();
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-600 text-gray-100 shadow-2xl">
         <DialogHeader className="space-y-3 pb-6 border-b border-gray-700">
           <DialogTitle className="text-2xl font-bold text-gray-100">
@@ -91,9 +123,12 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
             Fill in the details below to create a new KOL promotion campaign
           </p>
         </DialogHeader>
-        
+
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-6">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="space-y-4 pt-6"
+          >
             {/* Project Name */}
             <FormField
               control={form.control}
@@ -101,7 +136,9 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
               rules={{ required: "Project name is required" }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-300 text-sm font-medium">Project Name</FormLabel>
+                  <FormLabel className="text-gray-300 text-sm font-medium">
+                    Project Name
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -120,7 +157,9 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-300 text-sm font-medium">Description</FormLabel>
+                  <FormLabel className="text-gray-300 text-sm font-medium">
+                    Description
+                  </FormLabel>
                   <FormControl>
                     <Textarea
                       {...field}
@@ -139,7 +178,9 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
               name="influencerHandle"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-gray-300 text-sm font-medium">Select Influencer</FormLabel>
+                  <FormLabel className="text-gray-300 text-sm font-medium">
+                    Select Influencer
+                  </FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -159,7 +200,9 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
                 name="xAccount"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-300 text-sm font-medium">X Account</FormLabel>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      X Account
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -177,7 +220,9 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
                 name="website"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-300 text-sm font-medium">Website</FormLabel>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      Website
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -198,12 +243,16 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
                 name="offerEnds"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-300 text-sm font-medium">Offer Ends</FormLabel>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      Offer Ends
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="datetime-local"
                         className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                        min={getCurrentDateTime()}
+                        value={field.value || getCurrentDateTime()}
                       />
                     </FormControl>
                     <FormMessage className="text-red-400 text-xs" />
@@ -216,12 +265,15 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
                 name="promotionEnds"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-300 text-sm font-medium">Promotion Ends</FormLabel>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      Promotion Ends
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
                         type="datetime-local"
                         className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                        min={offerEndsValue || getCurrentDateTime()}
                       />
                     </FormControl>
                     <FormMessage className="text-red-400 text-xs" />
@@ -238,8 +290,13 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
                 rules={{ required: "Please select a payment token" }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-300 text-sm font-medium">Payment Token</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      Payment Token
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9">
                           <SelectValue placeholder="Select token" />
@@ -268,7 +325,9 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
                 rules={{ required: "Token amount is required" }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-gray-300 text-sm font-medium">Token Amount</FormLabel>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      Token Amount
+                    </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -308,4 +367,4 @@ export default function CollaborateDialog({ influencerHandle, children }: Collab
       </DialogContent>
     </Dialog>
   );
-} 
+}

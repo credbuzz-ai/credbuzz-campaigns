@@ -1,15 +1,16 @@
 "use client";
 
 import { usePrivy } from "@privy-io/react-auth";
-import { Menu, X, Power } from "lucide-react";
+import { Menu, Power, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [isMobileProfileDropdownOpen, setIsMobileProfileDropdownOpen] = useState(false);
+  const [isMobileProfileDropdownOpen, setIsMobileProfileDropdownOpen] =
+    useState(false);
   const { ready, authenticated, user, login, logout } = usePrivy();
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -24,17 +25,23 @@ export default function Header() {
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsProfileDropdownOpen(false);
       }
-      if (mobileDropdownRef.current && !mobileDropdownRef.current.contains(event.target as Node)) {
+      if (
+        mobileDropdownRef.current &&
+        !mobileDropdownRef.current.contains(event.target as Node)
+      ) {
         setIsMobileProfileDropdownOpen(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -81,15 +88,20 @@ export default function Header() {
               <div className="flex items-center gap-3">
                 <div className="relative" ref={dropdownRef}>
                   <button
-                    onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    onClick={() =>
+                      setIsProfileDropdownOpen(!isProfileDropdownOpen)
+                    }
                     className="w-8 h-8 rounded-full border-2 border-transparent hover:border-[#00D992]/50 transition-all"
                   >
                     <img
-                      src={getHighQualityProfileImage(user?.twitter?.profilePictureUrl)}
+                      src={getHighQualityProfileImage(
+                        user?.twitter?.profilePictureUrl
+                      )}
                       alt="Profile"
                       className="w-full h-full rounded-full object-cover"
                       onError={(e) => {
-                        e.currentTarget.src = "/placeholder.svg?height=32&width=32"
+                        e.currentTarget.src =
+                          "/placeholder.svg?height=32&width=32";
                       }}
                     />
                   </button>
@@ -154,15 +166,22 @@ export default function Header() {
                 <div className="flex justify-center py-2">
                   <div className="relative" ref={mobileDropdownRef}>
                     <button
-                      onClick={() => setIsMobileProfileDropdownOpen(!isMobileProfileDropdownOpen)}
+                      onClick={() =>
+                        setIsMobileProfileDropdownOpen(
+                          !isMobileProfileDropdownOpen
+                        )
+                      }
                       className="w-8 h-8 rounded-full border-2 border-transparent hover:border-[#00D992]/50 transition-all"
                     >
                       <img
-                        src={getHighQualityProfileImage(user?.twitter?.profilePictureUrl)}
+                        src={getHighQualityProfileImage(
+                          user?.twitter?.profilePictureUrl
+                        )}
                         alt="Profile"
                         className="w-full h-full rounded-full object-cover"
                         onError={(e) => {
-                          e.currentTarget.src = "/placeholder.svg?height=32&width=32"
+                          e.currentTarget.src =
+                            "/placeholder.svg?height=32&width=32";
                         }}
                       />
                     </button>
