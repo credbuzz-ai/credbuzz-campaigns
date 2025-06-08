@@ -23,7 +23,7 @@ export interface Campaign {
   token_decimals: number;
   amount: number;
   chain: "Base" | "Solana";
-  offer_end_date: number;
+  offer_end_date: string;
   counter?: number;
   project_wallet: string;
   influencer_wallet: string;
