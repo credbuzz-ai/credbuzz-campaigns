@@ -31,6 +31,9 @@ export default function MyCampaigns() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Add real-time countdown updates
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
   // Fetch campaigns data following BusinessDashboard pattern
   const fetchAllCampaigns = async () => {
     try {
@@ -107,6 +110,14 @@ export default function MyCampaigns() {
       fetchAllCampaigns();
     }
   }, [ready, authenticated, user]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
 
   if (!ready || !authenticated) {
     return (
@@ -188,12 +199,52 @@ export default function MyCampaigns() {
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp * 1000).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return "Invalid Date";
+      }
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch (error) {
+      return "Invalid Date";
+    }
+  };
+
+  const getCountdown = (dateString: string) => {
+    try {
+      const endDate = new Date(dateString);
+      if (isNaN(endDate.getTime())) {
+        return null;
+      }
+
+      const now = new Date();
+      const diff = endDate.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        return { expired: true, text: "Expired" };
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (days > 0) {
+        return { expired: false, text: `${days}d ${hours}h remaining` };
+      } else if (hours > 0) {
+        return { expired: false, text: `${hours}h ${minutes}m remaining` };
+      } else {
+        return { expired: false, text: `${minutes}m remaining` };
+      }
+    } catch (error) {
+      return null;
+    }
   };
 
   const getTokenSymbol = (
@@ -327,10 +378,31 @@ export default function MyCampaigns() {
                     {/* Footer */}
                     <div className="pt-4 border-t border-gray-700">
                       <div className="text-xs text-gray-400 mb-2">
-                        <span className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 mb-1">
                           <Calendar className="w-3 h-3" />
-                          {formatDate(campaign.offer_end_date)} -{" "}
-                        </span>
+                          <span>
+                            Ends: {formatDate(campaign.offer_end_date)}
+                          </span>
+                        </div>
+                        {(() => {
+                          const countdown = getCountdown(
+                            campaign.offer_end_date
+                          );
+                          if (countdown) {
+                            return (
+                              <div
+                                className={`text-xs font-medium ${
+                                  countdown.expired
+                                    ? "text-red-400"
+                                    : "text-[#00D992]"
+                                }`}
+                              >
+                                {countdown.text}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       {campaign.project_x_handle && (
@@ -434,10 +506,31 @@ export default function MyCampaigns() {
                     {/* Footer */}
                     <div className="pt-4 border-t border-gray-700">
                       <div className="text-xs text-gray-400 mb-2">
-                        <span className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 mb-1">
                           <Calendar className="w-3 h-3" />
-                          {formatDate(campaign.offer_end_date)} -{" "}
-                        </span>
+                          <span>
+                            Ends: {formatDate(campaign.offer_end_date)}
+                          </span>
+                        </div>
+                        {(() => {
+                          const countdown = getCountdown(
+                            campaign.offer_end_date
+                          );
+                          if (countdown) {
+                            return (
+                              <div
+                                className={`text-xs font-medium ${
+                                  countdown.expired
+                                    ? "text-red-400"
+                                    : "text-[#00D992]"
+                                }`}
+                              >
+                                {countdown.text}
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       {campaign.project_x_handle && (
