@@ -50,7 +50,7 @@ export const usePrivyDatabaseSync = () => {
     try {
       // Check if user exists in database - use lowercase handle
       const response = await apiClient.get(
-        `/auth/check-twitter-handle?account_handle=${twitterUsername}&user_type=brand`
+        `/auth/check-twitter-handle?account_handle=${twitterUsername}`
       );
 
       if (response.status === 200) {
@@ -69,7 +69,7 @@ export const usePrivyDatabaseSync = () => {
         }
 
         // New user - handle signup with lowercase handle
-        const user_id = await fastSignup(twitterUsername, "brand");
+        const user_id = await fastSignup(twitterUsername);
         if (user_id) {
           await fetchUserData();
           syncSuccessRef.current = true; // Mark as successful
@@ -88,7 +88,6 @@ export const usePrivyDatabaseSync = () => {
       toast({
         title: "Failed to sync account",
         description: "Please try again later",
-        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -140,9 +139,6 @@ export const usePrivyDatabaseSync = () => {
 
   // Get profile image from either database user or Privy user
   const getProfileImage = () => {
-    if (user?.profile_image_url && typeof user.profile_image_url === "string") {
-      return user.profile_image_url.replace("_normal", "_400x400");
-    }
     if (
       privyUser?.twitter?.profilePictureUrl &&
       typeof privyUser.twitter.profilePictureUrl === "string"
@@ -154,7 +150,7 @@ export const usePrivyDatabaseSync = () => {
 
   // Get display name
   const getDisplayName = () => {
-    if (user?.name) return user.name;
+    if (user?.x_handle) return user.x_handle;
     if (privyUser?.twitter?.name) return privyUser.twitter.name;
     if (privyUser?.twitter?.username) return `@${privyUser.twitter.username}`;
     return "User";
@@ -162,7 +158,7 @@ export const usePrivyDatabaseSync = () => {
 
   // Get twitter handle - return lowercase for consistency
   const getTwitterHandle = () => {
-    if (user?.twitter_handle) return user.twitter_handle.toLowerCase();
+    if (user?.x_handle) return user.x_handle.toLowerCase();
     if (privyUser?.twitter?.username)
       return privyUser.twitter.username.toLowerCase();
     return null;

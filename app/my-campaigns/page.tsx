@@ -3,28 +3,19 @@
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
-import { Campaign, allowedSolanaTokens, allowedTokens } from "@/lib/types";
+import { Campaign, allowedBaseTokens, allowedSolanaTokens } from "@/lib/types";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   Calendar,
   CheckCircle,
   Clock,
   DollarSign,
-  ExternalLink,
   Loader2,
   Pause,
   TrendingUp,
   XCircle,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-
-interface CreatedCampaign extends Campaign {
-  // Only using actual API fields
-}
-
-interface ReceivedCampaign extends Campaign {
-  brand_name?: string;
-}
 
 export default function MyCampaigns() {
   const { ready, authenticated } = usePrivy();
@@ -33,11 +24,9 @@ export default function MyCampaigns() {
   const { user } = useUser();
 
   // Separate state for open and closed campaigns
-  const [openCampaigns, setOpenCampaigns] = useState<CreatedCampaign[]>([]);
-  const [closedCampaigns, setClosedCampaigns] = useState<CreatedCampaign[]>([]);
-  const [receivedCampaigns, setReceivedCampaigns] = useState<
-    ReceivedCampaign[]
-  >([]);
+  const [openCampaigns, setOpenCampaigns] = useState<Campaign[]>([]);
+  const [closedCampaigns, setClosedCampaigns] = useState<Campaign[]>([]);
+  const [receivedCampaigns, setReceivedCampaigns] = useState<Campaign[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,19 +37,19 @@ export default function MyCampaigns() {
       setLoading(true);
       setError(null);
 
-      if (!user?.brand_id) {
-        throw new Error("User ID not found");
+      if (!user?.x_handle) {
+        throw new Error("X handle not found");
       }
 
       // Initialize arrays
-      const openCreated: CreatedCampaign[] = [];
-      const closedCreated: CreatedCampaign[] = [];
-      const received: ReceivedCampaign[] = [];
+      const openCreated: Campaign[] = [];
+      const closedCreated: Campaign[] = [];
+      const received: Campaign[] = [];
 
       // Fetch closed campaigns (same pattern as BusinessDashboard)
       try {
         const closedResponse = await apiClient.post("/campaign/get-campaigns", {
-          brand_id: user.brand_id, // Use user.id as brand_id for created campaigns
+          project_x_handle: user.x_handle,
         });
 
         if (closedResponse.data?.result) {
@@ -69,9 +58,6 @@ export default function MyCampaigns() {
             // Add mock analytics data
             closedCreated.push({
               ...campaign,
-              participants: Math.floor(Math.random() * 20) + 1,
-              reach: Math.floor(Math.random() * 50000) + 5000,
-              engagement: Math.floor(Math.random() * 20000) + 1000,
             });
           });
         }
@@ -79,34 +65,12 @@ export default function MyCampaigns() {
         console.error("Error fetching closed campaigns:", error);
       }
 
-      // Fetch open campaigns (same pattern as BusinessDashboard)
-      try {
-        const openResponse = await apiClient.get(
-          `/open-campaign/brand/${user.brand_id}`
-        );
-
-        if (openResponse.data?.result) {
-          const openData = openResponse.data.result;
-          openData.forEach((campaign: Campaign) => {
-            // Add mock analytics data
-            openCreated.push({
-              ...campaign,
-              participants: Math.floor(Math.random() * 20) + 1,
-              reach: Math.floor(Math.random() * 50000) + 5000,
-              engagement: Math.floor(Math.random() * 20000) + 1000,
-            });
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching open campaigns:", error);
-      }
-
       // Fetch campaigns where user is the influencer (received campaigns)
       try {
         const receivedResponse = await apiClient.post(
           "/campaign/get-campaigns",
           {
-            influencer_user_id: user.user_id, // Use user.id as influencer_user_id for received campaigns
+            influencer_x_handle: user.x_handle,
           }
         );
 
@@ -115,7 +79,6 @@ export default function MyCampaigns() {
           receivedData.forEach((campaign: Campaign) => {
             received.push({
               ...campaign,
-              brand_name: `Brand ${campaign.brand_id}`, // You might want to fetch brand name separately
             });
           });
         }
@@ -133,7 +96,6 @@ export default function MyCampaigns() {
       toast({
         title: "Error",
         description: "Failed to load campaigns. Please try again.",
-        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -141,7 +103,7 @@ export default function MyCampaigns() {
   };
 
   useEffect(() => {
-    if (ready && authenticated && user?.brand_id) {
+    if (ready && authenticated && user?.x_handle) {
       fetchAllCampaigns();
     }
   }, [ready, authenticated, user]);
@@ -249,7 +211,7 @@ export default function MyCampaigns() {
     }
 
     // Check Base/Ethereum chains
-    const baseToken = allowedTokens.find(
+    const baseToken = allowedBaseTokens.find(
       (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
     );
     return baseToken?.symbol || "ETH";
@@ -320,7 +282,7 @@ export default function MyCampaigns() {
                     {/* Header */}
                     <div className="mb-4">
                       <h3 className="text-lg font-semibold text-gray-100 mb-2">
-                        {campaign.project_name || "Untitled Campaign"}
+                        {campaign.campaign_name || "Untitled Campaign"}
                       </h3>
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
@@ -362,47 +324,31 @@ export default function MyCampaigns() {
                       </div>
                     </div>
 
-                    {/* Website Link */}
-                    {campaign.website && (
-                      <div className="mb-4">
-                        <a
-                          href={campaign.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#00D992] text-sm hover:underline flex items-center gap-1"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          View Website
-                        </a>
-                      </div>
-                    )}
-
                     {/* Footer */}
                     <div className="pt-4 border-t border-gray-700">
                       <div className="text-xs text-gray-400 mb-2">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {formatDate(campaign.offer_end_date)} -{" "}
-                          {formatDate(campaign.promotion_end_date)}
                         </span>
                       </div>
 
-                      {campaign.x_author_handle && (
+                      {campaign.project_x_handle && (
                         <div className="text-xs mb-2">
                           <span className="text-gray-400">X Handle: </span>
                           <span className="text-[#00D992]">
-                            @{campaign.x_author_handle}
+                            @{campaign.project_x_handle}
                           </span>
                         </div>
                       )}
 
-                      {campaign.influencer_wallet_addr && (
+                      {campaign.influencer_wallet && (
                         <div className="text-xs">
                           <span className="text-gray-400">Assigned: </span>
                           <span className="text-[#00D992] font-mono">
-                            {campaign.influencer_wallet_addr.substring(0, 6)}...
-                            {campaign.influencer_wallet_addr.substring(
-                              campaign.influencer_wallet_addr.length - 4
+                            {campaign.influencer_wallet.substring(0, 6)}...
+                            {campaign.influencer_wallet.substring(
+                              campaign.influencer_wallet.length - 4
                             )}
                           </span>
                         </div>
@@ -438,7 +384,7 @@ export default function MyCampaigns() {
                     {/* Header */}
                     <div className="mb-4">
                       <h3 className="text-lg font-semibold text-gray-100 mb-2">
-                        {campaign.project_name || "Untitled Campaign"}
+                        {campaign.campaign_name || "Untitled Campaign"}
                       </h3>
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
@@ -455,7 +401,8 @@ export default function MyCampaigns() {
                     <div className="mb-4">
                       <p className="text-sm text-[#00D992] font-medium mb-2">
                         From:{" "}
-                        {campaign.brand_name || `Brand ${campaign.brand_id}`}
+                        {campaign.project_x_handle ||
+                          `Brand ${campaign.project_x_handle}`}
                       </p>
                       <span className="text-xs text-gray-300 bg-gray-700 px-2 py-1 rounded-md">
                         {campaign.chain}
@@ -484,36 +431,20 @@ export default function MyCampaigns() {
                       </div>
                     </div>
 
-                    {/* Website Link */}
-                    {campaign.website && (
-                      <div className="mb-4">
-                        <a
-                          href={campaign.website}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-[#00D992] text-sm hover:underline flex items-center gap-1"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          View Website
-                        </a>
-                      </div>
-                    )}
-
                     {/* Footer */}
                     <div className="pt-4 border-t border-gray-700">
                       <div className="text-xs text-gray-400 mb-2">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {formatDate(campaign.offer_end_date)} -{" "}
-                          {formatDate(campaign.promotion_end_date)}
                         </span>
                       </div>
 
-                      {campaign.x_author_handle && (
+                      {campaign.project_x_handle && (
                         <div className="text-xs mb-3">
                           <span className="text-gray-400">X Handle: </span>
                           <span className="text-[#00D992]">
-                            @{campaign.x_author_handle}
+                            @{campaign.project_x_handle}
                           </span>
                         </div>
                       )}

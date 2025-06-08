@@ -80,7 +80,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         const userData = response.data.result;
         setUser(userData);
         if (typeof window !== "undefined") {
-          localStorage.setItem("referral_code", userData.referral_code);
+          localStorage.setItem("referral_code", userData.referral_code_used);
         }
         return userData;
       }
