@@ -31,8 +31,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useContract } from "@/hooks/useContract";
 import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
 import apiClient from "@/lib/api";
-import { CREDBUZZ_ACCOUNT, OWNER_SOLANA_ADDRESS } from "@/lib/constants";
-import { CollaborateFormData, Influencer, paymentTokens } from "@/lib/types";
+import { CREDBUZZ_ACCOUNT } from "@/lib/constants";
+import {
+  allowedBaseTokens,
+  allowedSolanaTokens,
+  Campaign,
+  Influencer,
+} from "@/lib/types";
 import { useConnectWallet, useWallets } from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import { Loader2, Send, Wallet } from "lucide-react";
@@ -52,7 +57,6 @@ export default function CollaborateDialog({
   const {
     ready,
     authenticated,
-    user: privyUser,
     login,
     isProcessing,
     getDisplayName,
@@ -83,31 +87,26 @@ export default function CollaborateDialog({
 
   // Add refs for managing API calls and form data
   const apiCallInProgressRef = useRef(false);
-  const formDataRef = useRef<CollaborateFormData | null>(null);
+  const formDataRef = useRef<Campaign | null>(null);
 
-  const form = useForm<CollaborateFormData>({
+  const form = useForm<Campaign>({
     defaultValues: {
-      campaignId: "",
-      brandId: "",
-      businessWalletAddr: "",
-      businessSolanaAddress: "",
-      influencerWalletAddr: CREDBUZZ_ACCOUNT,
-      influencerSolanaAddress: OWNER_SOLANA_ADDRESS,
-      status: "Pending",
-      projectName: "",
+      campaign_id: "",
+      project_x_handle: "",
+      influencer_x_handle: "",
+      campaign_type: "Public",
+      campaign_name: "",
       description: "",
-      influencerHandle: influencerHandle,
-      xAccount: "",
-      website: "",
-      offerEnds: "",
-      promotionEnds: "",
-      paymentToken: "",
-      tokenAmount: 0.0001,
+      status: "OPEN",
+      token: "",
+      token_address: "",
+      token_decimals: 0,
+      amount: 0,
       chain: "Base",
+      offer_end_date: 0,
       counter: 0,
-      campaignType: "Targeted",
-      tokenAddress: "",
-      tokenDecimals: 0,
+      project_wallet: "",
+      influencer_wallet: "",
     },
   });
 
@@ -122,23 +121,25 @@ export default function CollaborateDialog({
     async (username: string) => {
       try {
         setIsLoadingInfluencer(true);
-        const userId = await fastSignup(username, "creator");
+        const userId = await fastSignup(username);
 
         if (userId) {
           // Fetch the newly created influencer data
           const response = await apiClient.get("/user/list-influencers");
           const influencers = response.data.result;
 
+          // Use consistent comparison logic with fetchOrCreateInfluencer
+          const cleanUsername = username.toLowerCase().trim();
           const newInfluencer = influencers.find(
             (inf: Influencer) =>
-              inf.twitter_handle === username.replace("@", "")
+              inf.x_handle?.toLowerCase().trim() === cleanUsername
           );
 
           if (newInfluencer) {
             setInfluencerData(newInfluencer);
             toast({
               title: "Influencer Added",
-              description: `@${username} has been added to the platform`,
+              description: `${username} has been added to the platform`,
             });
           }
         }
@@ -147,7 +148,6 @@ export default function CollaborateDialog({
         toast({
           title: "Error",
           description: "Failed to add influencer to platform",
-          variant: "destructive",
         });
       } finally {
         setIsLoadingInfluencer(false);
@@ -166,9 +166,11 @@ export default function CollaborateDialog({
       const response = await apiClient.get("/user/list-influencers");
       const influencers = response.data.result;
 
-      const cleanHandle = influencerHandle.replace("@", "").toLowerCase(); // Make lowercase
+      // Normalize the handle for consistent comparison
+      const cleanHandle = influencerHandle.toLowerCase().trim();
+
       const existingInfluencer = influencers.find(
-        (inf: Influencer) => inf.twitter_handle?.toLowerCase() === cleanHandle // Compare lowercase
+        (inf: Influencer) => inf.x_handle?.toLowerCase().trim() === cleanHandle
       );
 
       if (existingInfluencer) {
@@ -182,7 +184,6 @@ export default function CollaborateDialog({
       toast({
         title: "Error",
         description: "Failed to load influencer data",
-        variant: "destructive",
       });
     } finally {
       setIsLoadingInfluencer(false);
@@ -194,12 +195,12 @@ export default function CollaborateDialog({
     if (open && authenticated && !isProcessing) {
       fetchOrCreateInfluencer();
     }
-  }, [open, authenticated, isProcessing, fetchOrCreateInfluencer]);
+  }, [open, authenticated, isProcessing]);
 
   // Update business wallet address when MetaMask wallet is connected
   useEffect(() => {
     if (authenticated && walletAddress) {
-      form.setValue("businessWalletAddr", walletAddress);
+      form.setValue("project_wallet", walletAddress);
     }
   }, [authenticated, walletAddress, form]);
 
@@ -207,15 +208,24 @@ export default function CollaborateDialog({
   useEffect(() => {
     const twitterHandle = getTwitterHandle();
     if (twitterHandle) {
-      form.setValue("xAccount", `@${twitterHandle}`);
+      form.setValue("project_x_handle", twitterHandle);
     }
   }, [user, getTwitterHandle, form]);
 
   // Check if wallet is connected
   const isWalletConnected = authenticated && walletAddress;
 
-  // Watch the offerEnds value to set minimum for promotionEnds
-  const offerEndsValue = form.watch("offerEnds");
+  // Watch the chain value to determine available tokens
+  const selectedChain = form.watch("chain");
+
+  // Get available tokens based on selected chain
+  const getAvailableTokens = () => {
+    if (selectedChain === "Solana") {
+      return allowedSolanaTokens;
+    } else {
+      return allowedBaseTokens; // Base chain tokens
+    }
+  };
 
   // Get current datetime in the correct format for datetime-local inputs
   const getCurrentDateTime = () => {
@@ -234,15 +244,9 @@ export default function CollaborateDialog({
     return Math.floor(new Date(datetimeLocal).getTime() / 1000);
   };
 
-  const onSubmit = async (data: CollaborateFormData) => {
-    console.log("Form submission data:", data);
-    console.log("Influencer data:", influencerData);
-
+  const onSubmit = async (data: Campaign) => {
     // Set influencer wallet address if not already set
-    const influencerWalletAddr =
-      influencerData?.wallet_addr ||
-      data.influencerWalletAddr ||
-      CREDBUZZ_ACCOUNT;
+    const influencerWalletAddr = influencerData?.evm_wallet || CREDBUZZ_ACCOUNT;
 
     // Validate required fields with specific error messages
     const missingFields = [];
@@ -250,27 +254,26 @@ export default function CollaborateDialog({
     if (!influencerWalletAddr) {
       missingFields.push("Influencer wallet address");
     }
-    if (!data.tokenAmount || data.tokenAmount <= 0) {
+    if (!data.amount || data.amount <= 0) {
       missingFields.push("Token amount");
     }
-    if (!data.promotionEnds) {
-      missingFields.push("Promotion end date");
-    }
-    if (!data.offerEnds) {
+    if (!data.offer_end_date || data.offer_end_date <= 0) {
       missingFields.push("Offer end date");
     }
-    if (!data.tokenAddress) {
+    if (!data.token_address) {
       missingFields.push("Payment token");
     }
-    if (!data.projectName) {
-      missingFields.push("Project name");
+    if (!data.campaign_name) {
+      missingFields.push("Campaign name");
+    }
+    if (!data.description) {
+      missingFields.push("Campaign description");
     }
 
     if (missingFields.length > 0) {
       toast({
         title: "Missing Required Fields",
         description: `Please fill in: ${missingFields.join(", ")}`,
-        variant: "destructive",
       });
       return;
     }
@@ -279,7 +282,6 @@ export default function CollaborateDialog({
       toast({
         title: "Error",
         description: "Influencer data not loaded. Please try again.",
-        variant: "destructive",
       });
       return;
     }
@@ -289,39 +291,42 @@ export default function CollaborateDialog({
     // Update form data with correct influencer wallet address
     const updatedData = {
       ...data,
-      influencerWalletAddr,
+      influencer_wallet: influencerWalletAddr,
     };
 
     formDataRef.current = updatedData; // Store updated form data for event handler
 
     try {
-      // Convert datetime strings to timestamps (seconds)
-      const promotionEndsTimestamp = convertToTimestamp(
-        data.promotionEnds || ""
-      );
-      const offerEndsTimestamp = convertToTimestamp(data.offerEnds || "");
-
       // Find selected token for decimals
-      const selectedToken = paymentTokens.find(
-        (token) => token.address === data.tokenAddress
+      const availableTokens = getAvailableTokens();
+      const selectedToken = availableTokens.find(
+        (token) => token.address === data.token_address
       );
-      const decimals = selectedToken?.decimals || 6;
+      const decimals = selectedToken?.decimals;
+
+      if (!decimals) {
+        toast({
+          title: "Error",
+          description: "Invalid token selected",
+        });
+        return;
+      }
 
       // Convert amount to wei
       const amountInWei = Number(
-        ethers.parseUnits(data.tokenAmount?.toString() || "0", decimals)
+        ethers.parseUnits(data.amount?.toString() || "0", decimals)
       );
 
       // 1. First transfer tokens to contract
-      await transferToken(data.tokenAddress || "", amountInWei);
+      await transferToken(data.token_address || "", amountInWei);
 
       // 2. Create campaign on blockchain
       const txHash = await createNewCampaign(
         influencerWalletAddr,
         amountInWei,
-        promotionEndsTimestamp,
-        offerEndsTimestamp,
-        data.tokenAddress || ""
+        data.offer_end_date,
+        data.offer_end_date, // Using same timestamp for both offer and promotion end
+        data.token_address || ""
       );
 
       // Don't close dialog here - wait for contract event
@@ -334,7 +339,6 @@ export default function CollaborateDialog({
       toast({
         title: "Error",
         description: "Failed to create campaign. Please try again.",
-        variant: "destructive",
       });
       setIsSubmitting(false);
     }
@@ -347,34 +351,24 @@ export default function CollaborateDialog({
 
       const data = formDataRef.current;
 
-      // Convert datetime strings to timestamps for API
-      const offerEndTimestamp = convertToTimestamp(data.offerEnds || "");
-      const promotionEndTimestamp = convertToTimestamp(
-        data.promotionEnds || ""
-      );
-
       // Build request body to match API schema exactly
       const requestBody = {
         campaign_id: campaignId,
-        brand_id: user?.brand_id || 0,
-        influencer_user_id: influencerData.user_id, // Use the actual influencer user_id
-        influencer_wallet_addr:
-          influencerData.wallet_addr || data.influencerWalletAddr,
-        influencer_solana_address:
-          influencerData.solana_address || data.influencerSolanaAddress,
-        business_solana_address: data.businessSolanaAddress || "",
-        project_name: data.projectName,
+        project_x_handle: data.project_x_handle,
+        influencer_x_handle: influencerData.x_handle,
+        campaign_type: data.campaign_type,
+        campaign_name: data.campaign_name,
         description: data.description,
-        x_author_handle: getTwitterHandle(),
-        website: data.website,
-        amount: data.tokenAmount,
-        status: "open",
-        offer_end_date: offerEndTimestamp,
-        promotion_end_date: promotionEndTimestamp,
+        status: data.campaign_type === "Public" ? "PUBLISHED" : "OPEN",
+        token: data.token,
+        token_address: data.token_address,
+        token_decimals: data.token_decimals,
+        amount: data.amount,
         chain: data.chain,
-        counter: 0,
-        token_address: data.tokenAddress,
-        token_decimals: data.tokenDecimals,
+        offer_end_date: data.offer_end_date,
+        counter: data.chain === "Solana" ? data.counter : null,
+        project_wallet: data.project_wallet,
+        influencer_wallet: data.influencer_wallet,
       };
 
       // Make API call to save campaign in database
@@ -389,13 +383,10 @@ export default function CollaborateDialog({
           description: "Campaign created successfully!",
         });
         setOpen(false);
-        // If you have a callback to refresh campaigns list, call it here
-        // fetchCampaigns?.();
       } else {
         toast({
           title: "Error",
           description: "Failed to save campaign in database",
-          variant: "destructive",
         });
       }
     } catch (error) {
@@ -404,7 +395,6 @@ export default function CollaborateDialog({
         title: "Error",
         description:
           "Campaign created on blockchain but failed to save in database",
-        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -416,7 +406,7 @@ export default function CollaborateDialog({
   useEffect(() => {
     if (!contract) return;
 
-    const handleEvent = (campaignId: string, creatorAddress: string) => {
+    const handleEvent = (campaignId: string) => {
       if (apiCallInProgressRef.current) return;
       apiCallInProgressRef.current = true;
 
@@ -434,7 +424,7 @@ export default function CollaborateDialog({
   // Update formDataRef when form data changes
   useEffect(() => {
     const subscription = form.watch((data) => {
-      formDataRef.current = data as CollaborateFormData;
+      formDataRef.current = data as Campaign;
     });
     return () => subscription.unsubscribe();
   }, [form]);
@@ -563,21 +553,18 @@ export default function CollaborateDialog({
     if (influencerData) {
       // Set influencer wallet address when influencer data is loaded
       form.setValue(
-        "influencerWalletAddr",
-        influencerData.wallet_addr || CREDBUZZ_ACCOUNT
+        "influencer_wallet",
+        influencerData.evm_wallet || CREDBUZZ_ACCOUNT
       );
-      form.setValue(
-        "influencerSolanaAddress",
-        influencerData.solana_address || OWNER_SOLANA_ADDRESS
-      );
+      form.setValue("influencer_x_handle", influencerData.x_handle || "");
     }
   }, [influencerData, form]);
 
   // Set default dates when form loads
   useEffect(() => {
-    const currentTime = getCurrentDateTime();
-    if (!form.getValues("offerEnds")) {
-      form.setValue("offerEnds", currentTime);
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    if (!form.getValues("offer_end_date")) {
+      form.setValue("offer_end_date", currentTimestamp);
     }
   }, [form]);
 
@@ -614,10 +601,46 @@ export default function CollaborateDialog({
               onSubmit={form.handleSubmit(onSubmit)}
               className="space-y-4 pt-6"
             >
+              {/* Campaign Type */}
+              <FormField
+                control={form.control}
+                name="campaign_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      Campaign Type
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9">
+                          <SelectValue placeholder="Select campaign type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        <SelectItem
+                          value="Targeted"
+                          className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
+                        >
+                          Targeted
+                        </SelectItem>
+                        <SelectItem
+                          value="Public"
+                          className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
+                          disabled
+                        >
+                          Public
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-red-400 text-xs" />
+                  </FormItem>
+                )}
+              />
+
               {/* Influencer Handle (Read-only) - Show actual influencer info */}
               <FormField
                 control={form.control}
-                name="influencerHandle"
+                name="influencer_x_handle"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-gray-300 text-sm font-medium">
@@ -626,11 +649,7 @@ export default function CollaborateDialog({
                     <FormControl>
                       <Input
                         {...field}
-                        value={
-                          influencerData
-                            ? `@${influencerData.twitter_handle}`
-                            : field.value
-                        }
+                        value={influencerData?.x_handle || ""}
                         disabled
                         className="bg-gray-700 border-gray-600 text-gray-300 cursor-not-allowed h-9"
                       />
@@ -640,20 +659,20 @@ export default function CollaborateDialog({
                 )}
               />
 
-              {/* Project Name */}
+              {/* Campaign Name */}
               <FormField
                 control={form.control}
-                name="projectName"
-                rules={{ required: "Project name is required" }}
+                name="campaign_name"
+                rules={{ required: "Campaign name is required" }}
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-gray-300 text-sm font-medium">
-                      Project Name
+                      Campaign Name
                     </FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Enter project name"
+                        placeholder="Enter campaign name"
                         className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
                       />
                     </FormControl>
@@ -683,101 +702,90 @@ export default function CollaborateDialog({
                 )}
               />
 
-              {/* X Account and Website */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="xAccount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-300 text-sm font-medium">
-                        X Account
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="@username"
-                          className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-400 text-xs" />
-                    </FormItem>
-                  )}
-                />
+              {/* Offer End Date */}
+              <FormField
+                control={form.control}
+                name="offer_end_date"
+                rules={{ required: "Offer end date is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      Offer Ends
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type="datetime-local"
+                        className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                        min={getCurrentDateTime()}
+                        onChange={(e) => {
+                          const timestamp = convertToTimestamp(e.target.value);
+                          field.onChange(timestamp);
+                        }}
+                        value={
+                          field.value && field.value > 0
+                            ? new Date(field.value * 1000)
+                                .toISOString()
+                                .slice(0, 16)
+                            : ""
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-400 text-xs" />
+                  </FormItem>
+                )}
+              />
 
-                <FormField
-                  control={form.control}
-                  name="website"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-300 text-sm font-medium">
-                        Website
-                      </FormLabel>
+              {/* Chain Selection */}
+              <FormField
+                control={form.control}
+                name="chain"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-300 text-sm font-medium">
+                      Blockchain
+                    </FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Reset token fields when chain changes
+                        form.setValue("token", "");
+                        form.setValue("token_address", "");
+                        form.setValue("token_decimals", 0);
+                      }}
+                      value={field.value}
+                    >
                       <FormControl>
-                        <Input
-                          {...field}
-                          placeholder="https://example.com"
-                          className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
-                        />
+                        <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9">
+                          <SelectValue placeholder="Select blockchain" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage className="text-red-400 text-xs" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Offer and Promotion End Dates */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <FormField
-                  control={form.control}
-                  name="offerEnds"
-                  rules={{ required: "Offer end date is required" }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-300 text-sm font-medium">
-                        Offer Ends
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="datetime-local"
-                          className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
-                          min={getCurrentDateTime()}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-400 text-xs" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="promotionEnds"
-                  rules={{ required: "Promotion end date is required" }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-gray-300 text-sm font-medium">
-                        Promotion Ends
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="datetime-local"
-                          className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
-                          min={offerEndsValue || getCurrentDateTime()}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-400 text-xs" />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                      <SelectContent className="bg-gray-800 border-gray-600">
+                        <SelectItem
+                          value="Base"
+                          className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
+                        >
+                          Base
+                        </SelectItem>
+                        <SelectItem
+                          value="Solana"
+                          className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
+                          disabled
+                        >
+                          Solana
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-red-400 text-xs" />
+                  </FormItem>
+                )}
+              />
 
               {/* Payment Token and Amount */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
-                  name="paymentToken"
+                  name="token"
                   rules={{ required: "Please select a payment token" }}
                   render={({ field }) => (
                     <FormItem>
@@ -788,20 +796,17 @@ export default function CollaborateDialog({
                         onValueChange={(value) => {
                           field.onChange(value);
                           // Find the selected token and set address and decimals
-                          const selectedToken = paymentTokens.find(
+                          const availableTokens = getAvailableTokens();
+                          const selectedToken = availableTokens.find(
                             (token) => token.value === value
                           );
                           if (selectedToken) {
-                            console.log(
-                              "Setting token address:",
+                            form.setValue(
+                              "token_address",
                               selectedToken.address
                             );
                             form.setValue(
-                              "tokenAddress",
-                              selectedToken.address
-                            );
-                            form.setValue(
-                              "tokenDecimals",
+                              "token_decimals",
                               selectedToken.decimals
                             );
                           }
@@ -814,13 +819,13 @@ export default function CollaborateDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="bg-gray-800 border-gray-600">
-                          {paymentTokens.map((token) => (
+                          {getAvailableTokens().map((token) => (
                             <SelectItem
                               key={token.value}
                               value={token.value}
                               className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
                             >
-                              {token.label}
+                              {token.symbol}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -832,7 +837,7 @@ export default function CollaborateDialog({
 
                 <FormField
                   control={form.control}
-                  name="tokenAmount"
+                  name="amount"
                   rules={{
                     required: "Token amount is required",
                     min: { value: 0.0001, message: "Minimum amount is 0.0001" },
