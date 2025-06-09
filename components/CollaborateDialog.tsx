@@ -103,7 +103,7 @@ export default function CollaborateDialog({
       token_decimals: 0,
       amount: 0,
       chain: "Base",
-      offer_end_date: 0,
+      offer_end_date: "",
       counter: 0,
       project_wallet: "",
       influencer_wallet: "",
@@ -253,7 +253,7 @@ export default function CollaborateDialog({
     if (!data.amount || data.amount <= 0) {
       missingFields.push("Token amount");
     }
-    if (!data.offer_end_date || data.offer_end_date <= 0) {
+    if (!data.offer_end_date) {
       missingFields.push("Offer end date");
     }
     if (!data.token_address) {
@@ -320,8 +320,8 @@ export default function CollaborateDialog({
       const txHash = await createNewCampaign(
         influencerWalletAddr,
         amountInWei,
-        data.offer_end_date,
-        data.offer_end_date, // Using same timestamp for both offer and promotion end
+        convertToTimestamp(data.offer_end_date),
+        convertToTimestamp(data.offer_end_date),
         data.token_address || ""
       );
 
@@ -343,7 +343,7 @@ export default function CollaborateDialog({
   // Handle campaign created event from contract
   const handleCampaignCreated = async (campaignId: string) => {
     try {
-      if (!formDataRef.current || !influencerData) return;
+      if (!formDataRef.current) return;
 
       const data = formDataRef.current;
 
@@ -351,11 +351,11 @@ export default function CollaborateDialog({
       const requestBody = {
         campaign_id: campaignId,
         project_x_handle: data.project_x_handle,
-        influencer_x_handle: influencerData.x_handle,
+        influencer_x_handle: influencerHandle,
         campaign_type: data.campaign_type,
         campaign_name: data.campaign_name,
         description: data.description,
-        status: data.campaign_type === "Public" ? "PUBLISHED" : "OPEN",
+        status: data.campaign_type !== "Public" ? "PUBLISHED" : "OPEN",
         token: data.token,
         token_address: data.token_address,
         token_decimals: data.token_decimals,
@@ -558,9 +558,10 @@ export default function CollaborateDialog({
 
   // Set default dates when form loads
   useEffect(() => {
-    const currentTimestamp = Math.floor(Date.now() / 1000);
     if (!form.getValues("offer_end_date")) {
-      form.setValue("offer_end_date", currentTimestamp);
+      // Set default to 24 hours from now as ISO string
+      const defaultEndTime = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      form.setValue("offer_end_date", defaultEndTime.toISOString());
     }
   }, [form]);
 
@@ -598,7 +599,7 @@ export default function CollaborateDialog({
               className="space-y-4 pt-6"
             >
               {/* Campaign Type */}
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="campaign_type"
                 render={({ field }) => (
@@ -631,10 +632,10 @@ export default function CollaborateDialog({
                     <FormMessage className="text-red-400 text-xs" />
                   </FormItem>
                 )}
-              />
+              /> */}
 
               {/* Influencer Handle (Read-only) - Show actual influencer info */}
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="influencer_x_handle"
                 render={({ field }) => (
@@ -653,7 +654,7 @@ export default function CollaborateDialog({
                     <FormMessage className="text-red-400 text-xs" />
                   </FormItem>
                 )}
-              />
+              /> */}
 
               {/* Campaign Name */}
               <FormField
@@ -715,14 +716,15 @@ export default function CollaborateDialog({
                         className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
                         min={getCurrentDateTime()}
                         onChange={(e) => {
-                          const timestamp = convertToTimestamp(e.target.value);
-                          field.onChange(timestamp);
+                          // Convert to simple datetime string
+                          const dateString = new Date(
+                            e.target.value
+                          ).toLocaleString("sv-SE"); // YYYY-MM-DD HH:mm:ss format
+                          field.onChange(dateString);
                         }}
                         value={
-                          field.value && field.value > 0
-                            ? new Date(field.value * 1000)
-                                .toISOString()
-                                .slice(0, 16)
+                          field.value && field.value !== ""
+                            ? new Date(field.value).toISOString().slice(0, 16)
                             : ""
                         }
                       />
@@ -733,7 +735,7 @@ export default function CollaborateDialog({
               />
 
               {/* Chain Selection */}
-              <FormField
+              {/* <FormField
                 control={form.control}
                 name="chain"
                 render={({ field }) => (
@@ -775,7 +777,7 @@ export default function CollaborateDialog({
                     <FormMessage className="text-red-400 text-xs" />
                   </FormItem>
                 )}
-              />
+              /> */}
 
               {/* Payment Token and Amount */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
