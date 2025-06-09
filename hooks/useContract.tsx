@@ -10,9 +10,7 @@ const GAS_LIMIT = 6666660;
 
 export const useContract = () => {
   const { toast } = useToast();
-  const { wallets } = useWallets();
-  const [provider, setProvider] = useState<ethers.Provider | null>(null);
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
+  const { ready, wallets } = useWallets();
   const [contract, setContract] = useState<ethers.Contract | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -21,25 +19,22 @@ export const useContract = () => {
 
   const initContract = async () => {
     try {
-      setIsInitializing(true);
-      if (walletProvider) {
-        setProvider(walletProvider);
-
-        const contractSigner = await walletProvider.getSigner();
-
-        setSigner(contractSigner);
-
-        const contractInstance = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          MarketplaceAbi,
-          contractSigner
-        );
-        setContract(contractInstance);
-
-        setIsConnected(true);
-      } else {
-        console.log("Wallet provider not found for Base.");
+      if (!walletProvider) {
+        console.warn("Provider not found for base chain.");
+        return;
       }
+      setIsInitializing(true);
+
+      const contractSigner = await walletProvider?.getSigner();
+
+      const contractInstance = new ethers.Contract(
+        CONTRACT_ADDRESS,
+        MarketplaceAbi,
+        contractSigner
+      );
+      setContract(contractInstance);
+
+      setIsConnected(true);
     } catch (error) {
       console.error("Error initializing contract:", error);
       setIsConnected(false);
@@ -51,13 +46,18 @@ export const useContract = () => {
   useEffect(() => {
     const getProvider = async () => {
       if (wallets.length > 0) {
-        const provider = await wallets[0]?.getEthereumProvider();
+        const provider = await wallets[0].getEthereumProvider();
         setWalletProvider(new ethers.BrowserProvider(provider));
-        initContract();
       }
     };
     getProvider();
-  }, [wallets]);
+  }, [ready, wallets]);
+
+  useEffect(() => {
+    if (walletProvider && ready) {
+      initContract();
+    }
+  }, [walletProvider]);
 
   // Campaign Functions
   const createNewCampaign = async (
@@ -262,89 +262,6 @@ export const useContract = () => {
       throw error;
     }
   };
-
-  const updatePlatformFees = async (newFees: number) => {
-    if (!newFees) {
-      toast({
-        title: "Platform fees are required",
-        description: "Please fill all the fields to update platform fees",
-      });
-      return;
-    }
-    try {
-      if (!contract) throw new Error("Contract not initialized");
-      const tx = await contract.updatePlatformFees(newFees, {
-        gasLimit: GAS_LIMIT,
-      });
-      await tx.wait();
-      return tx;
-    } catch (error) {
-      console.error("Error updating platform fees:", error);
-      throw error;
-    }
-  };
-
-  // Getter Functions
-  const getAllUsers = async () => {
-    try {
-      if (!contract) throw new Error("Contract not initialized");
-      return await contract.getAllUsers();
-    } catch (error) {
-      console.error("Error getting all users:", error);
-      throw error;
-    }
-  };
-
-  const getAllCampaigns = async () => {
-    try {
-      if (!contract) throw new Error("Contract not initialized");
-      return await contract.getAllCampaigns();
-    } catch (error) {
-      console.error("Error getting all campaigns:", error);
-      throw error;
-    }
-  };
-
-  const getUserCampaigns = async (userAddress: string) => {
-    if (!userAddress) {
-      toast({
-        title: "User address is required",
-        description: "Please fill all the fields to get user campaigns",
-      });
-      return;
-    }
-    try {
-      if (!contract) throw new Error("Contract not initialized");
-      return await contract.getUserCampaigns(userAddress);
-    } catch (error) {
-      console.error("Error getting user campaigns:", error);
-      throw error;
-    }
-  };
-
-  const getCampaignInfo = async (campaignId: string) => {
-    if (!campaignId) {
-      toast({
-        title: "Campaign ID is required",
-        description: "Please fill all the fields to get campaign info",
-      });
-      return;
-    }
-    try {
-      if (!contract) throw new Error("Contract not initialized");
-      return await contract.getCampaignInfo(campaignId);
-    } catch (error) {
-      console.error("Error getting campaign info:", error);
-      throw error;
-    }
-  };
-
-  // Add function to get allowed tokens
-  const getAllowedTokens = async () => {
-    if (!contract) throw new Error("Contract not initialized");
-    return await contract.getAllowedTokens();
-  };
-
   // Modify transfer function to handle different tokens
   const transferToken = async (tokenAddress: string, amount: number) => {
     if (!amount || !tokenAddress) {
@@ -355,11 +272,12 @@ export const useContract = () => {
       return;
     }
     try {
-      if (!signer) throw new Error("Signer not initialized");
+      if (!contract) throw new Error("Contract not initialized");
+      const contractSigner = await walletProvider?.getSigner();
       const tokenContract = new ethers.Contract(
         tokenAddress,
         IERC20Abi,
-        signer
+        contractSigner
       );
       const tx = await tokenContract.transfer(CONTRACT_ADDRESS, amount);
       await tx.wait();
@@ -371,11 +289,10 @@ export const useContract = () => {
   };
 
   return {
-    provider,
-    signer,
     contract,
     isConnected,
     isInitializing,
+    walletProvider,
     // contract functions
     initContract,
     // Campaign Functions
@@ -387,13 +304,6 @@ export const useContract = () => {
     acceptProjectCampaign,
     fulfilProjectCampaign,
     discardCampaign,
-    updatePlatformFees,
-    // Getter Functions
-    getAllUsers,
-    getAllCampaigns,
-    getUserCampaigns,
-    getCampaignInfo,
-    getAllowedTokens,
     transferToken,
   };
 };

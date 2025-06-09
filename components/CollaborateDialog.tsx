@@ -137,10 +137,6 @@ export default function CollaborateDialog({
 
           if (newInfluencer) {
             setInfluencerData(newInfluencer);
-            toast({
-              title: "Influencer Added",
-              description: `${username} has been added to the platform`,
-            });
           }
         }
       } catch (error) {

@@ -29,86 +29,6 @@ export interface Campaign {
   influencer_wallet: string;
 }
 
-export type Category =
-  | "crypto"
-  | "entertainment"
-  | "finance"
-  | "gaming"
-  | "social-impact"
-  | "sports"
-  | "startups"
-  | "tech";
-
-export type Specialities =
-  | "tweets"
-  | "threads"
-  | "memes-gifs"
-  | "polls"
-  | "live-events"
-  | "spaces"
-  | "short-videos"
-  | "long-videos";
-
-export type Platform = {
-  name: string;
-  connected: boolean;
-  handle: string;
-};
-
-export type BrandPlatform = {
-  id: string;
-  title: string;
-  icon: React.ReactNode;
-};
-
-export type Industry =
-  | "agency"
-  | "ecommerce"
-  | "website-app"
-  | "brick-mortar"
-  | "other";
-
-export type BrandCategory = {
-  id: string;
-  title: string;
-};
-
-export type ContentVolume = "0-5" | "5-10" | "10-20" | "20-50" | "50+";
-
-export type Budget =
-  | "under-10k"
-  | "10k-50k"
-  | "50k-100k"
-  | "100k-500k"
-  | "500k+";
-
-export type PackageData = {
-  id?: number;
-  platform: string;
-  content_type: string;
-  package_name: string;
-  package_description: string;
-  content_pieces: number;
-  price: number;
-};
-
-export const CONTENT_TYPES = {
-  youtube: ["short-videos", "long-videos", "live-events"],
-  x: ["tweet", "thread", "spaces", "memes-gifs", "polls"],
-};
-
-export type MockCampaign = {
-  id: string;
-  name: string;
-  status: "active" | "paused" | "completed";
-  budget: number;
-  spent: number;
-  startDate: string;
-  endDate: string;
-  engagement: number;
-  reach: number;
-};
-
 export type UserType = {
   x_handle: string;
   evm_wallet: string;
@@ -171,12 +91,6 @@ export type Token = {
   symbol: string;
   decimals: number;
 };
-
-export interface CampaignParticipant {
-  campaign_id: string;
-  user_id: number;
-  submission_url: string;
-}
 
 export const allowedSolanaTokens: Token[] = [
   {
