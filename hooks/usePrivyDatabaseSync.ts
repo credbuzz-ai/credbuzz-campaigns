@@ -61,10 +61,6 @@ export const usePrivyDatabaseSync = () => {
           }
           await fetchUserData();
           syncSuccessRef.current = true; // Mark as successful
-          toast({
-            title: "Welcome back!",
-            description: "Successfully connected to your account",
-          });
           return;
         }
 
