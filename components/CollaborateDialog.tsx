@@ -45,13 +45,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 
 interface CollaborateDialogProps {
-  influencerHandle: string;
+  influencerHandle?: string;
   children: React.ReactNode;
+  mode?: "targeted" | "public";
 }
 
 export default function CollaborateDialog({
   influencerHandle,
   children,
+  mode = "targeted",
 }: CollaborateDialogProps) {
   // Use the new Privy database sync hook
   const {
@@ -89,15 +91,15 @@ export default function CollaborateDialog({
   const apiCallInProgressRef = useRef(false);
   const formDataRef = useRef<Campaign | null>(null);
 
-  const form = useForm<Campaign>({
+  const form = useForm<Campaign & { target_x_handle?: string }>({
     defaultValues: {
       campaign_id: "",
       project_x_handle: "",
       influencer_x_handle: "",
-      campaign_type: "Targeted",
+      campaign_type: mode === "targeted" ? "Targeted" : "Public",
       campaign_name: "",
       description: "",
-      status: "OPEN",
+      status: mode === "targeted" ? "OPEN" : "PUBLISHED",
       token: "",
       token_address: "",
       token_decimals: 0,
@@ -107,6 +109,7 @@ export default function CollaborateDialog({
       counter: 0,
       project_wallet: "",
       influencer_wallet: "",
+      target_x_handle: "",
     },
   });
 
@@ -240,14 +243,14 @@ export default function CollaborateDialog({
     return Math.floor(new Date(datetimeLocal).getTime() / 1000);
   };
 
-  const onSubmit = async (data: Campaign) => {
+  const onSubmit = async (data: Campaign & { target_x_handle?: string }) => {
     // Set influencer wallet address if not already set
     const influencerWalletAddr = influencerData?.evm_wallet || CREDBUZZ_ACCOUNT;
 
     // Validate required fields with specific error messages
     const missingFields = [];
 
-    if (!influencerWalletAddr) {
+    if (mode === "targeted" && !influencerWalletAddr) {
       missingFields.push("Influencer wallet address");
     }
     if (!data.amount || data.amount <= 0) {
@@ -265,6 +268,9 @@ export default function CollaborateDialog({
     if (!data.description) {
       missingFields.push("Campaign description");
     }
+    if (mode === "public" && !data.target_x_handle) {
+      missingFields.push("Target X handle");
+    }
 
     if (missingFields.length > 0) {
       toast({
@@ -274,7 +280,7 @@ export default function CollaborateDialog({
       return;
     }
 
-    if (!influencerData) {
+    if (mode === "targeted" && !influencerData) {
       toast({
         title: "Error",
         description: "Influencer data not loaded. Please try again.",
@@ -284,13 +290,23 @@ export default function CollaborateDialog({
 
     setIsSubmitting(true);
 
-    // Update form data with correct influencer wallet address
+    // Update form data with correct influencer wallet address for targeted campaigns
+    const campaignType = mode === "targeted" ? "Targeted" : "Public";
     const updatedData = {
       ...data,
-      influencer_wallet: influencerWalletAddr,
-    };
+      influencer_wallet:
+        mode === "targeted" ? influencerWalletAddr : CREDBUZZ_ACCOUNT,
+      campaign_type: campaignType,
+      status: mode === "targeted" ? "OPEN" : "PUBLISHED",
+      description:
+        mode === "public"
+          ? `${
+              data.description
+            }\nTarget X Handle: @${data.target_x_handle?.replace("@", "")}`
+          : data.description,
+    } as Campaign;
 
-    formDataRef.current = updatedData; // Store updated form data for event handler
+    formDataRef.current = updatedData;
 
     try {
       // Find selected token for decimals
@@ -318,14 +334,13 @@ export default function CollaborateDialog({
 
       // 2. Create campaign on blockchain
       const txHash = await createNewCampaign(
-        influencerWalletAddr,
+        mode === "targeted" ? influencerWalletAddr : CREDBUZZ_ACCOUNT,
         amountInWei,
         convertToTimestamp(data.offer_end_date),
         convertToTimestamp(data.offer_end_date),
         data.token_address || ""
       );
 
-      // Don't close dialog here - wait for contract event
       toast({
         title: "Transaction Submitted",
         description: "Waiting for blockchain confirmation...",
@@ -351,10 +366,17 @@ export default function CollaborateDialog({
       const requestBody = {
         campaign_id: campaignId,
         project_x_handle: data.project_x_handle,
-        influencer_x_handle: influencerHandle,
+        influencer_x_handle:
+          mode === "targeted"
+            ? influencerHandle
+            : (data as any).target_x_handle?.replace("@", ""),
         campaign_type: data.campaign_type,
         campaign_name: data.campaign_name,
-        description: data.description,
+        description:
+          data.description +
+          (data.campaign_type === "Public" && (data as any).target_x_handle
+            ? "\nTarget X Handle: @" + (data as any).target_x_handle
+            : ""),
         status: data.campaign_type === "Targeted" ? "OPEN" : "PUBLISHED",
         token: data.token,
         token_address: data.token_address,
@@ -364,7 +386,7 @@ export default function CollaborateDialog({
         offer_end_date: data.offer_end_date,
         counter: data.chain === "Solana" ? data.counter : null,
         project_wallet: data.project_wallet,
-        influencer_wallet: data.influencer_wallet,
+        influencer_wallet: data.influencer_wallet ?? CREDBUZZ_ACCOUNT,
       };
 
       // Make API call to save campaign in database
@@ -398,21 +420,25 @@ export default function CollaborateDialog({
     }
   };
 
-  // Listen for contract events
+  // Update the event handling section
   useEffect(() => {
     if (!contract) return;
 
-    const handleEvent = (campaignId: string) => {
+    const handleCampaignEvent = (campaignId: string) => {
       if (apiCallInProgressRef.current) return;
       apiCallInProgressRef.current = true;
 
       handleCampaignCreated(campaignId);
     };
 
-    contract.on("CampaignCreated", handleEvent);
+    // Listen for both CampaignCreated and OpenCampaignCreated events
+    contract.on("CampaignCreated", handleCampaignEvent);
+    contract.on("OpenCampaignCreated", handleCampaignEvent);
 
     return () => {
-      contract.off("CampaignCreated", handleEvent);
+      // Clean up both event listeners
+      contract.off("CampaignCreated", handleCampaignEvent);
+      contract.off("OpenCampaignCreated", handleCampaignEvent);
       apiCallInProgressRef.current = false;
     };
   }, [contract]);
@@ -538,9 +564,7 @@ export default function CollaborateDialog({
   const LoadingUI = () => (
     <div className="text-center py-8">
       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992] mx-auto mb-4"></div>
-      <p className="text-gray-400">
-        {isLoadingInfluencer ? "Setting up influencer..." : "Loading..."}
-      </p>
+      <p className="text-gray-400">Loading...</p>
     </div>
   );
 
@@ -580,13 +604,15 @@ export default function CollaborateDialog({
               ? "Connect your X account to create campaigns"
               : !isWalletConnected
               ? "Connect your MetaMask wallet to proceed"
-              : isLoadingInfluencer
-              ? "Setting up influencer account..."
-              : "Fill in the details below to create a new KOL promotion campaign"}
+              : mode === "targeted"
+              ? isLoadingInfluencer
+                ? "Setting up influencer account..."
+                : "Fill in the details below to create a new KOL promotion campaign"
+              : "Fill in the details below to create a new public campaign"}
           </p>
         </DialogHeader>
 
-        {!ready || isLoadingInfluencer ? (
+        {!ready || (mode === "targeted" && isLoadingInfluencer) ? (
           <LoadingUI />
         ) : !authenticated ? (
           <AuthConnectionUI />
@@ -594,67 +620,44 @@ export default function CollaborateDialog({
           <WalletConnectionUI />
         ) : (
           <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="space-y-4 pt-6"
-            >
-              {/* Campaign Type */}
-              {/* <FormField
-                control={form.control}
-                name="campaign_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-300 text-sm font-medium">
-                      Campaign Type
-                    </FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Show target X handle field only for public campaigns */}
+              {mode === "public" && (
+                <FormField
+                  control={form.control}
+                  name="target_x_handle"
+                  rules={{
+                    required: "Target X handle is required",
+                    pattern: {
+                      value: /^@?[a-zA-Z0-9_]{1,15}$/,
+                      message: "Please enter a valid X handle",
+                    },
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-gray-300 text-sm font-medium">
+                        Target X Handle
+                      </FormLabel>
                       <FormControl>
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9">
-                          <SelectValue placeholder="Select campaign type" />
-                        </SelectTrigger>
+                        <Input
+                          {...field}
+                          placeholder="@handle"
+                          className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                          onChange={(e) => {
+                            // Ensure handle starts with @
+                            let value = e.target.value;
+                            if (value && !value.startsWith("@")) {
+                              value = "@" + value;
+                            }
+                            field.onChange(value);
+                          }}
+                        />
                       </FormControl>
-                      <SelectContent className="bg-gray-800 border-gray-600">
-                        <SelectItem
-                          value="Targeted"
-                          className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
-                        >
-                          Targeted
-                        </SelectItem>
-                        <SelectItem
-                          value="Public"
-                          className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
-                          disabled
-                        >
-                          Public
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-red-400 text-xs" />
-                  </FormItem>
-                )}
-              /> */}
-
-              {/* Influencer Handle (Read-only) - Show actual influencer info */}
-              {/* <FormField
-                control={form.control}
-                name="influencer_x_handle"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-gray-300 text-sm font-medium">
-                      Select Influencer
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={influencerData?.x_handle || ""}
-                        disabled
-                        className="bg-gray-700 border-gray-600 text-gray-300 cursor-not-allowed h-9"
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-400 text-xs" />
-                  </FormItem>
-                )}
-              /> */}
+                      <FormMessage className="text-red-400 text-xs" />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               {/* Campaign Name */}
               <FormField
@@ -866,7 +869,7 @@ export default function CollaborateDialog({
               </div>
 
               {/* Submit Button */}
-              <div className="flex justify-end gap-3 pt-6 border-t border-gray-700 mt-6">
+              <div className="flex justify-end gap-3 pt-6 mt-6">
                 <Button
                   type="button"
                   variant="outline"
@@ -877,7 +880,9 @@ export default function CollaborateDialog({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting || !influencerData}
+                  disabled={
+                    isSubmitting || (mode === "targeted" && !influencerData)
+                  }
                   className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium h-9 px-6"
                 >
                   <Send className="h-4 w-4 mr-2" />

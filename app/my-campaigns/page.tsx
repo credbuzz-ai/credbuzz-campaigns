@@ -168,6 +168,8 @@ export default function MyCampaigns() {
       case "active":
       case "open":
         return <TrendingUp className="w-4 h-4 text-green-500" />;
+      case "published":
+        return <TrendingUp className="w-4 h-4 text-green-500" />;
       case "completed":
       case "fulfilled":
         return <CheckCircle className="w-4 h-4 text-blue-500" />;
@@ -185,6 +187,8 @@ export default function MyCampaigns() {
     switch (status.toLowerCase()) {
       case "active":
       case "open":
+        return "bg-green-500/10 text-green-400 border-green-500/20";
+      case "published":
         return "bg-green-500/10 text-green-400 border-green-500/20";
       case "completed":
       case "fulfilled":
