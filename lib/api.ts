@@ -36,9 +36,8 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Clear token and redirect to login if unauthorized
+      // Clear token
       localStorage.removeItem("token");
-      window.location.href = "/creator";
     }
     return Promise.reject(error);
   }

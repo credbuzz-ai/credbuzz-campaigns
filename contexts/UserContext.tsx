@@ -43,7 +43,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
         if (typeof window !== "undefined") {
           localStorage.removeItem("token");
         }
-        router.push("/creator");
+        router.push("/");
         toast({
           title: "User not registered!",
           description: "Please sign up to access your account.",

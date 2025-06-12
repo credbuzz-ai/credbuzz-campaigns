@@ -2,7 +2,19 @@
 
 import { ChevronLeft, ChevronRight, Eye, Star, Users } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+// Add debounce function at the top level
+function debounce<T extends (...args: any[]) => void>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+}
 
 interface KOL {
   author_handle: string;
@@ -33,7 +45,9 @@ export default function KOLsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResult, setSearchResult] = useState<KOL | null>(null);
+  const [searchResult, setSearchResult] = useState<boolean | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [minCharMessage, setMinCharMessage] = useState<string>("");
 
   const fetchKOLs = async (page: number) => {
     setLoading(true);
@@ -79,54 +93,91 @@ export default function KOLsPage() {
   }, [currentPage, searchResult]);
 
   const searchAuthors = async (term: string) => {
+    if (!term.trim() || term.trim().length < 4) {
+      setSearchResult(null);
+      setMinCharMessage(
+        term.trim() ? "Please enter at least 4 characters to search" : ""
+      );
+      return;
+    }
+
+    setMinCharMessage("");
+    setSearchLoading(true);
     try {
       const response = await fetch(
-        `/api/user/search-authors?search_term=${term}&category=KOL&limit=1&start=0`
+        "https://api.cred.buzz/user/get-score-leaderboard",
+        {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            start: 0,
+            limit: 0,
+            author_handle: term.trim(),
+          }),
+        }
       );
-      const data = await response.json();
 
-      if (data.result && data.result.length > 0) {
-        const author = data.result[0];
-        setSearchResult({
-          author_handle: author.author_handle,
-          name: author.name,
-          score: author.engagement_score || 0,
-          followers: author.followers_count,
-          smart_followers: author.smart_followers_count,
-          avg_views: Math.round(
-            author.crypto_tweets_views_all / (author.crypto_tweets_all || 1)
-          ),
-          profile_image_url: author.profile_image_url,
-        });
-        setTotalItems(1);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data: LeaderboardResponse = await response.json();
+
+      if (data.result.data.length > 0) {
+        setKols(data.result.data);
+        setTotalItems(data.result.total);
+        setSearchResult(true);
+      } else {
+        setKols([]);
+        setTotalItems(0);
+        setSearchResult(null);
       }
     } catch (err) {
       console.error("Error searching authors:", err);
+      setKols([]);
+      setTotalItems(0);
+      setSearchResult(null);
+    } finally {
+      setSearchLoading(false);
     }
   };
 
-  const handleSearch = () => {
-    if (searchTerm.trim()) {
-      searchAuthors(searchTerm);
-    }
-  };
+  // Create debounced search function
+  const debouncedSearch = useCallback(
+    debounce((term: string) => searchAuthors(term), 300),
+    []
+  );
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
+    const value = e.target.value;
+    setSearchTerm(value);
+    if (!value.trim()) {
+      setSearchResult(null);
+      setMinCharMessage("");
+      fetchKOLs(1);
+    } else if (value.trim().length < 4) {
+      setMinCharMessage("Please enter at least 4 characters to search");
+    } else {
+      debouncedSearch(value);
+    }
   };
 
   const clearSearch = () => {
     setSearchTerm("");
     setSearchResult(null);
     setCurrentPage(1);
+    fetchKOLs(1);
   };
 
-  const displayedKols = searchResult ? [searchResult] : kols;
+  const displayedKols = kols;
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
-    return num.toString();
+    return num?.toString() || "0";
   };
 
   const getScoreColor = (score: number) => {
@@ -150,41 +201,50 @@ export default function KOLsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Users className="w-6 h-6 text-[#00D992]" />
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-100">
-              KOL Leaderboard
-            </h1>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Users className="w-6 h-6 text-[#00D992]" />
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-100">
+                KOL Leaderboard
+              </h1>
+            </div>
+
+            {/* Search Input */}
+            <div className="flex flex-col gap-2 w-96">
+              <div className="flex gap-2 relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  placeholder="Search by username (min. 4 characters)..."
+                  className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
+                />
+                {searchLoading && (
+                  <div className="absolute right-24 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#00D992]"></div>
+                  </div>
+                )}
+                {searchTerm && (
+                  <button
+                    onClick={clearSearch}
+                    className="px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={searchLoading}
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              {minCharMessage && (
+                <div className="text-sm text-amber-400 mt-1">
+                  {minCharMessage}
+                </div>
+              )}
+            </div>
           </div>
           <p className="text-sm sm:text-base text-gray-400 mb-4">
             Top-performing Key Opinion Leaders ranked by their credibility
             scores
           </p>
-
-          {/* Search Input */}
-          <div className="flex gap-2 max-w-md">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={handleSearchChange}
-              placeholder="Search by username..."
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
-            />
-            <button
-              onClick={handleSearch}
-              className="px-4 py-2 bg-[#00D992] text-gray-900 rounded-lg hover:bg-[#00D992]/90 transition-colors"
-            >
-              Search
-            </button>
-            {searchResult && (
-              <button
-                onClick={clearSearch}
-                className="px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors"
-              >
-                Clear
-              </button>
-            )}
-          </div>
         </div>
 
         {/* Content */}
