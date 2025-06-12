@@ -1,7 +1,8 @@
 "use client";
 
+import { XLogo } from "@/components/icons/x-logo";
 import { usePrivy } from "@privy-io/react-auth";
-import { ArrowLeft, ExternalLink, Twitter, Wallet } from "lucide-react";
+import { ArrowLeft, ExternalLink, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -38,7 +39,7 @@ export default function ProfilePage() {
     );
   }
 
-  const twitterUser = user.twitter;
+  const xUser = user.twitter;
   const walletAddress = user.wallet?.address;
 
   return (
@@ -60,9 +61,9 @@ export default function ProfilePage() {
           <div className="lg:col-span-2">
             <div className="bg-gray-800/50 backdrop-blur-md border border-gray-700/50 rounded-2xl p-8">
               <div className="flex items-start gap-6 mb-6">
-                {twitterUser?.profilePictureUrl && (
+                {xUser?.profilePictureUrl && (
                   <img
-                    src={twitterUser.profilePictureUrl}
+                    src={xUser.profilePictureUrl}
                     alt="Profile"
                     className="w-24 h-24 rounded-full border-2 border-[#00D992]/30"
                   />
@@ -70,38 +71,37 @@ export default function ProfilePage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h2 className="text-2xl font-bold text-white">
-                      {twitterUser?.name || "Twitter User"}
+                      {xUser?.name || "Twitter User"}
                     </h2>
-                    <Twitter className="w-5 h-5 text-[#1DA1F2]" />
+                    <XLogo className="w-5 h-5" />
                   </div>
-                  {twitterUser?.username && (
-                    <p className="text-gray-300 mb-3">
-                      @{twitterUser.username}
-                    </p>
+                  {xUser?.username && (
+                    <p className="text-gray-300 mb-3">@{xUser.username}</p>
                   )}
-                  {(twitterUser as any)?.description && (
+                  {(xUser as any)?.description && (
                     <p className="text-gray-400 leading-relaxed">
-                      {(twitterUser as any).description}
+                      {(xUser as any).description}
                     </p>
                   )}
                 </div>
               </div>
 
-              {/* Twitter Stats */}
-              {((twitterUser as any)?.numFollowers || (twitterUser as any)?.numFollowing) && (
+              {/* X Stats */}
+              {((xUser as any)?.numFollowers ||
+                (xUser as any)?.numFollowing) && (
                 <div className="flex gap-6 mb-6 pb-6 border-b border-gray-700/50">
-                  {(twitterUser as any).numFollowers && (
+                  {(xUser as any).numFollowers && (
                     <div className="text-center">
                       <div className="text-2xl font-bold text-[#00D992]">
-                        {(twitterUser as any).numFollowers.toLocaleString()}
+                        {(xUser as any).numFollowers.toLocaleString()}
                       </div>
                       <div className="text-sm text-gray-400">Followers</div>
                     </div>
                   )}
-                  {(twitterUser as any).numFollowing && (
+                  {(xUser as any).numFollowing && (
                     <div className="text-center">
                       <div className="text-2xl font-bold text-white">
-                        {(twitterUser as any).numFollowing.toLocaleString()}
+                        {(xUser as any).numFollowing.toLocaleString()}
                       </div>
                       <div className="text-sm text-gray-400">Following</div>
                     </div>
@@ -111,14 +111,14 @@ export default function ProfilePage() {
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-4">
-                {twitterUser?.username && (
+                {xUser?.username && (
                   <a
-                    href={`https://twitter.com/${twitterUser.username}`}
+                    href={`https://twitter.com/${xUser.username}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="btn-primary flex items-center gap-2"
                   >
-                    <Twitter className="w-4 h-4" />
+                    <XLogo className="w-4 h-4" />
                     View on Twitter
                     <ExternalLink className="w-4 h-4" />
                   </a>
