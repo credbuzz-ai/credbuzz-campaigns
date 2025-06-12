@@ -70,7 +70,7 @@ export default function KOLProfileHeader({
           className="bg-gray-600 text-gray-300 cursor-not-allowed"
         >
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Setting up account...
+          Loading...
         </Button>
       );
     }

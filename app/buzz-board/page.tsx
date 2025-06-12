@@ -1,5 +1,6 @@
 "use client";
 
+import CollaborateDialog from "@/components/CollaborateDialog";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
 import { Clock, DollarSign, Search, TrendingUp, Users } from "lucide-react";
@@ -193,10 +194,35 @@ export default function BuzzBoard() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-100 mb-4">Buzz Board</h1>
-          <p className="text-xl text-gray-300">
-            Discover and join active Web3 marketing campaigns
-          </p>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-100 mb-4">
+                Buzz Board
+              </h1>
+              <p className="text-xl text-gray-300">
+                Discover and join active Web3 marketing campaigns
+              </p>
+            </div>
+            <CollaborateDialog mode="public">
+              <button className="px-6 py-3 bg-[#00D992] hover:bg-[#00F5A8] text-gray-900 font-semibold rounded-xl transition-colors flex items-center gap-2">
+                <span>Create Campaign</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+              </button>
+            </CollaborateDialog>
+          </div>
         </div>
 
         {/* Filters */}

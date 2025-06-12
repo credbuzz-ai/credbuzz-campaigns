@@ -114,10 +114,4 @@ export const allowedBaseTokens: Token[] = [
     symbol: "USDC",
     decimals: 6,
   },
-  {
-    value: "USDT",
-    address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
-    symbol: "USDT",
-    decimals: 18,
-  },
 ];
