@@ -298,12 +298,8 @@ export default function CollaborateDialog({
         mode === "targeted" ? influencerWalletAddr : CREDBUZZ_ACCOUNT,
       campaign_type: campaignType,
       status: mode === "targeted" ? "OPEN" : "PUBLISHED",
-      description:
-        mode === "public"
-          ? `${
-              data.description
-            }\nTarget X Handle: @${data.target_x_handle?.replace("@", "")}`
-          : data.description,
+      influencer_x_handle: mode === "targeted" ? influencerHandle : undefined,
+      description: data.description,
     } as Campaign;
 
     formDataRef.current = updatedData;
@@ -366,17 +362,11 @@ export default function CollaborateDialog({
       const requestBody = {
         campaign_id: campaignId,
         project_x_handle: data.project_x_handle,
-        influencer_x_handle:
-          mode === "targeted"
-            ? influencerHandle
-            : (data as any).target_x_handle?.replace("@", ""),
+        influencer_x_handle: data.influencer_x_handle,
+        target_x_handle: data.target_x_handle,
         campaign_type: data.campaign_type,
         campaign_name: data.campaign_name,
-        description:
-          data.description +
-          (data.campaign_type === "Public" && (data as any).target_x_handle
-            ? "\nTarget X Handle: @" + (data as any).target_x_handle
-            : ""),
+        description: data.description,
         status: data.campaign_type === "Targeted" ? "OPEN" : "PUBLISHED",
         token: data.token,
         token_address: data.token_address,

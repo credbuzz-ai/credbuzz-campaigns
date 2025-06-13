@@ -42,6 +42,28 @@ export default function CampaignDetailsPage() {
     fetchCampaignDetails();
   }, [params.campaignId]);
 
+  useEffect(() => {
+    const fetchMindshare = async () => {
+      try {
+        // TODO: remove later
+        const response = await apiClient.get(`/mindshare?project_name=infinex`);
+        // const response = await apiClient.get(
+        //   `/mindshare?project_name=${campaign?.target_x_handle?.replace(
+        //     "@",
+        //     ""
+        //   )}`
+        // );
+        console.log("Mindshare data:", response.data);
+      } catch (err) {
+        console.error("Error fetching mindshare:", err);
+      }
+    };
+
+    if (campaign?.target_x_handle) {
+      fetchMindshare();
+    }
+  }, [campaign?.target_x_handle]);
+
   if (loading) {
     return <CampaignSkeleton />;
   }
@@ -70,25 +92,18 @@ export default function CampaignDetailsPage() {
                 </h1>
                 <div className="flex items-center gap-2 text-gray-400">
                   <XLogo className="w-4 h-4" />
-                  <span>@{campaign.project_x_handle}</span>
+                  <span>Creator: @{campaign.project_x_handle}</span>
                 </div>
-                {campaign.description.includes("Target X Handle") && (
+                {campaign.target_x_handle && (
                   <div className="flex items-center gap-2 text-gray-400 mt-2">
                     <XLogo className="w-4 h-4" />
                     <span className="text-[#00D992]">
-                      Target:{" "}
-                      {
-                        campaign.description
-                          .split("Target X Handle: ")[1]
-                          .split(" ")[0]
-                      }
+                      Target: {campaign.target_x_handle}
                     </span>
                   </div>
                 )}
                 <p className="text-gray-300 text-lg max-w-2xl">
-                  {campaign.description
-                    .replace(/Target X Handle: @\w+/g, "")
-                    .trim()}
+                  {campaign.description}
                 </p>
               </div>
               <div>
