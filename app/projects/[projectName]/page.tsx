@@ -1,202 +1,220 @@
-import { notFound } from "next/navigation"
-import { Calendar, DollarSign, Users, Target, Clock, CheckCircle } from "lucide-react"
+"use client";
+import MindshareTreemap from "@/app/components/MindshareTreemap";
+import { AuthorData, MindshareResponse } from "@/app/types";
+import apiClient from "@/lib/api";
+import Image from "next/image";
+import { notFound } from "next/navigation";
+import { useEffect, useState } from "react";
 
-// Mock data
-const campaigns = {
-  "defi-summer-2024": {
-    title: "DeFi Summer 2024 Campaign",
-    brand: "Compound Finance",
-    description:
-      "Educate users about the latest DeFi innovations and drive adoption of Compound V3 protocol through authentic storytelling and educational content.",
-    budget: "$50,000",
-    duration: "30 days",
-    startDate: "2024-06-01",
-    endDate: "2024-06-30",
-    status: "Active",
-    participants: 12,
-    targetReach: "500K",
-    currentReach: "342K",
-    requirements: [
-      "Minimum 10K followers in crypto/DeFi space",
-      "Previous DeFi campaign experience",
-      "Authentic engagement (>5% rate)",
-      "Content in English",
-    ],
-    deliverables: [
-      "2 educational Twitter threads",
-      "1 detailed blog post or video",
-      "5 engagement posts",
-      "Live AMA participation",
-    ],
-    kols: [
-      { name: "Alex Chen", username: "@alexweb3", followers: "125K", status: "Confirmed" },
-      { name: "Sarah DeFi", username: "@sarahdefi", followers: "89K", status: "Confirmed" },
-      { name: "Mike Crypto", username: "@mikecrypto", followers: "156K", status: "Pending" },
-    ],
-  },
-}
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
-export default function CampaignPage({ params }: { params: { projectName: string } }) {
-  const campaign = campaigns[params.projectName as keyof typeof campaigns]
+export default function ProjectPage({
+  params,
+}: {
+  params: { projectName: string };
+}) {
+  const { projectName } = params;
+  const [authorData, setAuthorData] = useState<AuthorData | null>(null);
+  const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
+    null
+  );
+  const [loading, setLoading] = useState(false);
 
-  if (!campaign) {
-    notFound()
+  const fetchProjectDetails = async () => {
+    try {
+      const response = await fetch(
+        `${baseUrl}/api/user/search-authors?search_term=${projectName.toLowerCase()}&limit=1&start=0&category=projects`,
+        {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+          signal: AbortSignal.timeout(10000),
+        }
+      );
+      const data = await response.json();
+      if (!data.result?.[0]) {
+        return notFound();
+      }
+      setAuthorData(data.result[0]);
+    } catch (error) {
+      console.error("Error fetching project:", error);
+      return notFound();
+    }
+  };
+
+  const fetchMindshare = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get(
+        `/mindshare?project_name=${projectName}&limit=50`
+      );
+      setMindshareData(response.data);
+    } catch (err) {
+      console.error("Error fetching mindshare:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjectDetails();
+    fetchMindshare();
+  }, [projectName]);
+
+  if (!authorData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="p-6 rounded-xl bg-white shadow-lg">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <p className="mt-3 text-sm text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
   }
 
-  const progress =
-    (Number.parseInt(campaign.currentReach.replace("K", "")) / Number.parseInt(campaign.targetReach.replace("K", ""))) *
-    100
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat("en-US", { notation: "compact" }).format(num);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="p-6 bg-white shadow-lg">
+          <div className="animate-spin h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <p className="mt-3 text-sm text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Campaign Header */}
-        <div className="card-pastel bg-pastel-beige mb-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">{campaign.title}</h1>
-              <p className="text-xl text-gray-600 dark:text-gray-300">by {campaign.brand}</p>
-            </div>
-            <div className="flex items-center gap-4 mt-4 md:mt-0">
-              <span
-                className={`px-4 py-2 rounded-full text-sm font-medium ${
-                  campaign.status === "Active" ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
-                }`}
-              >
-                {campaign.status}
-              </span>
-              <button className="btn-primary">Apply to Campaign</button>
-            </div>
-          </div>
-          <p className="text-gray-700 dark:text-gray-200 text-lg">{campaign.description}</p>
-        </div>
+    <div className="min-h-screen bg-background">
+      {/* Banner Image */}
+      <div className="relative h-48 md:h-56 w-full">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60 z-10" />
+        <Image
+          src={authorData.profile_banner_url}
+          alt="Profile Banner"
+          fill
+          className="object-cover"
+          priority
+        />
+      </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="md:col-span-2 space-y-8">
-            {/* Campaign Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="card-pastel bg-pastel-mint text-center">
-                <DollarSign className="w-8 h-8 text-gray-800 dark:text-gray-100 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{campaign.budget}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">Budget</div>
-              </div>
-              <div className="card-pastel bg-pastel-lavender text-center">
-                <Clock className="w-8 h-8 text-gray-800 dark:text-gray-100 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{campaign.duration}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">Duration</div>
-              </div>
-              <div className="card-pastel bg-pastel-peach text-center">
-                <Users className="w-8 h-8 text-gray-800 dark:text-gray-100 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{campaign.participants}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">KOLs</div>
-              </div>
-              <div className="card-pastel bg-pastel-sage text-center">
-                <Target className="w-8 h-8 text-gray-800 dark:text-gray-100 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-gray-800 dark:text-gray-100">{campaign.targetReach}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-300">Target Reach</div>
-              </div>
+      {/* Profile Section */}
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 relative z-20">
+        <div className="card-trendsage">
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Profile Image */}
+            <div className="relative h-28 w-28 rounded-xl overflow-hidden border-4 border-gray-700 shadow-xl transform -mt-16 md:-mt-20">
+              <Image
+                src={authorData.profile_image_url}
+                alt={authorData.name}
+                fill
+                className="object-cover"
+                priority
+              />
             </div>
 
-            {/* Progress */}
-            <div className="card-pastel bg-white">
-              <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Campaign Progress</h3>
-              <div className="mb-4">
-                <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300 mb-2">
-                  <span>Current Reach: {campaign.currentReach}</span>
-                  <span>Target: {campaign.targetReach}</span>
+            {/* Profile Info */}
+            <div className="flex-1">
+              <div className="flex flex-col md:flex-row md:items-center justify-between">
+                <div>
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {authorData.name}
+                  </h1>
+                  <p className="text-muted-foreground">
+                    @{authorData.author_handle}
+                  </p>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                  <div
-                    className="bg-gradient-to-r from-pastel-mint to-pastel-lavender dark:from-blue-500 dark:to-purple-500 h-3 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-                <div className="text-right text-sm text-gray-600 dark:text-gray-300 mt-1">
-                  {progress.toFixed(1)}% Complete
-                </div>
+                <a
+                  href={`https://${authorData.url_in_bio}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary"
+                >
+                  Visit Website
+                </a>
               </div>
-            </div>
-
-            {/* Requirements */}
-            <div className="card-pastel bg-pastel-mint">
-              <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Requirements</h3>
-              <ul className="space-y-2">
-                {campaign.requirements.map((req, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-200">{req}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Deliverables */}
-            <div className="card-pastel bg-pastel-lavender">
-              <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">Deliverables</h3>
-              <ul className="space-y-2">
-                {campaign.deliverables.map((deliverable, index) => (
-                  <li key={index} className="flex items-start gap-2">
-                    <Target className="w-5 h-5 text-gray-800 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 dark:text-gray-200">{deliverable}</span>
-                  </li>
-                ))}
-              </ul>
+              <p className="mt-2 text-foreground">{authorData.bio}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Joined {formatDate(authorData.account_created_at)}
+              </p>
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Campaign Timeline */}
-            <div className="card-pastel bg-white">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Timeline</h3>
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                  <div>
-                    <div className="font-medium text-gray-800 dark:text-gray-100">Start Date</div>
-                    <div className="text-gray-600 dark:text-gray-300">{campaign.startDate}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                  <div>
-                    <div className="font-medium text-gray-800 dark:text-gray-100">End Date</div>
-                    <div className="text-gray-600 dark:text-gray-300">{campaign.endDate}</div>
-                  </div>
-                </div>
+          {/* Stats Grid */}
+          <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { label: "Followers", value: authorData.followers_count },
+              { label: "Following", value: authorData.followings_count },
+              { label: "Crypto Tweets", value: authorData.crypto_tweets_all },
+              {
+                label: "Tweet Views",
+                value: authorData.crypto_tweets_views_all,
+              },
+            ].map((stat) => (
+              <div key={stat.label} className="card-trendsage">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  {stat.label}
+                </p>
+                <p className="mt-1 text-xl font-bold text-foreground">
+                  {formatNumber(stat.value)}
+                </p>
               </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Participating KOLs */}
-            <div className="card-pastel bg-pastel-peach">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">Participating KOLs</h3>
-              <div className="space-y-3">
-                {campaign.kols.map((kol, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg"
-                  >
-                    <div>
-                      <div className="font-medium text-gray-800 dark:text-gray-100">{kol.name}</div>
-                      <div className="text-sm text-gray-600 dark:text-gray-300">
-                        {kol.username} • {kol.followers}
-                      </div>
-                    </div>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        kol.status === "Confirmed" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"
-                      }`}
-                    >
-                      {kol.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
+          {/* Engagement Metrics */}
+          <div className="mt-8">
+            <h2 className="text-xl font-bold mb-4 text-foreground">
+              Engagement Metrics
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                {
+                  label: "Engagement Score",
+                  value: authorData.engagement_score,
+                },
+                {
+                  label: "Followers Impact",
+                  value: authorData.followers_impact,
+                },
+                {
+                  label: "Smart Followers",
+                  value: authorData.smart_followers_count,
+                },
+              ].map((metric) => (
+                <div key={metric.label} className="card-trendsage">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    {metric.label}
+                  </p>
+                  <p className="mt-1 text-2xl font-bold accent-trendsage">
+                    {formatNumber(metric.value)}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Mindshare Treemap */}
+      {mindshareData && mindshareData.result.mindshare_data.length > 0 && (
+        <div className="mt-8">
+          <MindshareTreemap data={mindshareData.result.mindshare_data} />
+        </div>
+      )}
     </div>
-  )
+  );
 }

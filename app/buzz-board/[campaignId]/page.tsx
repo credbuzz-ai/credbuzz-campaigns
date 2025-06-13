@@ -1,6 +1,7 @@
 "use client";
 
 import MindshareTreemap from "@/app/components/MindshareTreemap";
+import { MindshareResponse } from "@/app/types";
 import { XLogo } from "@/components/icons/x-logo";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -12,33 +13,6 @@ import { formatDistanceToNow } from "date-fns";
 import { Clock, Coins, Wallet } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-
-interface MindshareResponse {
-  result: {
-    period: string;
-    project_name: string;
-    author_handle: string | null;
-    total_results: number;
-    mindshare_data: Array<{
-      project_name: string;
-      author_handle: string;
-      author_buzz: number;
-      project_buzz: number;
-      mindshare_percent: number;
-      period: string;
-      created_at: string;
-      tweet_count: number;
-      user_info: {
-        name: string;
-        handle: string;
-        profile_image_url: string | null;
-        followers_count: number;
-        followings_count: number;
-      };
-    }>;
-  };
-  message: string;
-}
 
 export default function CampaignDetailsPage() {
   const params = useParams();

@@ -1,7 +1,28 @@
 "use client";
 
-import * as d3 from "d3";
-import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
+import React from "react";
+
+const ReactApexChart = dynamic(() => import("react-apexcharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[500px] bg-gray-800/50 rounded-lg animate-pulse">
+      <div className="h-full w-full grid grid-cols-3 gap-3 p-4">
+        {[...Array(9)].map((_, i) => (
+          <div
+            key={i}
+            className="bg-gray-700/50 rounded-lg animate-shimmer"
+            style={{
+              animationDelay: `${i * 100}ms`,
+              height: `${Math.max(50, Math.random() * 100)}%`,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  ),
+});
 
 interface MindshareData {
   author_handle: string;
@@ -13,6 +34,8 @@ interface MindshareData {
     profile_image_url: string | null;
     followers_count: number;
     followings_count: number;
+    smart_followers_count: number;
+    engagement_score: number;
   };
 }
 
@@ -20,277 +43,204 @@ interface MindshareTreemapProps {
   data: MindshareData[];
 }
 
-type HierarchyDatum = { children: MindshareData[] } | MindshareData;
+export default function MindshareTreemap({ data }: MindshareTreemapProps) {
+  const router = useRouter();
 
-const getTooltipPosition = (event: MouseEvent, tooltipElement: HTMLElement) => {
-  const viewport = {
-    width: window.innerWidth,
-    height: window.innerHeight,
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  const chartData = React.useMemo(() => {
+    return [
+      {
+        data: data.map((item) => ({
+          x: item.user_info.name,
+          y: item.mindshare_percent,
+          author_handle: item.author_handle,
+          author_buzz: item.author_buzz,
+          profile_image_url: item.user_info.profile_image_url,
+          followers_count: item.user_info.followers_count,
+          followings_count: item.user_info.followings_count,
+          smart_followers_count: item.user_info.smart_followers_count,
+          engagement_score: item.user_info.engagement_score,
+        })),
+      },
+    ];
+  }, [data]);
+
+  const chartOptions: ApexCharts.ApexOptions = {
+    chart: {
+      type: "treemap",
+      background: "transparent",
+      toolbar: {
+        show: false,
+      },
+      animations: {
+        enabled: true,
+        speed: 800,
+        animateGradually: {
+          enabled: true,
+          delay: 150,
+        },
+        dynamicAnimation: {
+          enabled: true,
+          speed: 350,
+        },
+      },
+      events: {
+        mounted: function () {
+          setIsLoading(false);
+        },
+        click: function (event, chartContext, config) {
+          if (config.dataPointIndex >= 0) {
+            const dataPoint =
+              chartContext.w.config.series[0].data[config.dataPointIndex];
+            if (dataPoint?.author_handle) {
+              router.push(`/kols/${dataPoint.author_handle}`);
+            }
+          }
+        },
+      },
+    },
+    theme: {
+      mode: "dark",
+      palette: "palette1",
+    },
+    title: {
+      text: undefined,
+    },
+    plotOptions: {
+      treemap: {
+        enableShades: true,
+        shadeIntensity: 0.2,
+        distributed: true,
+        colorScale: {
+          ranges: [
+            {
+              from: 0,
+              to: 25,
+              color: "#22c55e", // Green-500
+              foreColor: "#f8fafc", // Slate-50
+              name: "Low Mindshare",
+            },
+            {
+              from: 25,
+              to: 50,
+              color: "#0ea5e9", // Sky-500
+              foreColor: "#f8fafc", // Slate-50
+              name: "Medium Mindshare",
+            },
+            {
+              from: 50,
+              to: 75,
+              color: "#8b5cf6", // Violet-500
+              foreColor: "#f8fafc", // Slate-50
+              name: "High Mindshare",
+            },
+            {
+              from: 75,
+              to: 100,
+              color: "#ec4899", // Pink-500
+              foreColor: "#f8fafc", // Slate-50
+              name: "Very High Mindshare",
+            },
+          ],
+        },
+      },
+    },
+    dataLabels: {
+      enabled: true,
+      style: {
+        fontSize: "12px",
+        fontFamily: "Arial, Helvetica, sans-serif",
+        fontWeight: "normal",
+      },
+      formatter: function (text: string, op: any) {
+        // Limit text to 2 lines with ellipsis
+        const words = text.split(" ");
+        let result = "";
+        let line = "";
+        let lineCount = 0;
+        const maxLines = 2;
+
+        for (let i = 0; i < words.length; i++) {
+          const testLine = line + words[i] + " ";
+          if (testLine.length > 15 && line.length > 0) {
+            // Max 15 chars per line
+            result += line.trim() + "\n";
+            line = words[i] + " ";
+            lineCount++;
+            if (lineCount >= maxLines) {
+              result = result.trim() + "...";
+              break;
+            }
+          } else {
+            line = testLine;
+          }
+        }
+        if (lineCount < maxLines && line.length > 0) {
+          result += line.trim();
+        }
+        return result;
+      },
+    },
+    tooltip: {
+      theme: "dark",
+      custom: function ({ seriesIndex, dataPointIndex, w }) {
+        const data = w.config.series[seriesIndex].data[dataPointIndex];
+        return `
+          <div class="p-4 bg-gray-900/95 border border-[#00D992]/20 rounded-lg shadow-lg backdrop-blur-sm">
+            <div class="flex items-center gap-3 mb-3">
+              ${
+                data.profile_image_url
+                  ? `<img src="${data.profile_image_url}" class="w-10 h-10 rounded-full bg-gray-800 object-cover" />`
+                  : '<div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-600">👤</div>'
+              }
+              <div>
+                <div class="font-semibold text-white">${data.x}</div>
+                <div class="text-sm text-gray-400">@${data.author_handle}</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Buzz Score</div>
+                <div class="font-medium text-white">${data.author_buzz.toFixed(
+                  2
+                )}</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Mindshare</div>
+                <div class="font-medium text-white">${data.y.toFixed(2)}%</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Followers</div>
+                <div class="font-medium text-white">${data.followers_count.toLocaleString()}</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Following</div>
+                <div class="font-medium text-white">${data.followings_count.toLocaleString()}</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Smart Followers</div>
+                <div class="font-medium text-white">${data.smart_followers_count.toLocaleString()}</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Engagement Score</div>
+                <div class="font-medium text-white">${data.engagement_score.toFixed(
+                  2
+                )}</div>
+              </div>
+            </div>
+            <div class="mt-2 text-xs text-center text-gray-400">Click to view detailed profile</div>
+          </div>
+        `;
+      },
+    },
+    legend: {
+      show: false,
+    },
   };
 
-  const tooltipDimensions = tooltipElement.getBoundingClientRect();
-  const padding = 10; // Space between cursor and tooltip
-
-  // Default position (to the right of cursor)
-  let left = event.pageX + padding;
-  let top = event.pageY - padding;
-
-  // Check if tooltip would extend beyond right edge
-  if (event.clientX + padding + tooltipDimensions.width > viewport.width) {
-    // Position tooltip to the left of cursor instead
-    left = event.pageX - tooltipDimensions.width - padding;
-  }
-
-  // Check if tooltip would extend beyond bottom edge
-  if (event.clientY + tooltipDimensions.height > viewport.height) {
-    // Position tooltip above cursor
-    top = event.pageY - tooltipDimensions.height - padding;
-  }
-
-  return { left, top };
-};
-
-export default function MindshareTreemap({ data }: MindshareTreemapProps) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
-
-  useEffect(() => {
-    function handleResize() {
-      if (svgRef.current) {
-        const container = svgRef.current.parentElement;
-        if (container) {
-          setDimensions({
-            width: container.clientWidth,
-            height: Math.max(400, container.clientWidth * 0.6),
-          });
-        }
-      }
-    }
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    if (!svgRef.current || !data || data.length === 0) return;
-
-    const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
-
-    const margin = { top: 10, right: 10, bottom: 10, left: 10 };
-    const width = dimensions.width - margin.left - margin.right;
-    const height = dimensions.height - margin.top - margin.bottom;
-
-    // Create color scale with a more vibrant palette
-    const colorScale = d3
-      .scaleSequential()
-      .domain([0, d3.max(data, (d) => d.mindshare_percent) || 1])
-      .interpolator(d3.interpolateViridis); // Using viridis for better color distinction
-
-    // Create tooltip with improved styling
-    const tooltip = d3
-      .select("body")
-      .append("div")
-      .attr("class", "mindshare-tooltip")
-      .style("position", "absolute")
-      .style("visibility", "hidden")
-      .style("background", "rgba(17, 24, 39, 0.95)")
-      .style("border", "1px solid #00D992")
-      .style("color", "#f3f4f6")
-      .style("padding", "16px")
-      .style("border-radius", "12px")
-      .style("font-size", "14px")
-      .style("pointer-events", "none")
-      .style("z-index", "9999")
-      .style("box-shadow", "0 20px 25px -5px rgba(0, 0, 0, 0.2)")
-      .style("backdrop-filter", "blur(8px)")
-      .style("max-width", "300px"); // Add max-width to control tooltip size
-
-    // Prepare hierarchical data
-    const hierarchyData = { children: data };
-    const root = d3
-      .hierarchy<HierarchyDatum>(hierarchyData)
-      .sum((d) => ("author_buzz" in d ? d.author_buzz : 0))
-      .sort((a, b) => (b.value || 0) - (a.value || 0));
-
-    // Create treemap layout with rounded corners
-    const treemap = d3
-      .treemap<HierarchyDatum>()
-      .size([width, height])
-      .padding(4)
-      .round(true);
-
-    treemap(root);
-
-    // Create main group
-    const g = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    // Create cells with improved styling and animations
-    const cell = g
-      .selectAll("g")
-      .data(root.leaves())
-      .enter()
-      .append("g")
-      .attr("transform", (d) => `translate(${d.x0},${d.y0})`);
-
-    // Add rectangles with animations and hover effects
-    cell
-      .append("rect")
-      .attr("width", (d) => d.x1! - d.x0!)
-      .attr("height", (d) => d.y1! - d.y0!)
-      .attr("fill", (d) => {
-        const nodeData = d.data as MindshareData;
-        return colorScale(nodeData.mindshare_percent);
-      })
-      .attr("stroke", "#1f2937")
-      .attr("stroke-width", 2)
-      .attr("rx", 4) // Rounded corners
-      .style("cursor", "pointer")
-      .style("transition", "all 0.2s ease")
-      .style("opacity", 0) // Start with opacity 0 for fade-in animation
-      .transition()
-      .duration(500)
-      .delay((_, i) => i * 50) // Stagger the animations
-      .style("opacity", 1) // Fade in
-      .on("end", function () {
-        // Add hover effects after animation
-        d3.select(this)
-          .on("mouseover", function (event, d) {
-            const nodeData = d.data as MindshareData;
-            d3.select(this)
-              .transition()
-              .duration(200)
-              .attr("stroke", "#00D992")
-              .attr("stroke-width", 3)
-              .style("filter", "drop-shadow(0 4px 12px rgba(0,217,146,0.2))");
-
-            tooltip.style("visibility", "visible").html(`
-                <div class="space-y-3">
-                  <div class="flex items-center gap-2">
-                    <img 
-                      src="${nodeData.user_info.profile_image_url || ""}" 
-                      class="w-8 h-8 rounded-full bg-gray-700"
-                      onerror="this.style.display='none'"
-                    />
-                    <div>
-                      <div class="font-semibold">${
-                        nodeData.user_info.name
-                      }</div>
-                      <div class="text-gray-400 text-sm">@${
-                        nodeData.user_info.handle
-                      }</div>
-                    </div>
-                  </div>
-                  <div class="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                      <div class="text-gray-400">Buzz Score</div>
-                      <div class="font-medium">${nodeData.author_buzz.toFixed(
-                        2
-                      )}</div>
-                    </div>
-                    <div>
-                      <div class="text-gray-400">Mindshare</div>
-                      <div class="font-medium">${nodeData.mindshare_percent.toFixed(
-                        2
-                      )}%</div>
-                    </div>
-                    <div>
-                      <div class="text-gray-400">Followers</div>
-                      <div class="font-medium">${nodeData.user_info.followers_count.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div class="text-gray-400">Tweets</div>
-                      <div class="font-medium">${nodeData.tweet_count.toLocaleString()}</div>
-                    </div>
-                  </div>
-                </div>
-              `);
-
-            // Calculate and set the tooltip position after content is set
-            const tooltipNode = tooltip.node();
-            if (tooltipNode) {
-              const position = getTooltipPosition(event, tooltipNode);
-              tooltip
-                .style("left", `${position.left}px`)
-                .style("top", `${position.top}px`);
-            }
-          })
-          .on("mousemove", function (event) {
-            // Update position on mousemove
-            const tooltipNode = tooltip.node();
-            if (tooltipNode) {
-              const position = getTooltipPosition(event, tooltipNode);
-              tooltip
-                .style("left", `${position.left}px`)
-                .style("top", `${position.top}px`);
-            }
-          })
-          .on("mouseout", function () {
-            d3.select(this)
-              .transition()
-              .duration(200)
-              .attr("stroke", "#1f2937")
-              .attr("stroke-width", 2)
-              .style("filter", "none");
-            tooltip.style("visibility", "hidden");
-          });
-      });
-
-    // Add text labels with better visibility
-    cell
-      .append("text")
-      .attr("x", 4)
-      .attr("y", 14)
-      .style("font-size", "10px")
-      .style("fill", "white")
-      .style("font-weight", "500")
-      .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.8)")
-      .style("opacity", 0)
-      .text((d) => {
-        const width = d.x1! - d.x0!;
-        const height = d.y1! - d.y0!;
-        if (width < 60 || height < 30) return "";
-        const nodeData = d.data as MindshareData;
-        return nodeData.user_info.name;
-      })
-      .transition()
-      .duration(500)
-      .delay((_, i) => i * 50 + 250) // Slightly delayed after rectangles
-      .style("opacity", 1);
-
-    // Add percentage labels
-    cell
-      .append("text")
-      .attr("x", 4)
-      .attr("y", 26)
-      .style("font-size", "9px")
-      .style("fill", "rgba(255,255,255,0.9)")
-      .style("font-weight", "500")
-      .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.8)")
-      .style("opacity", 0)
-      .text((d) => {
-        const width = d.x1! - d.x0!;
-        const height = d.y1! - d.y0!;
-        if (width < 60 || height < 30) return "";
-        const nodeData = d.data as MindshareData;
-        return `${nodeData.mindshare_percent.toFixed(1)}%`;
-      })
-      .transition()
-      .duration(500)
-      .delay((_, i) => i * 50 + 500) // Further delayed after names
-      .style("opacity", 1);
-
-    // Cleanup
-    return () => {
-      tooltip.remove();
-    };
-  }, [data, dimensions]);
-
   return (
-    <div className="w-full h-full bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 border border-gray-700 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10">
+    <div className="card-trendsage">
       <div className="flex items-center justify-between mb-6">
         <div className="space-y-2">
           <h3 className="text-xl font-semibold text-gray-100">
@@ -301,12 +251,30 @@ export default function MindshareTreemap({ data }: MindshareTreemapProps) {
           </p>
         </div>
       </div>
-      <svg
-        ref={svgRef}
-        width={dimensions.width}
-        height={dimensions.height}
-        className="w-full h-full"
-      />
+      <div className="w-full h-[500px] hover:scale-[1.01] transition-transform duration-300 relative">
+        {isLoading && (
+          <div className="absolute inset-0 bg-gray-800/50 rounded-lg animate-pulse">
+            <div className="h-full w-full grid grid-cols-3 gap-3 p-4">
+              {[...Array(9)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-gray-700/50 rounded-lg animate-shimmer"
+                  style={{
+                    animationDelay: `${i * 100}ms`,
+                    height: `${Math.max(50, Math.random() * 100)}%`,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        <ReactApexChart
+          options={chartOptions}
+          series={chartData}
+          type="treemap"
+          height="100%"
+        />
+      </div>
     </div>
   );
 }
