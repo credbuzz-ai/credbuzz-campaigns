@@ -1,5 +1,7 @@
 "use client";
 
+import MindshareTreemap from "@/app/components/MindshareTreemap";
+import { MindshareResponse } from "@/app/types";
 import { XLogo } from "@/components/icons/x-logo";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -15,8 +17,11 @@ import { useEffect, useState } from "react";
 export default function CampaignDetailsPage() {
   const params = useParams();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchCampaignDetails = async () => {
@@ -41,6 +46,26 @@ export default function CampaignDetailsPage() {
 
     fetchCampaignDetails();
   }, [params.campaignId]);
+
+  useEffect(() => {
+    const fetchMindshare = async () => {
+      try {
+        setLoading(true);
+        const response = await apiClient.get(
+          `/mindshare?project_name=infinex&limit=50`
+        );
+        setMindshareData(response.data);
+      } catch (err) {
+        console.error("Error fetching mindshare:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (campaign?.target_x_handle) {
+      fetchMindshare();
+    }
+  }, [campaign?.target_x_handle]);
 
   if (loading) {
     return <CampaignSkeleton />;
@@ -70,25 +95,18 @@ export default function CampaignDetailsPage() {
                 </h1>
                 <div className="flex items-center gap-2 text-gray-400">
                   <XLogo className="w-4 h-4" />
-                  <span>@{campaign.project_x_handle}</span>
+                  <span>Creator: @{campaign.project_x_handle}</span>
                 </div>
-                {campaign.description.includes("Target X Handle") && (
+                {campaign.target_x_handle && (
                   <div className="flex items-center gap-2 text-gray-400 mt-2">
                     <XLogo className="w-4 h-4" />
                     <span className="text-[#00D992]">
-                      Target:{" "}
-                      {
-                        campaign.description
-                          .split("Target X Handle: ")[1]
-                          .split(" ")[0]
-                      }
+                      Target: {campaign.target_x_handle}
                     </span>
                   </div>
                 )}
                 <p className="text-gray-300 text-lg max-w-2xl">
-                  {campaign.description
-                    .replace(/Target X Handle: @\w+/g, "")
-                    .trim()}
+                  {campaign.description}
                 </p>
               </div>
               <div>
@@ -226,6 +244,18 @@ export default function CampaignDetailsPage() {
             </div>
           </Card>
         </div>
+
+        {loading && (
+          <div className="mt-8">
+            <Skeleton className="h-6 w-1/3 mb-4 bg-gray-700" />
+          </div>
+        )}
+        {/* Mindshare Treemap */}
+        {mindshareData && mindshareData.result.mindshare_data.length > 0 && (
+          <div className="mt-8">
+            <MindshareTreemap data={mindshareData.result.mindshare_data} />
+          </div>
+        )}
       </div>
     </div>
   );

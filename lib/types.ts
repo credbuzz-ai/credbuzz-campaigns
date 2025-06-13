@@ -8,6 +8,7 @@ export interface Campaign {
   campaign_id: string;
   project_x_handle: string;
   influencer_x_handle: string;
+  target_x_handle?: string;
   campaign_type: "Public" | "Targeted";
   campaign_name: string;
   description: string;
@@ -27,6 +28,7 @@ export interface Campaign {
   counter?: number;
   project_wallet: string;
   influencer_wallet: string;
+  verified_tweet_id?: string;
 }
 
 export type UserType = {

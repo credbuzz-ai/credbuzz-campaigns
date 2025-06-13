@@ -3,9 +3,11 @@
 import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
 import { Briefcase, Menu, Power, X } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 export default function Header() {
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [isMobileProfileDropdownOpen, setIsMobileProfileDropdownOpen] =
@@ -65,19 +67,25 @@ export default function Header() {
           <nav className="hidden md:flex items-center space-x-8">
             <Link
               href="/buzz-board"
-              className="text-gray-300 hover:text-[#00D992] transition-colors font-medium"
+              className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
+                pathname?.startsWith("/buzz-board") ? "!text-[#00D992]" : ""
+              }`}
             >
               Buzz Board
             </Link>
             <Link
               href="/kols"
-              className="text-gray-300 hover:text-[#00D992] transition-colors font-medium"
+              className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
+                pathname?.startsWith("/kols") ? "!text-[#00D992]" : ""
+              }`}
             >
               KOLs
             </Link>
             <Link
               href="/projects"
-              className="text-gray-300 hover:text-[#00D992] transition-colors font-medium"
+              className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
+                pathname?.startsWith("/projects") ? "!text-[#00D992]" : ""
+              }`}
             >
               Projects
             </Link>
@@ -159,19 +167,25 @@ export default function Header() {
             <div className="flex flex-col space-y-4">
               <Link
                 href="/buzz-board"
-                className="text-gray-300 hover:text-[#00D992] transition-colors font-medium"
+                className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
+                  pathname?.startsWith("/buzz-board") ? "!text-[#00D992]" : ""
+                }`}
               >
                 Buzz Board
               </Link>
               <Link
                 href="/kols"
-                className="text-gray-300 hover:text-[#00D992] transition-colors font-medium"
+                className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
+                  pathname?.startsWith("/kols") ? "!text-[#00D992]" : ""
+                }`}
               >
                 KOLs
               </Link>
               <Link
                 href="/projects"
-                className="text-gray-300 hover:text-[#00D992] transition-colors font-medium"
+                className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
+                  pathname?.startsWith("/projects") ? "!text-[#00D992]" : ""
+                }`}
               >
                 Projects
               </Link>

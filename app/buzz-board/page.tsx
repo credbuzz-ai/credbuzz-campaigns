@@ -47,15 +47,15 @@ export default function BuzzBoard() {
   // Function to format large numbers
   const formatAmount = (amount: number): string => {
     if (amount >= 1000000000) {
-      return (amount / 1000000000).toFixed(1).replace(/\.0$/, "") + "B";
+      return (amount / 1000000000).toFixed(4) + "B";
     }
     if (amount >= 1000000) {
-      return (amount / 1000000).toFixed(1).replace(/\.0$/, "") + "M";
+      return (amount / 1000000).toFixed(4) + "M";
     }
     if (amount >= 1000) {
-      return (amount / 1000).toFixed(1).replace(/\.0$/, "") + "K";
+      return (amount / 1000).toFixed(4) + "K";
     }
-    return amount.toString();
+    return amount.toFixed(4);
   };
 
   const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
@@ -167,14 +167,14 @@ export default function BuzzBoard() {
     }
   };
 
+  const fetchCampaigns = async () => {
+    const campaigns = await apiClient.post("/campaign/get-campaigns", {
+      campaign_type: "Public",
+    });
+    setCampaigns(campaigns.data.result);
+  };
+
   useEffect(() => {
-    const fetchCampaigns = async () => {
-      const campaigns = await apiClient.post("/campaign/get-campaigns", {
-        campaign_type: "Public",
-      });
-      setCampaigns(campaigns.data.result);
-      console.log(campaigns.data.result);
-    };
     fetchCampaigns();
   }, []);
 
@@ -293,7 +293,7 @@ export default function BuzzBoard() {
           <div className="card-trendsage text-center group">
             <DollarSign className="w-8 h-8 text-[#00D992] mx-auto mb-2 group-hover:scale-110 transition-transform" />
             <div className="text-2xl font-bold text-gray-100">
-              {totalBudget > 0 ? formatAmount(totalBudget) : "0"}
+              {totalBudget > 0 ? formatAmount(Number(totalBudget)) : "0"}
             </div>
             <div className="text-sm text-gray-400">Total Budget</div>
           </div>

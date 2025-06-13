@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.02) 8%,
+    rgba(255, 255, 255, 0.05) 18%,
+    rgba(255, 255, 255, 0.02) 33%
+  );
+  background-size: 1000px 100%;
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
