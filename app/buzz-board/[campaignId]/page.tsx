@@ -1,5 +1,6 @@
 "use client";
 
+import MindshareTreemap from "@/app/components/MindshareTreemap";
 import { XLogo } from "@/components/icons/x-logo";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -12,11 +13,41 @@ import { Clock, Coins, Wallet } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+interface MindshareResponse {
+  result: {
+    period: string;
+    project_name: string;
+    author_handle: string | null;
+    total_results: number;
+    mindshare_data: Array<{
+      project_name: string;
+      author_handle: string;
+      author_buzz: number;
+      project_buzz: number;
+      mindshare_percent: number;
+      period: string;
+      created_at: string;
+      tweet_count: number;
+      user_info: {
+        name: string;
+        handle: string;
+        profile_image_url: string | null;
+        followers_count: number;
+        followings_count: number;
+      };
+    }>;
+  };
+  message: string;
+}
+
 export default function CampaignDetailsPage() {
   const params = useParams();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchCampaignDetails = async () => {
@@ -45,17 +76,15 @@ export default function CampaignDetailsPage() {
   useEffect(() => {
     const fetchMindshare = async () => {
       try {
-        // TODO: remove later
-        const response = await apiClient.get(`/mindshare?project_name=infinex`);
-        // const response = await apiClient.get(
-        //   `/mindshare?project_name=${campaign?.target_x_handle?.replace(
-        //     "@",
-        //     ""
-        //   )}`
-        // );
-        console.log("Mindshare data:", response.data);
+        setLoading(true);
+        const response = await apiClient.get(
+          `/mindshare?project_name=infinex&limit=50`
+        );
+        setMindshareData(response.data);
       } catch (err) {
         console.error("Error fetching mindshare:", err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -241,6 +270,18 @@ export default function CampaignDetailsPage() {
             </div>
           </Card>
         </div>
+
+        {loading && (
+          <div className="mt-8">
+            <Skeleton className="h-6 w-1/3 mb-4 bg-gray-700" />
+          </div>
+        )}
+        {/* Mindshare Treemap */}
+        {mindshareData && mindshareData.result.mindshare_data.length > 0 && (
+          <div className="mt-8">
+            <MindshareTreemap data={mindshareData.result.mindshare_data} />
+          </div>
+        )}
       </div>
     </div>
   );
