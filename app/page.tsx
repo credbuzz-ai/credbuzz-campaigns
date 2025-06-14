@@ -1,5 +1,5 @@
-import Link from "next/link"
-import { ArrowRight, Zap, Shield, TrendingUp } from "lucide-react"
+import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
+import Link from "next/link";
 
 export default function LandingPage() {
   return (
@@ -15,14 +15,21 @@ export default function LandingPage() {
               </span>
             </h1>
             <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              AI-powered decentralized marketplace connecting brands with authentic web3 Key Opinion Leaders. Build
-              trust, drive engagement, and scale your campaigns with blockchain transparency.
+              AI-powered decentralized marketplace connecting brands with
+              authentic web3 Key Opinion Leaders. Build trust, drive engagement,
+              and scale your campaigns with blockchain transparency.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/buzz-board" className="btn-primary inline-flex items-center">
+              <Link
+                href="/buzz-board"
+                className="btn-primary inline-flex items-center"
+              >
                 Explore Campaigns <ArrowRight className="ml-2 w-4 h-4" />
               </Link>
-              <Link href="/kols/eliz883" className="btn-secondary inline-flex items-center">
+              <Link
+                href="/kols"
+                className="btn-secondary inline-flex items-center"
+              >
                 View KOL Profiles
               </Link>
             </div>
@@ -47,10 +54,13 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-[#00D992] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Zap className="w-6 h-6 text-gray-900" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-100 mb-4">AI-Powered Matching</h3>
+              <h3 className="text-2xl font-bold text-gray-100 mb-4">
+                AI-Powered Matching
+              </h3>
               <p className="text-gray-300">
-                Our advanced AI algorithms analyze audience demographics, engagement patterns, and brand alignment to
-                find the perfect KOL matches for your campaigns.
+                Our advanced AI algorithms analyze audience demographics,
+                engagement patterns, and brand alignment to find the perfect KOL
+                matches for your campaigns.
               </p>
             </div>
 
@@ -58,10 +68,13 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-[#00D992] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Shield className="w-6 h-6 text-gray-900" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-100 mb-4">Blockchain Transparency</h3>
+              <h3 className="text-2xl font-bold text-gray-100 mb-4">
+                Blockchain Transparency
+              </h3>
               <p className="text-gray-300">
-                All transactions, metrics, and campaign results are recorded on-chain, ensuring complete transparency
-                and trust between brands and influencers.
+                All transactions, metrics, and campaign results are recorded
+                on-chain, ensuring complete transparency and trust between
+                brands and influencers.
               </p>
             </div>
 
@@ -69,10 +82,13 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-[#00D992] rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <TrendingUp className="w-6 h-6 text-gray-900" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-100 mb-4">Real-time Analytics</h3>
+              <h3 className="text-2xl font-bold text-gray-100 mb-4">
+                Real-time Analytics
+              </h3>
               <p className="text-gray-300">
-                Track campaign performance with real-time analytics, engagement metrics, and ROI calculations powered by
-                decentralized data oracles.
+                Track campaign performance with real-time analytics, engagement
+                metrics, and ROI calculations powered by decentralized data
+                oracles.
               </p>
             </div>
           </div>
@@ -84,19 +100,27 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div className="group">
-              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">10K+</div>
+              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">
+                10K+
+              </div>
               <div className="text-gray-300">Verified KOLs</div>
             </div>
             <div className="group">
-              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">500+</div>
+              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">
+                500+
+              </div>
               <div className="text-gray-300">Active Campaigns</div>
             </div>
             <div className="group">
-              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">$50M+</div>
+              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">
+                $50M+
+              </div>
               <div className="text-gray-300">Campaign Value</div>
             </div>
             <div className="group">
-              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">98%</div>
+              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">
+                98%
+              </div>
               <div className="text-gray-300">Success Rate</div>
             </div>
           </div>
@@ -113,11 +137,15 @@ export default function LandingPage() {
             Join the future of influencer marketing with TrendSage
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="btn-primary">Start Your Campaign</button>
-            <button className="btn-secondary">Become a KOL</button>
+            <Link href="/buzz-board" className="btn-primary">
+              Start Your Campaign
+            </Link>
+            <Link href="/kols" className="btn-secondary">
+              Become a KOL
+            </Link>
           </div>
         </div>
       </section>
     </div>
-  )
+  );
 }

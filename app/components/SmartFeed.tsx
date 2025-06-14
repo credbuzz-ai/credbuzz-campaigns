@@ -366,7 +366,7 @@ export default function SmartFeed({
 
               {/* Tweet content */}
               <div className="mb-3">
-                <p className="text-gray-300 text-sm leading-relaxed">
+                <p className="text-gray-300 text-sm leading-relaxed break-words whitespace-pre-wrap">
                   {highlightTokens(displayText)}
                 </p>
                 {shouldTruncate && (

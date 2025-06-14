@@ -101,10 +101,10 @@ export default function ProjectPage({
 
   if (!authorData || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="p-6 rounded-xl bg-white shadow-lg">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-          <p className="mt-3 text-sm text-gray-600">Loading profile...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="p-6 justify-center items-center flex flex-col">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#00D992]"></div>
+          <p className="mt-3 text-lg text-gray-300">Loading project...</p>
         </div>
       </div>
     );
