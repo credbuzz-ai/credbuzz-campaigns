@@ -361,9 +361,9 @@ export default function CollaborateDialog({
       // Build request body to match API schema exactly
       const requestBody = {
         campaign_id: campaignId,
-        project_x_handle: data.project_x_handle,
-        influencer_x_handle: data.influencer_x_handle,
-        target_x_handle: data.target_x_handle,
+        project_x_handle: data.project_x_handle?.replace("@", ""),
+        influencer_x_handle: data.influencer_x_handle?.replace("@", ""),
+        target_x_handle: data.target_x_handle?.replace("@", ""),
         campaign_type: data.campaign_type,
         campaign_name: data.campaign_name,
         description: data.description,
