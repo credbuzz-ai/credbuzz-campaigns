@@ -1,18 +1,11 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { getCashtagLeaderboard } from "@/lib/cashtag";
 import { TokenDataItem } from "@/lib/cashtag.types";
 import { formatNumber } from "@/lib/helper";
-import { ArrowUpDown, Loader2, Search } from "lucide-react";
+import { ArrowUpDown, Loader2, Search, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -184,106 +177,157 @@ export default function ProjectsPage() {
     );
   }
 
-  const SortableHeader = ({
-    label,
-    sortKey,
-  }: {
-    label: string;
-    sortKey: SortableFields;
-  }) => (
-    <TableHead
-      className="cursor-pointer hover:bg-muted/50 transition-colors"
-      onClick={() => handleSort(sortKey)}
-    >
-      <div className="flex items-center gap-2">
-        {label}
-        <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-        {sortConfig?.key === sortKey && (
-          <span className="text-xs text-muted-foreground">
-            {sortConfig.direction === "asc" ? "↑" : "↓"}
-          </span>
-        )}
-      </div>
-    </TableHead>
-  );
-
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+    <div className="min-h-screen bg-gray-900">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-3">
+            <Star className="w-6 h-6 text-[#00D992]" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-100">
               Projects
             </h1>
-            <p className="text-sm text-muted-foreground">
-              A list of all projects with their market metrics.
-            </p>
           </div>
-          <div className="relative w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search projects..."
-              value={searchTerm}
-              onChange={handleSearch}
-              className="pl-8"
-            />
-          </div>
-        </div>
+          <p className="text-sm sm:text-base text-gray-400">
+            A list of all projects with their market metrics.
+          </p>
 
-        <div className="rounded-lg border bg-card shadow-sm">
-          <div className="relative overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-[50px] text-center">#</TableHead>
-                  <SortableHeader label="Project Name" sortKey="token_name" />
-                  <SortableHeader label="Market Cap" sortKey="market_cap" />
-                  <SortableHeader
-                    label="Mentions (24h)"
-                    sortKey="mention_count_24hr"
-                  />
-                  <SortableHeader
-                    label="Mentions Change (24h)"
-                    sortKey="mentions_change_24_hr"
-                  />
-                  <SortableHeader label="Volume (24h)" sortKey="vol_24hr" />
-                  <SortableHeader label="Liquidity" sortKey="liquidity" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <div className="relative">
+            <div className="absolute right-0 -top-12">
+              <div className="flex gap-2 relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+                <Input
+                  placeholder="Search projects..."
+                  value={searchTerm}
+                  onChange={handleSearch}
+                  className="w-64 px-8 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
+                />
+              </div>
+            </div>
+
+            <table className="w-full bg-gray-800 rounded-lg overflow-hidden">
+              <thead className="bg-gray-700">
+                <tr>
+                  <TableHead className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider text-center">
+                    #
+                  </TableHead>
+                  <TableHead
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                    onClick={() => handleSort("token_name")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Project Name
+                      <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                      {sortConfig?.key === "token_name" && (
+                        <span className="text-xs text-gray-400">
+                          {sortConfig.direction === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                    onClick={() => handleSort("market_cap")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Market Cap
+                      <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                      {sortConfig?.key === "market_cap" && (
+                        <span className="text-xs text-gray-400">
+                          {sortConfig.direction === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                    onClick={() => handleSort("mention_count_24hr")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Mentions (24h)
+                      <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                      {sortConfig?.key === "mention_count_24hr" && (
+                        <span className="text-xs text-gray-400">
+                          {sortConfig.direction === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                    onClick={() => handleSort("mentions_change_24_hr")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Mentions Change (24h)
+                      <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                      {sortConfig?.key === "mentions_change_24_hr" && (
+                        <span className="text-xs text-gray-400">
+                          {sortConfig.direction === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                    onClick={() => handleSort("vol_24hr")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Volume (24h)
+                      <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                      {sortConfig?.key === "vol_24hr" && (
+                        <span className="text-xs text-gray-400">
+                          {sortConfig.direction === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                  <TableHead
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-600 transition-colors"
+                    onClick={() => handleSort("liquidity")}
+                  >
+                    <div className="flex items-center gap-2">
+                      Liquidity
+                      <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                      {sortConfig?.key === "liquidity" && (
+                        <span className="text-xs text-gray-400">
+                          {sortConfig.direction === "asc" ? "↑" : "↓"}
+                        </span>
+                      )}
+                    </div>
+                  </TableHead>
+                </tr>
+              </thead>
+              <tbody className="bg-gray-800 divide-y divide-gray-700">
                 {sortedProjects.map((project, index) => {
                   const displayNumber = searchTerm ? index + 1 : index + 1;
                   const twitterHandle = project.token_twitter;
                   return (
                     <TableRow
                       key={project.token_name}
-                      className="hover:bg-muted/50 cursor-pointer transition-colors"
+                      className="hover:bg-gray-700 transition-colors cursor-pointer group"
                       onClick={() => {
                         if (twitterHandle) {
                           router.push(`/projects/${twitterHandle}`);
                         }
                       }}
                     >
-                      <TableCell className="text-center font-medium text-muted-foreground">
-                        {displayNumber}
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200 text-center">
+                        #{displayNumber}
                       </TableCell>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {project.token_name}
-                        </div>
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">
+                        {project.token_name}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
                         ${formatNumber(Number(project.market_cap || 0))}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
                         {formatNumber(Number(project.mention_count_24hr || 0))}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm">
                         <span
                           className={
                             (project.mentions_change_24_hr ?? 0) >= 0
-                              ? "text-green-500"
-                              : "text-red-500"
+                              ? "text-[#00D992]"
+                              : "text-red-400"
                           }
                         >
                           {(project.mentions_change_24_hr ?? 0) >= 0 ? "+" : ""}
@@ -293,26 +337,26 @@ export default function ProjectsPage() {
                           %
                         </span>
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
                         ${formatNumber(Number(project.vol_24hr || 0))}
                       </TableCell>
-                      <TableCell className="font-medium">
+                      <TableCell className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
                         ${formatNumber(Number(project.liquidity || 0))}
                       </TableCell>
                     </TableRow>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
             {sortedProjects.length === 0 && !loadingMore && (
-              <div className="text-center py-8 text-muted-foreground">
+              <div className="text-center py-8 text-gray-400 bg-gray-800">
                 No projects found matching your search.
               </div>
             )}
-            {!searchTerm && (
-              <div ref={loadingRef} className="py-4">
+            {!searchTerm && hasMore && (
+              <div ref={loadingRef} className="h-20 bg-gray-800">
                 {loadingMore && (
-                  <div className="flex justify-center items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex justify-center items-center gap-2 text-sm text-gray-400 py-4">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Loading more projects...
                   </div>
@@ -320,10 +364,6 @@ export default function ProjectsPage() {
               </div>
             )}
           </div>
-        </div>
-        <div className="text-xs text-muted-foreground text-center">
-          Showing {sortedProjects.length} projects
-          {hasMore && !searchTerm && " (Scroll for more)"}
         </div>
       </div>
     </div>
