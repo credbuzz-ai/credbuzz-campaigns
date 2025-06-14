@@ -116,31 +116,73 @@ export default function MindshareTreemap({ data }: MindshareTreemapProps) {
           ranges: [
             {
               from: 0,
-              to: 25,
-              color: "#22c55e", // Green-500
+              to: 0.2,
+              color: "#0ea5e9", // Sky-500 (Lightest blue)
               foreColor: "#f8fafc", // Slate-50
-              name: "Low Mindshare",
+              name: "0-0.2% Mindshare",
             },
             {
-              from: 25,
-              to: 50,
-              color: "#0ea5e9", // Sky-500
+              from: 0.2,
+              to: 0.4,
+              color: "#3b82f6", // Blue-500
               foreColor: "#f8fafc", // Slate-50
-              name: "Medium Mindshare",
+              name: "0.2-0.4% Mindshare",
             },
             {
-              from: 50,
-              to: 75,
+              from: 0.4,
+              to: 0.6,
+              color: "#6366f1", // Indigo-500
+              foreColor: "#f8fafc", // Slate-50
+              name: "0.4-0.6% Mindshare",
+            },
+            {
+              from: 0.6,
+              to: 0.8,
               color: "#8b5cf6", // Violet-500
               foreColor: "#f8fafc", // Slate-50
-              name: "High Mindshare",
+              name: "0.6-0.8% Mindshare",
             },
             {
-              from: 75,
-              to: 100,
+              from: 0.8,
+              to: 1.0,
+              color: "#a855f7", // Purple-500
+              foreColor: "#f8fafc", // Slate-50
+              name: "0.8-1.0% Mindshare",
+            },
+            {
+              from: 1.0,
+              to: 1.2,
+              color: "#d946ef", // Fuchsia-500
+              foreColor: "#f8fafc", // Slate-50
+              name: "1.0-1.2% Mindshare",
+            },
+            {
+              from: 1.2,
+              to: 1.4,
               color: "#ec4899", // Pink-500
               foreColor: "#f8fafc", // Slate-50
-              name: "Very High Mindshare",
+              name: "1.2-1.4% Mindshare",
+            },
+            {
+              from: 1.4,
+              to: 1.6,
+              color: "#f43f5e", // Rose-500
+              foreColor: "#f8fafc", // Slate-50
+              name: "1.4-1.6% Mindshare",
+            },
+            {
+              from: 1.6,
+              to: 1.8,
+              color: "#ef4444", // Red-500
+              foreColor: "#f8fafc", // Slate-50
+              name: "1.6-1.8% Mindshare",
+            },
+            {
+              from: 1.8,
+              to: 10,
+              color: "#dc2626", // Red-600 (Darkest red)
+              foreColor: "#f8fafc", // Slate-50
+              name: "1.8%+ Mindshare",
             },
           ],
         },
