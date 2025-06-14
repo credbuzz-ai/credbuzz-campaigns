@@ -46,7 +46,7 @@ export default function SmartFeed({
 }: SmartFeedProps) {
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000; // 1 second base delay
+  const RETRY_DELAY = 1000;
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +67,7 @@ export default function SmartFeed({
             "Content-Type": "application/json",
           },
           cache: "no-store",
-          signal: AbortSignal.timeout(5000), // 5 second timeout
+          signal: AbortSignal.timeout(5000),
         }
       );
 
@@ -85,7 +85,7 @@ export default function SmartFeed({
             tweet_category: tweet.tweet_category || null,
           }));
           setTweets(sanitizedTweets);
-          setRetryCount(0); // Reset retry count on success
+          setRetryCount(0);
         } else {
           throw new Error("Invalid response format");
         }
@@ -95,9 +95,8 @@ export default function SmartFeed({
     } catch (error) {
       console.error(`Failed to fetch tweets (attempt ${attempt + 1}):`, error);
 
-      // Retry logic
       if (attempt < MAX_RETRIES) {
-        const delay = RETRY_DELAY * Math.pow(2, attempt); // Exponential backoff
+        const delay = RETRY_DELAY * Math.pow(2, attempt);
         setRetryCount(attempt + 1);
         setError(`Retrying... (${attempt + 1}/${MAX_RETRIES})`);
 
@@ -107,124 +106,8 @@ export default function SmartFeed({
         return;
       }
 
-      // Max retries reached, show error and fallback data
       setError("Failed to fetch tweets");
       setRetryCount(0);
-      // Enhanced fallback data for demo
-      setTweets([
-        {
-          tweet_id: "1",
-          author_handle: authorHandle,
-          body: "At this point the magic of crypto is gone, and we're at a 'we know they know we know' point. There's no unfathomable wonder, no distant frontier left",
-          tweet_create_time: "2025-04-19T10:30:00Z",
-          view_count: 88294,
-          like_count: 1100,
-          quote_count: 0,
-          reply_count: 123,
-          retweet_count: 97,
-          profile_image_url: "/placeholder.svg?height=40&width=40",
-          sentiment: 0.2,
-          tweet_category: "market-analysis",
-        },
-        {
-          tweet_id: "2",
-          author_handle: authorHandle,
-          body: "$ETH looking for this sweep. The market is showing strong signals for a potential breakout. 📈",
-          tweet_create_time: "2025-04-18T15:20:00Z",
-          view_count: 45123,
-          like_count: 892,
-          quote_count: 12,
-          reply_count: 67,
-          retweet_count: 234,
-          profile_image_url: "/placeholder.svg?height=40&width=40",
-          sentiment: 0.6,
-          tweet_category: "price-action",
-        },
-        {
-          tweet_id: "3",
-          author_handle: authorHandle,
-          body: "gm leggende !!!! spending this weekend relaxing away from the charts! you know I avoid operating on the weekend! I wish you and your wonderful families a peaceful Sunday ☀️",
-          tweet_create_time: "2025-04-17T08:53:46Z",
-          view_count: 51978,
-          like_count: 463,
-          quote_count: 0,
-          reply_count: 112,
-          retweet_count: 13,
-          profile_image_url: "/placeholder.svg?height=40&width=40",
-          sentiment: null,
-          tweet_category: "community",
-        },
-        {
-          tweet_id: "4",
-          author_handle: authorHandle,
-          body: "$ENA the dumps can be good opportunities to build a spot position. Always DYOR and manage your risk properly. 🎯",
-          tweet_create_time: "2025-04-16T19:03:29Z",
-          view_count: 34685,
-          like_count: 444,
-          quote_count: 0,
-          reply_count: 83,
-          retweet_count: 48,
-          profile_image_url: "/placeholder.svg?height=40&width=40",
-          sentiment: 0.3,
-          tweet_category: "trading-strategy",
-        },
-        {
-          tweet_id: "5",
-          author_handle: authorHandle,
-          body: "as usual enjoying the weekend was the best trader! Sometimes the best trade is no trade at all. 🧘‍♀️",
-          tweet_create_time: "2025-04-15T17:37:19Z",
-          view_count: 31020,
-          like_count: 315,
-          quote_count: 0,
-          reply_count: 91,
-          retweet_count: 5,
-          profile_image_url: "/placeholder.svg?height=40&width=40",
-          sentiment: null,
-          tweet_category: "trading-strategy",
-        },
-        {
-          tweet_id: "6",
-          author_handle: authorHandle,
-          body: "Market volatility is creating some interesting opportunities. Remember to always manage your risk and never invest more than you can afford to lose. 💡",
-          tweet_create_time: "2025-04-14T12:15:30Z",
-          view_count: 28450,
-          like_count: 287,
-          quote_count: 5,
-          reply_count: 76,
-          retweet_count: 23,
-          profile_image_url: "/placeholder.svg?height=40&width=40",
-          sentiment: 0.1,
-          tweet_category: "market-analysis",
-        },
-        {
-          tweet_id: "7",
-          author_handle: authorHandle,
-          body: "$BTC consolidation phase continues. Patience is key in this market. The next move could be significant. ⏳",
-          tweet_create_time: "2025-04-13T16:42:18Z",
-          view_count: 42180,
-          like_count: 398,
-          quote_count: 8,
-          reply_count: 95,
-          retweet_count: 67,
-          profile_image_url: "/placeholder.svg?height=40&width=40",
-          sentiment: 0.4,
-          tweet_category: "price-action",
-        },
-        {
-          tweet_id: "8",
-          author_handle: authorHandle,
-          body: "DeFi protocols are evolving rapidly. The innovation in this space continues to amaze me. We're still early! 🚀",
-          tweet_create_time: "2025-04-12T09:28:45Z",
-          view_count: 35670,
-          like_count: 456,
-          quote_count: 15,
-          reply_count: 89,
-          retweet_count: 78,
-          profile_image_url: "/placeholder.svg?height=40&width=40",
-          sentiment: 0.7,
-          tweet_category: "ecosystem-news",
-        },
-      ]);
     } finally {
       setLoading(false);
     }
@@ -255,10 +138,13 @@ export default function SmartFeed({
       const now = new Date();
       const diffTime = Math.abs(now.getTime() - date.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
 
-      if (diffDays === 1) return "May 29";
-      if (diffDays === 2) return "May 30";
-      if (diffDays < 7) return `May ${31 - diffDays}`;
+      if (diffHours < 24) {
+        return diffHours === 1 ? "1h" : `${diffHours}h`;
+      }
+      if (diffDays === 1) return "1d";
+      if (diffDays < 7) return `${diffDays}d`;
       if (diffDays < 30) return `${Math.ceil(diffDays / 7)}w`;
       return date.toLocaleDateString("en-US", {
         month: "short",
@@ -342,10 +228,7 @@ export default function SmartFeed({
   };
 
   const getSortLabel = () => {
-    return (
-      sortOptions.find((option) => option.value === sortBy)?.label ||
-      "Top Views"
-    );
+    return sortOptions.find((option) => option.value === sortBy)?.label;
   };
 
   return (
