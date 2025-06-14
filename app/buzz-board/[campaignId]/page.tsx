@@ -54,6 +54,7 @@ export default function CampaignDetailsPage() {
         const response = await apiClient.get(
           `/mindshare?project_name=${campaign?.target_x_handle}&limit=100`
         );
+        console.log("fetched mindshare successfully");
         setMindshareData(response.data);
       } catch (err) {
         console.error("Error fetching mindshare:", err);
