@@ -1,7 +1,9 @@
 "use client";
 
+import FollowersOverview from "@/app/components/FollowersOverview";
 import MindshareTreemap from "@/app/components/MindshareTreemap";
-import { MindshareResponse } from "@/app/types";
+import { ActivityChart } from "@/app/components/ProfileCharts";
+import { MindshareResponse, UserProfileResponse } from "@/app/types";
 import { XLogo } from "@/components/icons/x-logo";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -22,6 +24,9 @@ export default function CampaignDetailsPage() {
   const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
     null
   );
+  const [activityData, setActivityData] = useState<
+    UserProfileResponse["result"]["activity_data"] | null
+  >(null);
 
   useEffect(() => {
     const fetchCampaignDetails = async () => {
@@ -65,8 +70,34 @@ export default function CampaignDetailsPage() {
       }
     };
 
+    const fetchActivityData = async () => {
+      try {
+        const handle = campaign?.target_x_handle?.replace("@", "");
+        if (!handle) return;
+
+        const response = await fetch(
+          `/api/user/get-user-profile?handle=${handle}`,
+          {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+            },
+            cache: "no-store",
+            signal: AbortSignal.timeout(10000),
+          }
+        );
+        const data = await response.json();
+        if (data.result?.activity_data) {
+          setActivityData(data.result.activity_data);
+        }
+      } catch (error) {
+        console.error("Error fetching activity data:", error);
+      }
+    };
+
     if (campaign?.target_x_handle) {
       fetchMindshare();
+      fetchActivityData();
     }
   }, [campaign?.target_x_handle]);
 
@@ -248,17 +279,45 @@ export default function CampaignDetailsPage() {
           </Card>
         </div>
 
-        {loading && (
-          <div className="mt-8">
-            <Skeleton className="h-6 w-1/3 mb-4 bg-gray-700" />
-          </div>
-        )}
-        {/* Mindshare Treemap */}
-        {mindshareData && mindshareData.result.mindshare_data.length > 0 && (
-          <div className="mt-8">
-            <MindshareTreemap data={mindshareData.result.mindshare_data} />
-          </div>
-        )}
+        {/* Target Account Analytics */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold text-gray-100 mb-6">
+            Target Account Analytics
+          </h2>
+
+          {/* Followers Overview */}
+          {campaign?.target_x_handle && (
+            <div className="mb-8">
+              <FollowersOverview
+                authorHandle={campaign.target_x_handle.replace("@", "")}
+              />
+            </div>
+          )}
+
+          {/* Activity Heatmap */}
+          {activityData && (
+            <Card className="bg-gray-800 border-gray-700 mb-8">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-100 mb-4">
+                  Activity Heatmap
+                </h3>
+                <ActivityChart activityData={activityData} />
+              </div>
+            </Card>
+          )}
+
+          {/* Mindshare Treemap */}
+          {mindshareData && mindshareData.result.mindshare_data.length > 0 && (
+            <Card className="bg-gray-800 border-gray-700">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-100 mb-4">
+                  Project Mindshare
+                </h3>
+                <MindshareTreemap data={mindshareData.result.mindshare_data} />
+              </div>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
