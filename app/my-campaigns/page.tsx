@@ -3,7 +3,7 @@
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
-import { Campaign, allowedBaseTokens, allowedSolanaTokens } from "@/lib/types";
+import { allowedBaseTokens, allowedSolanaTokens, Campaign } from "@/lib/types";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   Calendar,
@@ -15,12 +15,17 @@ import {
   TrendingUp,
   XCircle,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function MyCampaigns() {
+  const router = useRouter();
   const { ready, authenticated } = usePrivy();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"created" | "received">("created");
+  const [campaignType, setCampaignType] = useState<"Targeted" | "Public">(
+    "Targeted"
+  );
   const { user } = useUser();
 
   // Separate state for open and closed campaigns
@@ -275,6 +280,23 @@ export default function MyCampaigns() {
   // Combine open and closed campaigns for created campaigns display
   const allCreatedCampaigns = [...openCampaigns, ...closedCampaigns];
 
+  // Filter campaigns based on type
+  const filteredCreatedCampaigns = allCreatedCampaigns.filter((campaign) =>
+    campaignType === "Targeted"
+      ? campaign.campaign_type === "Targeted"
+      : campaign.campaign_type !== "Targeted"
+  );
+
+  const filteredReceivedCampaigns = receivedCampaigns.filter((campaign) =>
+    campaignType === "Targeted"
+      ? campaign.campaign_type === "Targeted"
+      : campaign.campaign_type !== "Targeted"
+  );
+
+  const handleCampaignClick = (campaignId: string) => {
+    router.push(`/my-campaigns/${campaignId}`);
+  };
+
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -288,36 +310,80 @@ export default function MyCampaigns() {
           </p>
         </div>
 
-        {/* Tab Navigation */}
+        {/* Tab Navigation with Campaign Type Toggle */}
         <div className="border-b border-gray-700 mb-8">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab("created")}
-              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "created"
-                  ? "border-[#00D992] text-[#00D992]"
-                  : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
-              }`}
-            >
-              Created Campaigns ({allCreatedCampaigns.length})
-            </button>
-            <button
-              onClick={() => setActiveTab("received")}
-              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === "received"
-                  ? "border-[#00D992] text-[#00D992]"
-                  : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
-              }`}
-            >
-              Received Campaigns ({receivedCampaigns.length})
-            </button>
-          </nav>
+          <div className="flex justify-between items-center">
+            <nav className="-mb-px flex space-x-8">
+              <button
+                onClick={() => setActiveTab("created")}
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "created"
+                    ? "border-[#00D992] text-[#00D992]"
+                    : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
+                }`}
+              >
+                Created Campaigns ({filteredCreatedCampaigns.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("received")}
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "received"
+                    ? "border-[#00D992] text-[#00D992]"
+                    : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
+                }`}
+              >
+                Received Campaigns ({filteredReceivedCampaigns.length})
+              </button>
+            </nav>
+
+            {/* Campaign Type Toggle */}
+            <div className="flex items-center bg-gray-800 p-1 rounded-lg">
+              <button
+                onClick={() => setCampaignType("Targeted")}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  campaignType === "Targeted"
+                    ? "bg-[#00D992] text-gray-900 shadow-sm"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <span>Targeted</span>
+                  {campaignType === "Targeted" && (
+                    <span className="text-xs bg-gray-900/20 px-2 py-0.5 rounded-full">
+                      {activeTab === "created"
+                        ? filteredCreatedCampaigns.length
+                        : filteredReceivedCampaigns.length}
+                    </span>
+                  )}
+                </div>
+              </button>
+              <button
+                onClick={() => setCampaignType("Public")}
+                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                  campaignType === "Public"
+                    ? "bg-[#00D992] text-gray-900 shadow-sm"
+                    : "text-gray-400 hover:text-gray-200"
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <span>Public</span>
+                  {campaignType === "Public" && (
+                    <span className="text-xs bg-gray-900/20 px-2 py-0.5 rounded-full">
+                      {activeTab === "created"
+                        ? filteredCreatedCampaigns.length
+                        : filteredReceivedCampaigns.length}
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Created Campaigns Tab */}
         {activeTab === "created" && (
           <div className="space-y-6">
-            {allCreatedCampaigns.length === 0 ? (
+            {filteredCreatedCampaigns.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-gray-400 mb-4">
                   <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -329,10 +395,11 @@ export default function MyCampaigns() {
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {allCreatedCampaigns.map((campaign) => (
+                {filteredCreatedCampaigns.map((campaign) => (
                   <div
                     key={campaign.campaign_id}
-                    className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10"
+                    onClick={() => handleCampaignClick(campaign.campaign_id)}
+                    className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10 cursor-pointer"
                   >
                     {/* Header */}
                     <div className="mb-4">
@@ -440,7 +507,7 @@ export default function MyCampaigns() {
         {/* Received Campaigns Tab */}
         {activeTab === "received" && (
           <div className="space-y-6">
-            {receivedCampaigns.length === 0 ? (
+            {filteredReceivedCampaigns.length === 0 ? (
               <div className="text-center py-12">
                 <div className="text-gray-400 mb-4">
                   <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -452,10 +519,11 @@ export default function MyCampaigns() {
               </div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {receivedCampaigns.map((campaign) => (
+                {filteredReceivedCampaigns.map((campaign) => (
                   <div
                     key={campaign.campaign_id}
-                    className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10"
+                    onClick={() => handleCampaignClick(campaign.campaign_id)}
+                    className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10 cursor-pointer"
                   >
                     {/* Header */}
                     <div className="mb-4">
@@ -551,7 +619,8 @@ export default function MyCampaigns() {
                         <div className="flex gap-2">
                           <button
                             className="flex-1 bg-[#00D992] text-gray-900 py-2 px-3 rounded-lg text-sm font-medium hover:bg-[#00D992]/90 transition-colors"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               toast({
                                 title: "Campaign Accepted",
                                 description: "You have accepted this campaign",
@@ -562,7 +631,8 @@ export default function MyCampaigns() {
                           </button>
                           <button
                             className="flex-1 bg-gray-700 text-gray-300 py-2 px-3 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               toast({
                                 title: "Campaign Declined",
                                 description: "You have declined this campaign",
