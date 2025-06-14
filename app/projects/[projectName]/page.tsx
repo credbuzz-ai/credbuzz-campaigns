@@ -48,7 +48,7 @@ export default function ProjectPage({
     try {
       setLoading(true);
       const response = await apiClient.get(
-        `/mindshare?project_name=${projectName}&limit=50`
+        `/mindshare?project_name=${projectName}&limit=100`
       );
       setMindshareData(response.data);
     } catch (err) {
