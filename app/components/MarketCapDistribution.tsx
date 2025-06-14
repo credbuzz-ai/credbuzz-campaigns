@@ -3,7 +3,6 @@
 import * as d3 from "d3";
 import { TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { API_BASE_URL } from "../../lib/constants";
 
 // Type definitions
 interface Token {
@@ -112,18 +111,27 @@ const formatMarketCap = (value: number) => {
 
 // Retry function for API calls
 const fetchWithRetry = async <T,>(url: string, maxRetries = 3): Promise<T> => {
+  let lastError: Error | null = null;
   for (let i = 0; i < maxRetries; i++) {
     try {
       const response = await fetch(url);
-      if (!response.ok)
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error("NOT_FOUND");
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
       return await response.json();
     } catch (error) {
-      if (i === maxRetries - 1) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
+      lastError =
+        error instanceof Error ? error : new Error("An unknown error occurred");
+      if (error instanceof Error && error.message === "NOT_FOUND") {
+        throw lastError; // Don't retry on 404
+      }
+      if (i === maxRetries - 1) throw lastError;
     }
   }
-  throw new Error("Max retries reached");
+  throw lastError;
 };
 
 export default function MarketCapDistribution({
@@ -136,31 +144,42 @@ export default function MarketCapDistribution({
   );
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [timePeriod, setTimePeriod] = useState<string>("30day");
+  const [timePeriod, setTimePeriod] = useState<"1day" | "7day" | "30day">(
+    "30day"
+  );
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Fetch data
-  const fetchData = async (interval: string) => {
+  const fetchData = async (interval: "1day" | "7day" | "30day") => {
     try {
       setLoading(true);
       setError(null);
 
       const data = await fetchWithRetry<ApiResponse>(
-        `${API_BASE_URL}/user/first-call-marketcap?author_handle=${authorHandle}&interval=${interval}`
+        `${process.env.NEXT_PUBLIC_CREDBUZZ_API_URL}/user/first-call-marketcap?author_handle=${authorHandle}&interval=${interval}`
       );
 
       // Handle case where API returns successful response but no data
       if (!data.result) {
         setMarketCapData(null);
-        setError(data.message || "No market cap data found for this author");
+        setError("No market cap data found for this author");
         return;
       }
 
       setMarketCapData(data.result);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unknown error occurred"
-      );
+      console.error("Error fetching market cap data:", err);
+      setMarketCapData(null);
+
+      if (err instanceof Error) {
+        if (err.message === "NOT_FOUND") {
+          setError("No data found");
+        } else {
+          setError("Unable to load");
+        }
+      } else {
+        setError("Unable to load");
+      }
     } finally {
       setLoading(false);
     }
@@ -168,12 +187,13 @@ export default function MarketCapDistribution({
 
   useEffect(() => {
     if (authorHandle) {
+      console.log("calling fetch data", timePeriod, authorHandle);
       fetchData(timePeriod);
     }
   }, [authorHandle, timePeriod]);
 
   // Handle time period change
-  const handleTimePeriodChange = (period: string) => {
+  const handleTimePeriodChange = (period: "1day" | "7day" | "30day") => {
     setTimePeriod(period);
   };
 
@@ -522,10 +542,33 @@ export default function MarketCapDistribution({
               Market Cap Distribution
             </h3>
           </div>
+
+          {/* Keep time period filter visible in error state */}
+          <div className="flex bg-gray-700 rounded-lg p-1">
+            {TIME_PERIODS.map((period) => (
+              <button
+                key={period.value}
+                onClick={() =>
+                  handleTimePeriodChange(
+                    period.value as "1day" | "7day" | "30day"
+                  )
+                }
+                className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
+                  timePeriod === period.value
+                    ? "bg-[#00D992] text-gray-900"
+                    : "text-gray-300 hover:text-[#00D992] hover:bg-gray-600"
+                }`}
+              >
+                {period.label}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="text-center py-12">
           <p className="text-gray-400 text-sm mb-4">
-            Unable to load market cap data at this time
+            {error === "No data found"
+              ? "No market cap data available for this time period"
+              : "Unable to load market cap data at this time"}
           </p>
           <button onClick={() => fetchData(timePeriod)} className="btn-primary">
             Try Again
@@ -570,7 +613,11 @@ export default function MarketCapDistribution({
           {TIME_PERIODS.map((period) => (
             <button
               key={period.value}
-              onClick={() => handleTimePeriodChange(period.value)}
+              onClick={() =>
+                handleTimePeriodChange(
+                  period.value as "1day" | "7day" | "30day"
+                )
+              }
               className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
                 timePeriod === period.value
                   ? "bg-[#00D992] text-gray-900"

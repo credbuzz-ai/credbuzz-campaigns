@@ -615,7 +615,7 @@ export default function MyCampaigns() {
                       )}
 
                       {/* Action Buttons */}
-                      {campaign.status.toLowerCase() === "open" && (
+                      {/* {campaign.status.toLowerCase() === "open" && (
                         <div className="flex gap-2">
                           <button
                             className="flex-1 bg-[#00D992] text-gray-900 py-2 px-3 rounded-lg text-sm font-medium hover:bg-[#00D992]/90 transition-colors"
@@ -642,7 +642,7 @@ export default function MyCampaigns() {
                             Decline
                           </button>
                         </div>
-                      )}
+                      )} */}
                     </div>
                   </div>
                 ))}
