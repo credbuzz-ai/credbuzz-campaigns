@@ -57,10 +57,9 @@ export default function CampaignDetailsPage() {
       try {
         setLoading(true);
         const response = await apiClient.get(
-          `/mindshare?project_name=${campaign?.influencer_x_handle?.replace(
-            "@",
-            ""
-          )}&limit=100` || "infinex"
+          `/mindshare?project_name=${campaign?.influencer_x_handle
+            ?.replace("@", "")
+            ?.toLowerCase()}&limit=100`
         );
         setMindshareData(response.data);
       } catch (err) {
