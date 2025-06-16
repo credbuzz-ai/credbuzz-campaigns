@@ -140,7 +140,7 @@ export default function CampaignDetailsPage() {
                 </h1>
                 <div className="flex items-center gap-2 text-gray-400">
                   <XLogo className="w-4 h-4" />
-                  <span>Creator: @{campaign.project_x_handle}</span>
+                  <span>Creator: @{campaign.owner_x_handle}</span>
                 </div>
                 {campaign.target_x_handle && (
                   <div className="flex items-center gap-2 text-gray-400 mt-2">
@@ -192,7 +192,7 @@ export default function CampaignDetailsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400">Token</span>
                   <span className="font-medium text-gray-100">
-                    {campaign.token}
+                    {campaign.payment_token}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -356,7 +356,8 @@ export default function CampaignDetailsPage() {
                 <div className="w-full h-[300px] flex items-center justify-center">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
                 </div>
-              ) : mindshareData?.result?.mindshare_data?.length > 0 ? (
+              ) : mindshareData?.result?.mindshare_data?.length &&
+                mindshareData.result.mindshare_data.length > 0 ? (
                 <MindshareTreemap data={mindshareData.result.mindshare_data} />
               ) : (
                 <div className="text-center py-8 text-gray-400">

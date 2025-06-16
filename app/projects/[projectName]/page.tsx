@@ -28,6 +28,7 @@ export default function ProjectPage({
   const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
     null
   );
+  const [timeframe, setTimeframe] = useState<"30d" | "7d" | "24h">("30d");
   const [activityData, setActivityData] = useState<
     UserProfileResponse["result"]["activity_data"] | null
   >(null);
@@ -83,7 +84,7 @@ export default function ProjectPage({
     try {
       setLoading(true);
       const response = await apiClient.get(
-        `/mindshare?project_name=${projectName}&limit=100`
+        `/mindshare?project_name=${projectName}&limit=100&timeframe=${timeframe}`
       );
       setMindshareData(response.data);
     } catch (err) {
@@ -97,7 +98,7 @@ export default function ProjectPage({
     fetchProjectDetails();
     fetchMindshare();
     fetchActivityData();
-  }, [projectName]);
+  }, [projectName, timeframe]);
 
   if (!authorData || loading) {
     return (
@@ -255,9 +256,28 @@ export default function ProjectPage({
             {mindshareData &&
               mindshareData.result.mindshare_data.length > 0 && (
                 <div className="mt-8">
-                  <h2 className="text-xl font-bold mb-4 text-foreground">
-                    Project Mindshare
-                  </h2>
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-foreground">
+                      Project Mindshare
+                    </h2>
+                    <div className="flex gap-2">
+                      {["30d", "7d", "24h"].map((period) => (
+                        <button
+                          key={period}
+                          onClick={() =>
+                            setTimeframe(period as "30d" | "7d" | "24h")
+                          }
+                          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                            timeframe === period
+                              ? "bg-[#00D992] text-black"
+                              : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                          }`}
+                        >
+                          {period}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   <MindshareTreemap
                     data={mindshareData.result.mindshare_data}
                   />
