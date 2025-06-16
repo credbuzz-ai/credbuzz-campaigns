@@ -45,26 +45,46 @@ interface MindshareTreemapProps {
 
 export default function MindshareTreemap({ data }: MindshareTreemapProps) {
   const router = useRouter();
-
   const [isLoading, setIsLoading] = React.useState(true);
+
+  // Validate and clean data to prevent null values
+  const validData = React.useMemo(() => {
+    return data.filter(
+      (item) =>
+        item &&
+        item.user_info &&
+        item.user_info.name &&
+        typeof item.mindshare_percent === "number" &&
+        !isNaN(item.mindshare_percent)
+    );
+  }, [data]);
 
   const chartData = React.useMemo(() => {
     return [
       {
-        data: data.map((item) => ({
-          x: item.user_info.name,
-          y: item.mindshare_percent,
-          author_handle: item.author_handle,
-          author_buzz: item.author_buzz,
-          profile_image_url: item.user_info.profile_image_url,
-          followers_count: item.user_info.followers_count,
-          followings_count: item.user_info.followings_count,
-          smart_followers_count: item.user_info.smart_followers_count,
-          engagement_score: item.user_info.engagement_score,
+        data: validData.map((item) => ({
+          x: item.user_info.name || "Unknown",
+          y: Number(item.mindshare_percent.toFixed(4)), // Ensure number and limit decimal places
+          author_handle: item.author_handle || "",
+          author_buzz: item.author_buzz || 0,
+          profile_image_url: item.user_info.profile_image_url || null,
+          followers_count: item.user_info.followers_count || 0,
+          followings_count: item.user_info.followings_count || 0,
+          smart_followers_count: item.user_info.smart_followers_count || 0,
+          engagement_score: item.user_info.engagement_score || 0,
         })),
       },
     ];
-  }, [data]);
+  }, [validData]);
+
+  // If no valid data, show a message
+  if (validData.length === 0) {
+    return (
+      <div className="w-full h-[300px] flex items-center justify-center text-gray-400">
+        No valid mindshare data available
+      </div>
+    );
+  }
 
   const chartOptions: ApexCharts.ApexOptions = {
     chart: {

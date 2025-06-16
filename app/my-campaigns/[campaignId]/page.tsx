@@ -8,6 +8,7 @@ import { XLogo } from "@/components/icons/x-logo";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
 import { truncateAddress } from "@/lib/utils";
@@ -15,6 +16,8 @@ import { formatDistanceToNow } from "date-fns";
 import { Clock, Coins, Wallet } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+
+type TimePeriod = "30d" | "7d" | "1d";
 
 export default function CampaignDetailsPage() {
   const params = useParams();
@@ -24,6 +27,8 @@ export default function CampaignDetailsPage() {
   const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
     null
   );
+  const [selectedTimePeriod, setSelectedTimePeriod] =
+    useState<TimePeriod>("30d");
   const [activityData, setActivityData] = useState<
     UserProfileResponse["result"]["activity_data"] | null
   >(null);
@@ -54,16 +59,23 @@ export default function CampaignDetailsPage() {
 
   useEffect(() => {
     const fetchMindshare = async () => {
+      if (!campaign?.influencer_x_handle) return;
+
       try {
         setLoading(true);
+        const handle = campaign.influencer_x_handle
+          .replace("@", "")
+          .toLowerCase();
         const response = await apiClient.get(
-          `/mindshare?project_name=${campaign?.influencer_x_handle
-            ?.replace("@", "")
-            ?.toLowerCase()}&limit=100`
+          `/mindshare?project_name=${handle}&limit=100&period=${selectedTimePeriod}`
         );
         setMindshareData(response.data);
       } catch (err) {
-        console.error("Error fetching mindshare:", err);
+        console.error(
+          `Error fetching mindshare for ${selectedTimePeriod}:`,
+          err
+        );
+        setMindshareData(null);
       } finally {
         setLoading(false);
       }
@@ -98,7 +110,7 @@ export default function CampaignDetailsPage() {
       fetchMindshare();
       fetchActivityData();
     }
-  }, [campaign?.influencer_x_handle]);
+  }, [campaign?.influencer_x_handle, selectedTimePeriod]);
 
   if (loading) {
     return <CampaignSkeleton />;
@@ -280,10 +292,10 @@ export default function CampaignDetailsPage() {
           </Card>
         </div>
 
-        {/* Influencer Analytics */}
+        {/* Target Account Analytics */}
         <div className="mt-8">
           <h2 className="text-2xl font-bold text-gray-100 mb-6">
-            Influencer Analytics
+            Target Account Analytics
           </h2>
 
           {/* Followers Overview */}
@@ -308,16 +320,55 @@ export default function CampaignDetailsPage() {
           )}
 
           {/* Mindshare Treemap */}
-          {mindshareData && mindshareData.result.mindshare_data.length > 0 && (
-            <Card className="bg-gray-800 border-gray-700">
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-100 mb-4">
+          <Card className="bg-gray-800 border-gray-700">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-100">
                   Project Mindshare
                 </h3>
-                <MindshareTreemap data={mindshareData.result.mindshare_data} />
+                <ToggleGroup
+                  type="single"
+                  value={selectedTimePeriod}
+                  onValueChange={(value) =>
+                    value && setSelectedTimePeriod(value as TimePeriod)
+                  }
+                  className="bg-gray-700 rounded-lg p-1"
+                >
+                  <ToggleGroupItem
+                    value="30d"
+                    className="data-[state=on]:bg-[#00D992] data-[state=on]:text-gray-900 px-3 py-1 rounded"
+                  >
+                    30D
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="7d"
+                    className="data-[state=on]:bg-[#00D992] data-[state=on]:text-gray-900 px-3 py-1 rounded"
+                  >
+                    7D
+                  </ToggleGroupItem>
+                  <ToggleGroupItem
+                    value="1d"
+                    className="data-[state=on]:bg-[#00D992] data-[state=on]:text-gray-900 px-3 py-1 rounded"
+                  >
+                    24H
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
-            </Card>
-          )}
+              {loading ? (
+                <div className="w-full h-[300px] flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
+                </div>
+              ) : mindshareData?.result?.mindshare_data &&
+                mindshareData.result.mindshare_data.length > 0 ? (
+                <MindshareTreemap data={mindshareData.result.mindshare_data} />
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  No mindshare data available for{" "}
+                  {selectedTimePeriod === "1d" ? "24H" : selectedTimePeriod}
+                </div>
+              )}
+            </div>
+          </Card>
         </div>
       </div>
     </div>
