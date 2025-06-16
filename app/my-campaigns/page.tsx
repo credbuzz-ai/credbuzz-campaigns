@@ -57,7 +57,7 @@ export default function MyCampaigns() {
       // Fetch closed campaigns (same pattern as BusinessDashboard)
       try {
         const closedResponse = await apiClient.post("/campaign/get-campaigns", {
-          project_x_handle: user.x_handle,
+          owner_x_handle: user.x_handle,
         });
 
         if (closedResponse.data?.result) {
@@ -476,11 +476,11 @@ export default function MyCampaigns() {
                         })()}
                       </div>
 
-                      {campaign.project_x_handle && (
+                      {campaign.owner_x_handle && (
                         <div className="text-xs mb-2">
                           <span className="text-gray-400">X Handle: </span>
                           <span className="text-[#00D992]">
-                            @{campaign.project_x_handle}
+                            @{campaign.owner_x_handle}
                           </span>
                         </div>
                       )}
@@ -545,8 +545,8 @@ export default function MyCampaigns() {
                     <div className="mb-4">
                       <p className="text-sm text-[#00D992] font-medium mb-2">
                         From:{" "}
-                        {campaign.project_x_handle ||
-                          `Brand ${campaign.project_x_handle}`}
+                        {campaign.owner_x_handle ||
+                          `Brand ${campaign.owner_x_handle}`}
                       </p>
                       <span className="text-xs text-gray-300 bg-gray-700 px-2 py-1 rounded-md">
                         {campaign.chain}
@@ -605,11 +605,11 @@ export default function MyCampaigns() {
                         })()}
                       </div>
 
-                      {campaign.project_x_handle && (
+                      {campaign.owner_x_handle && (
                         <div className="text-xs mb-3">
                           <span className="text-gray-400">X Handle: </span>
                           <span className="text-[#00D992]">
-                            @{campaign.project_x_handle}
+                            @{campaign.owner_x_handle}
                           </span>
                         </div>
                       )}

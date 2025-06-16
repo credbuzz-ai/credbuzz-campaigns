@@ -55,9 +55,7 @@ export default function BuzzBoard() {
   const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
     const matchesSearch =
       campaign.campaign_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      campaign.project_x_handle
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      campaign.owner_x_handle.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       selectedStatus === "All" ||
       campaign.status === selectedStatus.toUpperCase();
@@ -279,7 +277,7 @@ export default function BuzzBoard() {
                         {campaign.campaign_name}
                       </h3>
                       <p className="text-gray-400 text-sm">
-                        @{campaign.project_x_handle}
+                        @{campaign.owner_x_handle}
                       </p>
                     </div>
                     <span

@@ -94,15 +94,15 @@ export default function CollaborateDialog({
   const form = useForm<Campaign & { target_x_handle?: string }>({
     defaultValues: {
       campaign_id: "",
-      project_x_handle: "",
+      owner_x_handle: "",
       influencer_x_handle: "",
       campaign_type: mode === "targeted" ? "Targeted" : "Public",
       campaign_name: "",
       description: "",
       status: mode === "targeted" ? "OPEN" : "PUBLISHED",
-      token: "",
-      token_address: "",
-      token_decimals: 0,
+      payment_token: "",
+      payment_token_address: "",
+      payment_token_decimals: 0,
       amount: 0,
       chain: "Base",
       offer_end_date: "",
@@ -207,7 +207,7 @@ export default function CollaborateDialog({
   useEffect(() => {
     const twitterHandle = getTwitterHandle();
     if (twitterHandle) {
-      form.setValue("project_x_handle", twitterHandle);
+      form.setValue("owner_x_handle", twitterHandle);
     }
   }, [user, getTwitterHandle, form]);
 
@@ -259,7 +259,7 @@ export default function CollaborateDialog({
     if (!data.offer_end_date) {
       missingFields.push("Offer end date");
     }
-    if (!data.token_address) {
+    if (!data.payment_token_address) {
       missingFields.push("Payment token");
     }
     if (!data.campaign_name) {
@@ -299,6 +299,8 @@ export default function CollaborateDialog({
       campaign_type: campaignType,
       status: mode === "targeted" ? "OPEN" : "PUBLISHED",
       influencer_x_handle: mode === "targeted" ? influencerHandle : undefined,
+      target_x_handle:
+        mode === "targeted" ? influencerHandle : data.target_x_handle,
       description: data.description,
     } as Campaign;
 
@@ -308,7 +310,7 @@ export default function CollaborateDialog({
       // Find selected token for decimals
       const availableTokens = getAvailableTokens();
       const selectedToken = availableTokens.find(
-        (token) => token.address === data.token_address
+        (token) => token.address === data.payment_token_address
       );
       const decimals = selectedToken?.decimals;
 
@@ -326,7 +328,7 @@ export default function CollaborateDialog({
       );
 
       // 1. First transfer tokens to contract
-      await transferToken(data.token_address || "", amountInWei);
+      await transferToken(data.payment_token_address || "", amountInWei);
 
       // 2. Create campaign on blockchain
       const txHash = await createNewCampaign(
@@ -334,7 +336,7 @@ export default function CollaborateDialog({
         amountInWei,
         convertToTimestamp(data.offer_end_date),
         convertToTimestamp(data.offer_end_date),
-        data.token_address || ""
+        data.payment_token_address || ""
       );
 
       toast({
@@ -361,16 +363,16 @@ export default function CollaborateDialog({
       // Build request body to match API schema exactly
       const requestBody = {
         campaign_id: campaignId,
-        project_x_handle: data.project_x_handle?.replace("@", ""),
+        owner_x_handle: data.owner_x_handle?.replace("@", ""),
         influencer_x_handle: data.influencer_x_handle?.replace("@", ""),
         target_x_handle: data.target_x_handle?.replace("@", ""),
         campaign_type: data.campaign_type,
         campaign_name: data.campaign_name,
         description: data.description,
         status: data.campaign_type === "Targeted" ? "OPEN" : "PUBLISHED",
-        token: data.token,
-        token_address: data.token_address,
-        token_decimals: data.token_decimals,
+        payment_token: data.payment_token,
+        payment_token_address: data.payment_token_address,
+        payment_token_decimals: data.payment_token_decimals,
         amount: data.amount,
         chain: data.chain,
         offer_end_date: data.offer_end_date,
@@ -773,7 +775,7 @@ export default function CollaborateDialog({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
-                  name="token"
+                  name="payment_token"
                   rules={{ required: "Please select a payment token" }}
                   render={({ field }) => (
                     <FormItem>
@@ -790,11 +792,11 @@ export default function CollaborateDialog({
                           );
                           if (selectedToken) {
                             form.setValue(
-                              "token_address",
+                              "payment_token_address",
                               selectedToken.address
                             );
                             form.setValue(
-                              "token_decimals",
+                              "payment_token_decimals",
                               selectedToken.decimals
                             );
                           }

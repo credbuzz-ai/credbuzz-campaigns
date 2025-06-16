@@ -140,7 +140,7 @@ export default function CampaignDetailsPage() {
                 </h1>
                 <div className="flex items-center gap-2 text-gray-400">
                   <XLogo className="w-4 h-4" />
-                  <span>Creator: @{campaign.project_x_handle}</span>
+                  <span>Creator: @{campaign.owner_x_handle}</span>
                 </div>
                 {campaign.influencer_x_handle && (
                   <div className="flex items-center gap-2 text-gray-400 mt-2">
@@ -192,7 +192,7 @@ export default function CampaignDetailsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400">Token</span>
                   <span className="font-medium text-gray-100">
-                    {campaign.token}
+                    {campaign.payment_token}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

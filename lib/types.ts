@@ -6,9 +6,11 @@ export interface Influencer {
 
 export interface Campaign {
   campaign_id: string;
-  project_x_handle: string;
+  owner_x_handle: string;
   influencer_x_handle: string;
   target_x_handle?: string;
+  target_name?: string;
+  target_token_symbol?: string;
   campaign_type: "Public" | "Targeted";
   campaign_name: string;
   description: string;
@@ -19,9 +21,9 @@ export interface Campaign {
     | "FULFILLED"
     | "UNFULFILLED"
     | "DISCARDED";
-  token: string;
-  token_address: string;
-  token_decimals: number;
+  payment_token: string;
+  payment_token_address: string;
+  payment_token_decimals?: number;
   amount: number;
   chain: "Base" | "Solana";
   offer_end_date: string;
