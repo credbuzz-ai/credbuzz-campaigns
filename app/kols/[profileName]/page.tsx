@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import KOLProfileHeader from "../../../components/KOLProfileHeader";
 import KOLSearch from "../../../components/KOLSearch";
-import InfluencerMatchMaking from "../../components/InfluencerMatchmaking";
 import MarketCapDistribution from "../../components/MarketCapDistribution";
 import { ProfileCharts } from "../../components/ProfileCharts";
 import SmartFeed from "../../components/SmartFeed";
@@ -229,11 +228,6 @@ export default async function ProfilePage({
             {/* Token Overview Section */}
             <div className="mt-8">
               <TokenOverview authorHandle={profile.author_handle} />
-            </div>
-
-            {/* Job Manager - Influencer Matchmaking */}
-            <div className="mt-8 mb-8">
-              <InfluencerMatchMaking projectHandle={profile.author_handle} />
             </div>
           </div>
         </div>

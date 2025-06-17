@@ -1,51 +1,13 @@
 "use client";
 
+import CampaignCard from "@/components/CampaignCard";
 import CollaborateDialog from "@/components/CollaborateDialog";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
-import { DollarSign, Search, TrendingUp, Users } from "lucide-react";
-import Link from "next/link";
+import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const statusOptions = ["All", "Published", "Fulfilled", "Discarded"];
-
-// Helper function to format date
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  }).format(date);
-};
-
-// Description component with read more functionality
-const ExpandableDescription = ({ description }: { description: string }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const maxLength = 100; // Maximum characters to show initially
-
-  if (description.length <= maxLength) {
-    return <p className="text-gray-300 text-sm mb-4">{description}</p>;
-  }
-
-  return (
-    <div className="text-gray-300 text-sm mb-4">
-      {isExpanded ? description : `${description.slice(0, maxLength)}...`}
-      <button
-        onClick={(e) => {
-          e.preventDefault(); // Prevent link navigation
-          setIsExpanded(!isExpanded);
-        }}
-        className="ml-1 text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors"
-      >
-        {isExpanded ? "Read less" : "Read more"}
-      </button>
-    </div>
-  );
-};
 
 export default function BuzzBoard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -63,88 +25,6 @@ export default function BuzzBoard() {
     return matchesSearch && matchesStatus;
   });
 
-  // Function to format large numbers
-  const formatAmount = (amount: number): string => {
-    if (amount >= 1000000000) {
-      return (amount / 1000000000).toFixed(4) + "B";
-    }
-    if (amount >= 1000000) {
-      return (amount / 1000000).toFixed(4) + "M";
-    }
-    if (amount >= 1000) {
-      return (amount / 1000).toFixed(4) + "K";
-    }
-    return amount.toFixed(4);
-  };
-
-  const calculateTimeProgress = (campaign: Campaign) => {
-    if (campaign.status === "FULFILLED") {
-      return 100;
-    }
-
-    if (campaign.status === "OPEN") {
-      return 0;
-    }
-
-    try {
-      const endDate = new Date(campaign.offer_end_date);
-      const currentDate = new Date();
-
-      // If end date has passed, return 100%
-      if (currentDate >= endDate) {
-        return 100;
-      }
-
-      // Calculate campaign duration (assuming it started 30 days before end date as demo)
-      // You might want to add a start_date field to your Campaign type for more accuracy
-      const estimatedStartDate = new Date(endDate);
-      estimatedStartDate.setDate(estimatedStartDate.getDate() - 30); // Assume 30-day campaigns
-
-      // If current date is before estimated start, return 0%
-      if (currentDate < estimatedStartDate) {
-        return 0;
-      }
-
-      const totalDuration = endDate.getTime() - estimatedStartDate.getTime();
-      const elapsed = currentDate.getTime() - estimatedStartDate.getTime();
-
-      const progress = Math.round((elapsed / totalDuration) * 100);
-      return Math.max(0, Math.min(100, progress)); // Ensure between 0-100
-    } catch (error) {
-      console.error("Error calculating time progress:", error);
-      // Fallback to demo progress if date parsing fails
-      return campaign.status === "PUBLISHED" || campaign.status === "ACCEPTED"
-        ? 50
-        : 0;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "PUBLISHED":
-        return "bg-[#00D992]/10 text-[#00D992] border-[#00D992]/20";
-      case "FULFILLED":
-        return "bg-red-500/10 text-red-400 border-red-500/20";
-      case "DISCARDED":
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
-      default:
-        return "bg-gray-500/10 text-gray-400 border-gray-500/20";
-    }
-  };
-
-  const getStatusDisplayName = (status: string) => {
-    switch (status) {
-      case "PUBLISHED":
-        return "Published";
-      case "FULFILLED":
-        return "Fulfilled";
-      case "DISCARDED":
-        return "Discarded";
-      default:
-        return status;
-    }
-  };
-
   const fetchCampaigns = async () => {
     const campaigns = await apiClient.post("/campaign/get-campaigns", {
       campaign_type: "Public",
@@ -155,8 +35,6 @@ export default function BuzzBoard() {
   useEffect(() => {
     fetchCampaigns();
   }, []);
-
-
 
   return (
     <div className="min-h-screen bg-gray-900/30 py-8 px-4 sm:px-6 lg:px-8">
@@ -173,8 +51,12 @@ export default function BuzzBoard() {
               </p>
             </div>
             <CollaborateDialog mode="public">
-              <button className="px-6 py-3 bg-[#00D992]/90 hover:bg-[#00F5A8]/90 text-gray-900 font-semibold rounded-xl transition-colors flex items-center gap-2">
+              <button
+                className="px-6 py-3 bg-[#00D992]/90 hover:bg-[#00F5A8]/90 text-gray-900 font-semibold rounded-xl transition-colors flex items-center gap-2"
+                title="Create a new public campaign"
+              >
                 <span>Create Campaign</span>
+
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="20"
@@ -193,7 +75,6 @@ export default function BuzzBoard() {
             </CollaborateDialog>
           </div>
         </div>
-
         {/* Filters */}
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
@@ -210,119 +91,82 @@ export default function BuzzBoard() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-
             {/* Status Filter */}
-            <select
-              className="px-4 py-3 border border-gray-600/30 rounded-xl 
+            <div className="flex items-center gap-2 min-w-[180px]">
+              <select
+                className="px-4 py-3 border border-gray-600/30 rounded-xl 
              bg-gray-700/30 text-gray-100 min-w-[150px]
              focus-trendsage"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+              >
+                {statusOptions.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
-
-
-
+        {/* Campaign Card Guide */}
+        <div className="mb-6 p-3 bg-gray-800/30 rounded-xl border border-gray-700/30 text-xs text-gray-400 grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div>
+            <span className="font-semibold text-gray-300">Budget:</span> Total
+            rewards for influencers
+          </div>
+          <div>
+            <span className="font-semibold text-gray-300">Token:</span> Currency
+            used for rewards
+          </div>
+          <div>
+            <span className="font-semibold text-gray-300">Chain:</span>{" "}
+            Blockchain for distribution
+          </div>
+          <div>
+            <span className="font-semibold text-gray-300">Status:</span>{" "}
+            Campaign's current state
+          </div>
+        </div>
         {/* Campaign Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCampaigns.map((campaign) => {
-            const progress = calculateTimeProgress(campaign);
-            return (
-              <Link
-                key={campaign.campaign_id}
-                href={`/buzz-board/${campaign.campaign_id}`}
-                className="group hover:scale-[1.02] transition-transform"
-              >
-                <div className="bg-gray-800/30 p-6 rounded-xl border border-gray-700/30 h-full transition-all duration-200 hover:border-[#00D992]/30">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-100 mb-1 group-hover:text-[#00D992] transition-colors">
-                        {campaign.campaign_name}
-                      </h3>
-                      <p className="text-gray-400 text-sm">
-                        @{campaign.owner_x_handle}
-                      </p>
-                    </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                        campaign.status
-                      )}`}
-                    >
-                      {getStatusDisplayName(campaign.status)}
-                    </span>
-                  </div>
-
-                  <ExpandableDescription description={campaign.description} />
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400">Budget:</span>
-                      <span className="text-gray-200 font-medium">
-                        {formatAmount(campaign.amount)} {campaign.payment_token}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400">Token:</span>
-                      <span className="text-gray-200">{campaign.payment_token}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-400">Chain:</span>
-                      <span className="text-gray-200">{campaign.chain}</span>
-                    </div>
-
-                    {campaign.status !== "OPEN" && (
-                      <div className="mt-4">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-gray-400 text-sm">
-                            Campaign Progress
-                          </span>
-                          <span className="text-gray-200 text-sm">
-                            {campaign.status === "FULFILLED"
-                              ? "100%"
-                              : `${progress}%`}
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-700 rounded-full h-2 mb-2">
-                          <div
-                            className={`h-2 rounded-full transition-all ${
-                              campaign.status === "FULFILLED"
-                                ? "bg-gradient-to-r from-gray-500 to-gray-600"
-                                : "bg-gradient-to-r from-[#00D992] to-[#00F5A8]"
-                            }`}
-                            style={{ width: `${progress}%` }}
-                          ></div>
-                        </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-gray-400">
-                            Ends: {formatDate(campaign.offer_end_date)}
-                          </span>
-                          {campaign.status === "FULFILLED" && (
-                            <span className="text-red-400">
-                              Campaign has ended
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            );
-          })}
+          {filteredCampaigns.map((campaign) => (
+            <CampaignCard key={campaign.campaign_id} campaign={campaign} />
+          ))}
         </div>
 
         {filteredCampaigns.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-2">No campaigns found</div>
-            <div className="text-gray-500 text-sm">
-              Try adjusting your search or filter criteria
+            <div className="text-gray-400 text-lg mb-2 flex items-center justify-center gap-2">
+              <svg
+                width="24"
+                height="24"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="text-[#00D992]"
+              >
+                <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 8v4m0 4h.01"
+                />
+              </svg>
+              No campaigns found
+            </div>
+            <div className="text-gray-500 text-sm mb-2">
+              Try adjusting your search or filter criteria.
+              <br />
+              <span className="text-gray-400">
+                Tip: Public campaigns are created by brands or projects looking
+                for influencer collaboration. Use the{" "}
+                <span className="text-[#00D992] font-medium">
+                  Create Campaign
+                </span>{" "}
+                button above to start your own!
+              </span>
             </div>
           </div>
         )}

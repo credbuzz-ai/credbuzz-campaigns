@@ -535,7 +535,7 @@ export default function CollaborateDialog({
           className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium h-10 px-6 w-full"
         >
           <Wallet className="h-4 w-4 mr-2" />
-          Connect MetaMask
+          Connect Wallet
         </Button>
         <Button
           type="button"
