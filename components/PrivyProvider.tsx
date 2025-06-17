@@ -16,7 +16,7 @@ export default function PrivyProvider({ children }: PrivyProviderProps) {
           accentColor: "#00D992",
           logo: "/logo-green.svg",
           loginMessage: "Login to TrendSage",
-          walletList: ["metamask"],
+          // walletList: ["metamask"],
         },
         loginMethods: ["twitter"],
       }}
