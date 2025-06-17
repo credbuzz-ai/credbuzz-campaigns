@@ -1,21 +1,44 @@
 "use client";
 
 import FollowersOverview from "@/app/components/FollowersOverview";
-import MindshareTreemap from "@/app/components/MindshareTreemap";
-import { ActivityChart } from "@/app/components/ProfileCharts";
+import MindshareVisualization from "@/app/components/MindshareVisualization";
+
+import SmartFeed from "@/app/components/SmartFeed";
 import { MindshareResponse, UserProfileResponse } from "@/app/types";
 import { XLogo } from "@/components/icons/x-logo";
 import { Card } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
 import { truncateAddress } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
-import { Clock, Coins, Wallet } from "lucide-react";
+import { formatDistanceToNow, differenceInDays, differenceInHours } from "date-fns";
+import { Clock, Coins } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+
+// Expandable Description component for campaign descriptions
+const ExpandableDescription = ({ description }: { description: string }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const maxLength = 150; // Maximum characters to show initially
+
+  if (description.length <= maxLength) {
+    return <p className="text-sm text-gray-300 leading-relaxed">{description}</p>;
+  }
+
+  return (
+    <div className="text-sm text-gray-300 leading-relaxed">
+      {isExpanded ? description : `${description.slice(0, maxLength)}...`}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="ml-1 text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors"
+      >
+        {isExpanded ? "Show less" : "Show more"}
+      </button>
+    </div>
+  );
+};
 
 type TimePeriod = "30d" | "7d" | "1d";
 
@@ -35,6 +58,8 @@ export default function CampaignDetailsPage() {
 
   useEffect(() => {
     const fetchCampaignDetails = async () => {
+      if (!params?.campaignId) return;
+      
       try {
         setLoading(true);
         const response = await apiClient.post("/campaign/get-campaigns", {
@@ -55,7 +80,7 @@ export default function CampaignDetailsPage() {
     };
 
     fetchCampaignDetails();
-  }, [params.campaignId]);
+  }, [params?.campaignId]);
 
   useEffect(() => {
     const fetchMindshare = async (period: TimePeriod) => {
@@ -127,246 +152,100 @@ export default function CampaignDetailsPage() {
     );
   }
 
+  // Helper function to calculate campaign time remaining
+  const getCampaignTimeRemaining = () => {
+    const endDate = new Date(campaign.offer_end_date);
+    const now = new Date();
+    
+    if (endDate <= now) {
+      return "Campaign ended";
+    }
+    
+    const totalHours = differenceInHours(endDate, now);
+    const days = Math.floor(totalHours / 24);
+    const hours = totalHours % 24;
+    
+    if (days > 0) {
+      return `${days} ${days === 1 ? 'day' : 'days'} ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    } else {
+      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    }
+  };
+
+  // Get the handle for the smart feed (prefer project_handle, then target, fallback to owner)
+  const smartFeedHandle = campaign.project_handle 
+    ? campaign.project_handle.replace("@", "").toLowerCase()
+    : campaign.target_x_handle 
+    ? campaign.target_x_handle.replace("@", "").toLowerCase()
+    : campaign.owner_x_handle.replace("@", "").toLowerCase();
+
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-gray-900">
-      <div className="max-w-7xl mx-auto">
-        {/* Campaign Header */}
-        <Card className="bg-gray-800 border-gray-700 mb-8">
-          <div className="p-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-              <div className="space-y-3">
-                <h1 className="text-3xl font-bold text-gray-100">
-                  {campaign.campaign_name}
-                </h1>
-                <div className="flex items-center gap-2 text-gray-400">
-                  <XLogo className="w-4 h-4" />
-                  <span>Creator: @{campaign.owner_x_handle}</span>
-                </div>
-                {campaign.target_x_handle && (
-                  <div className="flex items-center gap-2 text-gray-400 mt-2">
-                    <XLogo className="w-4 h-4" />
-                    <span className="text-[#00D992]">
-                      Target: {campaign.target_x_handle}
-                    </span>
-                  </div>
-                )}
-                <p className="text-gray-300 text-lg max-w-2xl">
-                  {campaign.description}
-                </p>
-              </div>
-              <div>
-                <span
-                  className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                    campaign.status === "OPEN"
-                      ? "bg-[#00D992]/10 text-[#00D992] border border-[#00D992]/20"
-                      : campaign.status === "PUBLISHED"
-                      ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                      : campaign.status === "ACCEPTED"
-                      ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                      : campaign.status === "FULFILLED"
-                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                      : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
-                  }`}
-                >
-                  {campaign.status}
-                </span>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Campaign Details Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Token Details */}
-          <Card className="bg-gray-800 border-gray-700 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10">
-            <div className="p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-[#00D992]/10">
-                  <Coins className="w-5 h-5 text-[#00D992]" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-100">
-                  Token Details
-                </h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Token</span>
-                  <span className="font-medium text-gray-100">
-                    {campaign.payment_token}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Amount</span>
-                  <span className="font-medium text-gray-100">
-                    {campaign.amount}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Chain</span>
-                  <span className="font-medium text-gray-100">
-                    {campaign.chain}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          {/* Campaign Timeline */}
-          <Card className="bg-gray-800 border-gray-700 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10">
-            <div className="p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-[#00D992]/10">
-                  <Clock className="w-5 h-5 text-[#00D992]" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-100">
-                  Timeline
-                </h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Offer Ends</span>
-                  <span className="font-medium text-gray-100">
-                    {formatDistanceToNow(new Date(campaign.offer_end_date), {
-                      addSuffix: true,
-                    })}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-400">Type</span>
-                  <span className="font-medium text-gray-100">
-                    {campaign.campaign_type}
-                  </span>
-                </div>
-                {campaign.counter && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-400">Counter</span>
-                    <span className="font-medium text-gray-100">
-                      {campaign.counter}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-
-          {/* Wallet Information */}
-          <Card className="bg-gray-800 border-gray-700 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10">
-            <div className="p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-full bg-[#00D992]/10">
-                  <Wallet className="w-5 h-5 text-[#00D992]" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-100">
-                  Wallet Information
-                </h3>
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <span className="text-gray-400 block mb-1">
-                    Project Wallet
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm text-gray-100 break-all bg-gray-700/50 p-2 rounded block flex-1">
-                      {truncateAddress(campaign.project_wallet)}
-                    </span>
-                    <CopyButton text={campaign.project_wallet} />
-                  </div>
-                </div>
-                {campaign.influencer_wallet && (
-                  <div>
-                    <span className="text-gray-400 block mb-1">
-                      Influencer Wallet
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm text-gray-100 break-all bg-gray-700/50 p-2 rounded block flex-1">
-                        {truncateAddress(campaign.influencer_wallet)}
-                      </span>
-                      <CopyButton text={campaign.influencer_wallet} />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </Card>
-        </div>
-
-        {/* Target Account Analytics */}
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-100 mb-6">
-            Target Account Analytics
-          </h2>
-
-          {/* Followers Overview */}
-          {campaign?.target_x_handle && (
-            <div className="mb-8">
-              <FollowersOverview
-                authorHandle={campaign.target_x_handle.replace("@", "")}
-              />
-            </div>
-          )}
-
-          {/* Activity Heatmap */}
-          {activityData && (
+    <div className="min-h-screen bg-gray-900">
+      <div className="flex items-start">
+        {/* Main Content */}
+        <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
+          <div className="max-w-6xl mx-auto">
+            {/* Campaign Header */}
             <Card className="bg-gray-800 border-gray-700 mb-8">
               <div className="p-6">
-                <h3 className="text-xl font-bold text-gray-100 mb-4">
-                  Activity Heatmap
-                </h3>
-                <ActivityChart activityData={activityData} />
+                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                  <div className="space-y-3 flex-1">
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-2xl font-bold text-gray-100">
+                        {campaign.campaign_name}
+                      </h1>
+                      <button
+                        onClick={() => window.open('https://twitter.com', '_blank')}
+                        className="p-2 rounded-full bg-gray-700/50 hover:bg-gray-600/50 transition-colors group"
+                        title="View on Twitter"
+                      >
+                        <XLogo className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+                      </button>
+                    </div>
+                    <div className="max-w-2xl">
+                      <ExpandableDescription description={campaign.description} />
+                    </div>
+                  </div>
+                  <div className="text-right space-y-3">
+                    <div className="flex items-center gap-2 text-[#00D992] font-semibold text-sm">
+                      <Coins className="w-4 h-4" />
+                      <span>Reward: {campaign.amount} {campaign.payment_token}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[#00D992] font-semibold text-sm">
+                      <Clock className="w-4 h-4" />
+                      <span>Ends: {getCampaignTimeRemaining()}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Card>
-          )}
 
-          {/* Mindshare Treemap */}
-          <Card className="bg-gray-800 border-gray-700">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-100">
-                  Project Mindshare
-                </h3>
-                <ToggleGroup
-                  type="single"
-                  value={selectedTimePeriod}
-                  onValueChange={(value) =>
-                    value && setSelectedTimePeriod(value as TimePeriod)
-                  }
-                  className="bg-gray-700 rounded-lg p-1"
-                >
-                  <ToggleGroupItem
-                    value="30d"
-                    className="data-[state=on]:bg-[#00D992] data-[state=on]:text-gray-900 px-3 py-1 rounded"
-                  >
-                    30D
-                  </ToggleGroupItem>
-                  <ToggleGroupItem
-                    value="7d"
-                    className="data-[state=on]:bg-[#00D992] data-[state=on]:text-gray-900 px-3 py-1 rounded"
-                  >
-                    7D
-                  </ToggleGroupItem>
-                  <ToggleGroupItem
-                    value="1d"
-                    className="data-[state=on]:bg-[#00D992] data-[state=on]:text-gray-900 px-3 py-1 rounded"
-                  >
-                    24H
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-              {loading ? (
-                <div className="w-full h-[300px] flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
-                </div>
-              ) : mindshareData?.result?.mindshare_data?.length &&
-                mindshareData.result.mindshare_data.length > 0 ? (
-                <MindshareTreemap data={mindshareData.result.mindshare_data} />
-              ) : (
-                <div className="text-center py-8 text-gray-400">
-                  No mindshare data available for{" "}
-                  {selectedTimePeriod === "1d" ? "24H" : selectedTimePeriod}
-                </div>
-              )}
+
+
+            {/* Community Mindshare */}
+            <div className="mb-8 mt-8">
+              <MindshareVisualization 
+                data={mindshareData?.result?.mindshare_data || []}
+                selectedTimePeriod={selectedTimePeriod}
+                onTimePeriodChange={(period) => setSelectedTimePeriod(period as TimePeriod)}
+                loading={loading}
+              />
             </div>
-          </Card>
+
+            {/* Followers Overview */}
+            {campaign?.target_x_handle && (
+              <div className="mb-8">
+                <FollowersOverview
+                  authorHandle={campaign.target_x_handle.replace("@", "")}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Smart Feed Sidebar */}
+        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-start sticky top-8">
+          <SmartFeed authorHandle={smartFeedHandle} />
         </div>
       </div>
     </div>

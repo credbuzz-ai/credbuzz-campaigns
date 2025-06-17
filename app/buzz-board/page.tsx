@@ -156,14 +156,7 @@ export default function BuzzBoard() {
     fetchCampaigns();
   }, []);
 
-  // Update the stats calculation
-  const activeCount = campaigns.filter((c) => c.status === "PUBLISHED").length;
-  const recruitingCount = campaigns.filter((c) => c.status === "OPEN").length;
 
-  // Calculate total budget from actual campaign data
-  const totalBudget = campaigns.reduce((sum, campaign) => {
-    return sum + (campaign.amount || 0);
-  }, 0);
 
   return (
     <div className="min-h-screen bg-gray-900/30 py-8 px-4 sm:px-6 lg:px-8">
@@ -235,30 +228,7 @@ export default function BuzzBoard() {
           </div>
         </div>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-          <div className="card-trendsage text-center group bg-gray-800/30 border-gray-700/30">
-            <TrendingUp className="w-8 h-8 text-[#00D992] mx-auto mb-2 group-hover:scale-110 transition-transform" />
-            <div className="text-2xl font-bold text-gray-100">
-              {activeCount}
-            </div>
-            <div className="text-sm text-gray-400">Active Campaigns</div>
-          </div>
-          <div className="card-trendsage text-center group bg-gray-800/30 border-gray-700/30">
-            <Users className="w-8 h-8 text-[#00D992] mx-auto mb-2 group-hover:scale-110 transition-transform" />
-            <div className="text-2xl font-bold text-gray-100">
-              {campaigns.length}
-            </div>
-            <div className="text-sm text-gray-400">Total Campaigns</div>
-          </div>
-          <div className="card-trendsage text-center group bg-gray-800/30 border-gray-700/30">
-            <DollarSign className="w-8 h-8 text-[#00D992] mx-auto mb-2 group-hover:scale-110 transition-transform" />
-            <div className="text-2xl font-bold text-gray-100">
-              {totalBudget > 0 ? formatAmount(Number(totalBudget)) : "0"}
-            </div>
-            <div className="text-sm text-gray-400">Total Budget</div>
-          </div>
-        </div>
+
 
         {/* Campaign Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -295,12 +265,12 @@ export default function BuzzBoard() {
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-400">Budget:</span>
                       <span className="text-gray-200 font-medium">
-                        {formatAmount(campaign.amount)} {campaign.token}
+                        {formatAmount(campaign.amount)} {campaign.payment_token}
                       </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-400">Token:</span>
-                      <span className="text-gray-200">{campaign.token}</span>
+                      <span className="text-gray-200">{campaign.payment_token}</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-gray-400">Chain:</span>

@@ -1,7 +1,7 @@
 "use client";
 
 import FollowersOverview from "@/app/components/FollowersOverview";
-import MindshareTreemap from "@/app/components/MindshareTreemap";
+import MindshareVisualization from "@/app/components/MindshareVisualization";
 import { ActivityChart } from "@/app/components/ProfileCharts";
 import { MindshareResponse, UserProfileResponse } from "@/app/types";
 import { XLogo } from "@/components/icons/x-logo";
@@ -319,7 +319,7 @@ export default function CampaignDetailsPage() {
             </Card>
           )}
 
-          {/* Mindshare Treemap */}
+          {/* Mindshare Visualization */}
           <Card className="bg-gray-800 border-gray-700">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
@@ -360,7 +360,7 @@ export default function CampaignDetailsPage() {
                 </div>
               ) : mindshareData?.result?.mindshare_data &&
                 mindshareData.result.mindshare_data.length > 0 ? (
-                <MindshareTreemap data={mindshareData.result.mindshare_data} />
+                <MindshareVisualization data={mindshareData.result.mindshare_data} />
               ) : (
                 <div className="text-center py-8 text-gray-400">
                   No mindshare data available for{" "}

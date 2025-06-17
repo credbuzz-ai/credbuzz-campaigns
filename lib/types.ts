@@ -11,6 +11,7 @@ export interface Campaign {
   target_x_handle?: string;
   target_name?: string;
   target_token_symbol?: string;
+  project_handle?: string;
   campaign_type: "Public" | "Targeted";
   campaign_name: string;
   description: string;
