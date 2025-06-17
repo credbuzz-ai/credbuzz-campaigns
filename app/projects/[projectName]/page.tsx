@@ -12,9 +12,9 @@ import {
   UserProfileResponse,
 } from "@/app/types";
 import apiClient from "@/lib/api";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
+import ProjectProfileHeader from "../../../components/ProjectProfileHeader";
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
@@ -133,103 +133,13 @@ export default function ProjectPage({
             <ProjectSearch />
 
             {/* Project Profile Section */}
-            <div className="card-trendsage mt-8">
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Profile Image */}
-                <div className="relative h-28 w-28 rounded-xl overflow-hidden border-4 border-gray-700 shadow-xl">
-                  <Image
-                    src={authorData.profile_image_url}
-                    alt={authorData.name}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                </div>
+            <ProjectProfileHeader
+              project={authorData}
+              accountCreatedText={`Joined ${formatDate(
+                authorData.account_created_at
+              )}`}
+            />
 
-                {/* Profile Info */}
-                <div className="flex-1">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between">
-                    <div>
-                      <h1 className="text-2xl font-bold text-foreground">
-                        {authorData.name}
-                      </h1>
-                      <p className="text-muted-foreground">
-                        @{authorData.author_handle}
-                      </p>
-                    </div>
-                    <a
-                      href={`https://${authorData.url_in_bio}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-primary"
-                    >
-                      Visit Website
-                    </a>
-                  </div>
-                  <p className="mt-2 text-foreground">{authorData.bio}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Joined {formatDate(authorData.account_created_at)}
-                  </p>
-                </div>
-              </div>
-
-              {/* Stats Grid */}
-              <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[
-                  { label: "Followers", value: authorData.followers_count },
-                  { label: "Following", value: authorData.followings_count },
-                  {
-                    label: "Crypto Tweets",
-                    value: authorData.crypto_tweets_all,
-                  },
-                  {
-                    label: "Tweet Views",
-                    value: authorData.crypto_tweets_views_all,
-                  },
-                ].map((stat) => (
-                  <div key={stat.label} className="card-trendsage">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      {stat.label}
-                    </p>
-                    <p className="mt-1 text-xl font-bold text-foreground">
-                      {formatNumber(stat.value)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Engagement Metrics */}
-              <div className="mt-8">
-                <h2 className="text-xl font-bold mb-4 text-foreground">
-                  Engagement Metrics
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {[
-                    {
-                      label: "Engagement Score",
-                      value: authorData.engagement_score,
-                    },
-                    {
-                      label: "Followers Impact",
-                      value: authorData.followers_impact,
-                    },
-                    {
-                      label: "Smart Followers",
-                      value: authorData.smart_followers_count,
-                    },
-                  ].map((metric) => (
-                    <div key={metric.label} className="card-trendsage">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        {metric.label}
-                      </p>
-                      <p className="mt-1 text-2xl font-bold accent-trendsage">
-                        {formatNumber(metric.value)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
             {/* Job Manager - Influencer Matchmaking */}
             <div className="mt-8">
               <InfluencerMatchMaking projectHandle={authorData.author_handle} />
