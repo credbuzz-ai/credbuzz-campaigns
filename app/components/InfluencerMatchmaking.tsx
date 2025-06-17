@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "../../components/ui/badge";
 import { Button } from "../../components/ui/button";
 
+import { useToast } from "@/hooks/use-toast";
 // Simplified type definitions
 interface JobStatus {
   id: number;
@@ -94,6 +95,7 @@ export default function InfluencerMatchMaking({
     useState<MatchmakingResults | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // Results state
   const [results, setResults] = useState<MatchmakingResults | null>(null);
@@ -520,9 +522,6 @@ export default function InfluencerMatchMaking({
                   {getStatusIcon(currentJob.status)}
                   <span className="ml-1 capitalize">{currentJob.status}</span>
                 </Badge>
-                <span className="text-sm text-gray-400">
-                  Job ID: {currentJob.id}
-                </span>
               </div>
               <div className="flex gap-2">
                 {currentJob.status === "completed" && (
@@ -555,6 +554,17 @@ export default function InfluencerMatchMaking({
             {currentJob.status_info && (
               <div className="bg-gray-700 rounded-lg p-3 mb-3">
                 <p className="text-xs sm:text-sm text-gray-300 mb-2">
+                  {currentJob.status === "processing" ? (
+                    <span className="text-xs sm:text-sm text-gray-300 mb-2">
+                      <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                      Your AI Analysis is in progress...
+                    </span>
+                  ) : (
+                    <span className="text-xs sm:text-sm text-gray-300 mb-2">
+                      {currentJob.status_info.message}
+                    </span>
+                  )}
+
                   {currentJob.status_info.message}
                 </p>
 
@@ -693,22 +703,32 @@ export default function InfluencerMatchMaking({
                       <div className="flex items-start gap-4">
                         {/* Main Content */}
                         <div className="flex-1">
-                          <div className="flex items-start justify-between mb-2">
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h3
-                                  className="font-semibold text-gray-100 cursor-pointer hover:text-[#00D992] transition-colors"
-                                  onClick={() =>
-                                    window.open(
-                                      `https://twitter.com/${influencer.influencer_handle}`,
-                                      "_blank"
-                                    )
-                                  }
-                                >
-                                  @{influencer.influencer_handle}
-                                </h3>
-                              </div>
-                            </div>
+                          {/* Card Header: handle left, collaborate right */}
+                          <div className="flex items-center justify-between mb-2">
+                            <h3
+                              className="font-semibold text-gray-100 cursor-pointer hover:text-[#00D992] transition-colors"
+                              onClick={() =>
+                                window.open(
+                                  `https://twitter.com/${influencer.influencer_handle}`,
+                                  "_blank"
+                                )
+                              }
+                            >
+                              @{influencer.influencer_handle}
+                            </h3>
+                            {/* <CollaborateDialog influencerHandle={profile.author_handle}> */}
+                            <Button
+                              className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium"
+                              onClick={() => {
+                                toast({
+                                  title: "Coming Soon",
+                                  description: "This feature is coming soon.",
+                                });
+                              }}
+                            >
+                              Collaborate
+                            </Button>
+                            {/* </CollaborateDialog> */}
                           </div>
 
                           {/* Stats */}
