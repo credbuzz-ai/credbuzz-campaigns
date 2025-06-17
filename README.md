@@ -1,4 +1,4 @@
-# trendsage-campaigns
+# trendsage-campaignss
 
 TrendSage Campaigns - Web3 KOL Marketplace
 
