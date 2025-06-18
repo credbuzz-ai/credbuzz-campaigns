@@ -1,8 +1,8 @@
 "use client";
 
 import FollowersOverview from "@/app/components/FollowersOverview";
+import MentionsFeed from "@/app/components/MentionsFeed";
 import MindshareVisualization from "@/app/components/MindshareVisualization";
-import SmartFeed from "@/app/components/SmartFeed";
 import { MindshareResponse, UserProfileResponse } from "@/app/types";
 import { XLogo } from "@/components/icons/x-logo";
 import { Card } from "@/components/ui/card";
@@ -19,7 +19,9 @@ const ExpandableDescription = ({ description }: { description: string }) => {
   const maxLength = 150; // Maximum characters to show initially
 
   if (description.length <= maxLength) {
-    return <p className="text-sm text-gray-300 leading-relaxed">{description}</p>;
+    return (
+      <p className="text-sm text-gray-300 leading-relaxed">{description}</p>
+    );
   }
 
   return (
@@ -41,7 +43,9 @@ interface CampaignDetailsClientProps {
   campaignId: string;
 }
 
-export default function CampaignDetailsClient({ campaignId }: CampaignDetailsClientProps) {
+export default function CampaignDetailsClient({
+  campaignId,
+}: CampaignDetailsClientProps) {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +61,7 @@ export default function CampaignDetailsClient({ campaignId }: CampaignDetailsCli
   useEffect(() => {
     const fetchCampaignDetails = async () => {
       if (!campaignId) return;
-      
+
       try {
         setLoading(true);
         const response = await apiClient.post("/campaign/get-campaigns", {
@@ -154,26 +158,28 @@ export default function CampaignDetailsClient({ campaignId }: CampaignDetailsCli
   const getCampaignTimeRemaining = () => {
     const endDate = new Date(campaign.offer_end_date);
     const now = new Date();
-    
+
     if (endDate <= now) {
       return "Campaign ended";
     }
-    
+
     const totalHours = differenceInHours(endDate, now);
     const days = Math.floor(totalHours / 24);
     const hours = totalHours % 24;
-    
+
     if (days > 0) {
-      return `${days} ${days === 1 ? 'day' : 'days'} ${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+      return `${days} ${days === 1 ? "day" : "days"} ${hours} ${
+        hours === 1 ? "hour" : "hours"
+      }`;
     } else {
-      return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
     }
   };
 
   // Get the handle for the smart feed (prefer project_handle, then target, fallback to owner)
-  const smartFeedHandle = campaign.project_handle 
+  const smartFeedHandle = campaign.project_handle
     ? campaign.project_handle.replace("@", "").toLowerCase()
-    : campaign.target_x_handle 
+    : campaign.target_x_handle
     ? campaign.target_x_handle.replace("@", "").toLowerCase()
     : campaign.owner_x_handle.replace("@", "").toLowerCase();
 
@@ -193,7 +199,9 @@ export default function CampaignDetailsClient({ campaignId }: CampaignDetailsCli
                         {campaign.campaign_name}
                       </h1>
                       <button
-                        onClick={() => window.open('https://twitter.com', '_blank')}
+                        onClick={() =>
+                          window.open("https://twitter.com", "_blank")
+                        }
                         className="p-2 rounded-full bg-gray-700/50 hover:bg-gray-600/50 transition-colors group"
                         title="View on Twitter"
                       >
@@ -201,13 +209,17 @@ export default function CampaignDetailsClient({ campaignId }: CampaignDetailsCli
                       </button>
                     </div>
                     <div className="max-w-2xl">
-                      <ExpandableDescription description={campaign.description} />
+                      <ExpandableDescription
+                        description={campaign.description}
+                      />
                     </div>
                   </div>
                   <div className="text-right space-y-3">
                     <div className="flex items-center gap-2 text-[#00D992] font-semibold text-sm">
                       <Coins className="w-4 h-4" />
-                      <span>Reward: {campaign.amount} {campaign.payment_token}</span>
+                      <span>
+                        Reward: {campaign.amount} {campaign.payment_token}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 text-[#00D992] font-semibold text-sm">
                       <Clock className="w-4 h-4" />
@@ -220,10 +232,12 @@ export default function CampaignDetailsClient({ campaignId }: CampaignDetailsCli
 
             {/* Community Mindshare */}
             <div className="mb-8 mt-8">
-              <MindshareVisualization 
+              <MindshareVisualization
                 data={mindshareData?.result?.mindshare_data || []}
                 selectedTimePeriod={selectedTimePeriod}
-                onTimePeriodChange={(period) => setSelectedTimePeriod(period as TimePeriod)}
+                onTimePeriodChange={(period) =>
+                  setSelectedTimePeriod(period as TimePeriod)
+                }
                 loading={loading}
               />
             </div>
@@ -241,7 +255,7 @@ export default function CampaignDetailsClient({ campaignId }: CampaignDetailsCli
 
         {/* Smart Feed Sidebar */}
         <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-start sticky top-8">
-          <SmartFeed authorHandle={smartFeedHandle} />
+          <MentionsFeed authorHandle={smartFeedHandle} />
         </div>
       </div>
     </div>
@@ -280,4 +294,4 @@ function CampaignSkeleton() {
       </div>
     </div>
   );
-} 
+}
