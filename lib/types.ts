@@ -111,12 +111,3 @@ export const allowedSolanaTokens: Token[] = [
     decimals: 9,
   },
 ];
-
-export const allowedBaseTokens: Token[] = [
-  {
-    value: "USDC",
-    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    symbol: "USDC",
-    decimals: 6,
-  },
-];

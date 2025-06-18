@@ -3,7 +3,7 @@
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
-import { allowedBaseTokens, allowedSolanaTokens, Campaign } from "@/lib/types";
+import { Campaign, Token } from "@/lib/types";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   Calendar,
@@ -38,6 +38,24 @@ export default function MyCampaigns() {
 
   // Add real-time countdown updates
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Token list state
+  const [tokens, setTokens] = useState<Token[]>([]);
+
+  // Fetch tokens from backend on mount
+  useEffect(() => {
+    apiClient.get("/campaign/list-payment-tokens").then((res) => {
+      const tokensData = res.data;
+      setTokens(
+        tokensData.map((t: any) => ({
+          value: t.token_symbol,
+          address: t.token_address,
+          symbol: t.token_symbol,
+          decimals: t.token_decimals,
+        }))
+      );
+    });
+  }, []);
 
   // Fetch campaigns data following BusinessDashboard pattern
   const fetchAllCampaigns = async () => {
@@ -261,20 +279,10 @@ export default function MyCampaigns() {
     chain: string | undefined
   ) => {
     if (!tokenAddress) return "TOKEN";
-
-    // Check if it's Solana chain
-    if (chain?.toLowerCase() === "solana") {
-      const solanaToken = allowedSolanaTokens.find(
-        (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
-      );
-      return solanaToken?.symbol || "SOL";
-    }
-
-    // Check Base/Ethereum chains
-    const baseToken = allowedBaseTokens.find(
+    const found = tokens.find(
       (token) => token.address.toLowerCase() === tokenAddress.toLowerCase()
     );
-    return baseToken?.symbol || "ETH";
+    return found?.symbol || (chain?.toLowerCase() === "solana" ? "SOL" : "ETH");
   };
 
   // Combine open and closed campaigns for created campaigns display
@@ -439,7 +447,7 @@ export default function MyCampaigns() {
                         <span className="text-gray-100 font-semibold">
                           {campaign.amount}{" "}
                           {getTokenSymbol(
-                            campaign.token_address,
+                            campaign.payment_token_address,
                             campaign.chain
                           )}
                         </span>
@@ -568,7 +576,7 @@ export default function MyCampaigns() {
                         <span className="text-gray-100 font-semibold text-lg">
                           {campaign.amount}{" "}
                           {getTokenSymbol(
-                            campaign.token_address,
+                            campaign.payment_token_address,
                             campaign.chain
                           )}
                         </span>

@@ -67,6 +67,37 @@ export interface Tweet {
   tweet_category?: string | null;
 }
 
+export interface TweetMentionData {
+  tweet_id: string;
+  mentioned_author_handle: string;
+  author_found: boolean;
+  author_handle: string;
+  body: string;
+  author_id?: string;
+  tweet_create_time?: string;
+  view_count?: number;
+  like_count?: number;
+  quote_count?: number;
+  reply_count?: number;
+  retweet_count?: number;
+  profile_image_url?: string;
+  sentiment?: number;
+  tweet_category?: string | null;
+}
+
+export interface PaginationInfo {
+  total_count: number;
+  start: number;
+  limit: number;
+  has_more: boolean;
+  next_start?: number;
+}
+
+export interface MentionsResponse {
+  tweets: TweetMentionData[];
+  pagination: PaginationInfo;
+}
+
 export interface TopTweetsResponse {
   result: Tweet[];
   message: string;
@@ -95,7 +126,6 @@ export interface TokenOverviewResponse {
   };
   message: string;
 }
-
 
 export interface AuthorData {
   author_handle: string;

@@ -32,12 +32,7 @@ import { useContract } from "@/hooks/useContract";
 import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
 import apiClient from "@/lib/api";
 import { CREDBUZZ_ACCOUNT } from "@/lib/constants";
-import {
-  allowedBaseTokens,
-  allowedSolanaTokens,
-  Campaign,
-  Influencer,
-} from "@/lib/types";
+import { allowedSolanaTokens, Campaign, Influencer, Token } from "@/lib/types";
 import { useConnectWallet, useWallets } from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import { Loader2, Send, Wallet } from "lucide-react";
@@ -79,7 +74,8 @@ export default function CollaborateDialog({
       console.error("Error connecting wallet:", error);
     },
   });
-  const { createNewCampaign, transferToken, contract } = useContract();
+  const { createNewCampaign, transferToken, contract, getERC20TokenInfo } =
+    useContract();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -90,6 +86,12 @@ export default function CollaborateDialog({
   // Add refs for managing API calls and form data
   const apiCallInProgressRef = useRef(false);
   const formDataRef = useRef<Campaign | null>(null);
+
+  const [showAddToken, setShowAddToken] = useState(false);
+  const [newTokenAddress, setNewTokenAddress] = useState("");
+  const [isFetchingToken, setIsFetchingToken] = useState(false);
+  const [addTokenError, setAddTokenError] = useState<string | null>(null);
+  const [baseTokens, setBaseTokens] = useState<Token[]>([]);
 
   const form = useForm<Campaign & { target_x_handle?: string }>({
     defaultValues: {
@@ -222,7 +224,7 @@ export default function CollaborateDialog({
     if (selectedChain === "Solana") {
       return allowedSolanaTokens;
     } else {
-      return allowedBaseTokens; // Base chain tokens
+      return baseTokens;
     }
   };
 
@@ -453,6 +455,66 @@ export default function CollaborateDialog({
       await connectWallet();
     } catch (error) {
       console.error("Failed to connect wallet:", error);
+    }
+  };
+
+  // Fetch tokens from backend when dialog opens
+  useEffect(() => {
+    if (open) {
+      apiClient.get("/campaign/list-payment-tokens").then((res) => {
+        const tokens = res.data;
+        // Map backend tokens to Token type
+        setBaseTokens(
+          tokens.map((t: any) => ({
+            value: t.token_symbol,
+            address: t.token_address,
+            symbol: t.token_symbol,
+            decimals: t.token_decimals,
+          }))
+        );
+      });
+    }
+  }, [open]);
+
+  const handleFetchAndAddToken = async () => {
+    setIsFetchingToken(true);
+    setAddTokenError(null);
+    try {
+      const { symbol, decimals } = await getERC20TokenInfo(newTokenAddress);
+      const decimalsNum =
+        typeof decimals === "bigint" ? Number(decimals) : decimals;
+      if (!symbol || decimalsNum === undefined)
+        throw new Error("Token info not found");
+      await apiClient.post("/campaign/add-payment-token", {
+        token_symbol: symbol,
+        token_address: newTokenAddress,
+        token_decimals: decimalsNum,
+        first_used_by: user?.x_handle,
+      });
+      // Add to local list and select
+      const newToken: Token = {
+        value: symbol,
+        address: newTokenAddress,
+        symbol,
+        decimals: decimalsNum,
+      };
+      setBaseTokens((prev) => [...prev, newToken]);
+      form.setValue("payment_token", symbol);
+      form.setValue("payment_token_address", newTokenAddress);
+      form.setValue("payment_token_decimals", decimalsNum);
+      setShowAddToken(false);
+      setNewTokenAddress("");
+      toast({ title: "Token added!", description: `${symbol} added to list.` });
+    } catch (err: any) {
+      setAddTokenError(
+        "Could not fetch token info or add token. Please check the address."
+      );
+      toast({
+        title: "Error",
+        description: err.message || "Failed to add token",
+      });
+    } finally {
+      setIsFetchingToken(false);
     }
   };
 
@@ -784,21 +846,29 @@ export default function CollaborateDialog({
                       </FormLabel>
                       <Select
                         onValueChange={(value) => {
-                          field.onChange(value);
-                          // Find the selected token and set address and decimals
-                          const availableTokens = getAvailableTokens();
-                          const selectedToken = availableTokens.find(
-                            (token) => token.value === value
-                          );
-                          if (selectedToken) {
-                            form.setValue(
-                              "payment_token_address",
-                              selectedToken.address
+                          if (value === "add_new_token") {
+                            setShowAddToken(true);
+                            form.setValue("payment_token", "");
+                            form.setValue("payment_token_address", "");
+                            form.setValue("payment_token_decimals", 0);
+                          } else {
+                            setShowAddToken(false);
+                            field.onChange(value);
+                            // Find the selected token and set address and decimals
+                            const availableTokens = getAvailableTokens();
+                            const selectedToken = availableTokens.find(
+                              (token) => token.value === value
                             );
-                            form.setValue(
-                              "payment_token_decimals",
-                              selectedToken.decimals
-                            );
+                            if (selectedToken) {
+                              form.setValue(
+                                "payment_token_address",
+                                selectedToken.address
+                              );
+                              form.setValue(
+                                "payment_token_decimals",
+                                selectedToken.decimals
+                              );
+                            }
                           }
                         }}
                         value={field.value}
@@ -809,17 +879,55 @@ export default function CollaborateDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="bg-gray-800 border-gray-600">
-                          {getAvailableTokens().map((token) => (
-                            <SelectItem
-                              key={token.value}
-                              value={token.value}
-                              className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
-                            >
-                              {token.symbol}
-                            </SelectItem>
-                          ))}
+                          {getAvailableTokens()
+                            .filter(
+                              (token) =>
+                                token.symbol === "WETH" ||
+                                token.symbol === "USDC" ||
+                                token.symbol === "USDT"
+                            )
+                            .map((token) => (
+                              <SelectItem
+                                key={token.value}
+                                value={token.value}
+                                className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
+                              >
+                                {token.symbol}
+                              </SelectItem>
+                            ))}
+                          <SelectItem
+                            value="add_new_token"
+                            className="text-gray-100"
+                          >
+                            Add new token...
+                          </SelectItem>
                         </SelectContent>
                       </Select>
+                      {showAddToken && (
+                        <div className="mt-2 space-y-2">
+                          <Input
+                            placeholder="Enter ERC20 token address"
+                            value={newTokenAddress}
+                            onChange={(e) => setNewTokenAddress(e.target.value)}
+                            className="bg-gray-800 border-gray-600 text-gray-100"
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleFetchAndAddToken}
+                            disabled={isFetchingToken || !newTokenAddress}
+                            className="bg-[#00D992] hover:bg-[#00C080] text-gray-900"
+                          >
+                            {isFetchingToken
+                              ? "Fetching..."
+                              : "Fetch & Add Token"}
+                          </Button>
+                          {addTokenError && (
+                            <div className="text-red-400 text-xs">
+                              {addTokenError}
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <FormMessage className="text-red-400 text-xs" />
                     </FormItem>
                   )}

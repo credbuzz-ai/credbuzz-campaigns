@@ -288,6 +288,28 @@ export const useContract = () => {
     }
   };
 
+  // Fetch ERC20 token info (name, symbol, decimals)
+  const getERC20TokenInfo = async (tokenAddress: string) => {
+    try {
+      if (!walletProvider) throw new Error("Wallet provider not initialized");
+      const contractSigner = await walletProvider.getSigner();
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        IERC20Abi,
+        contractSigner
+      );
+      const [name, symbol, decimals] = await Promise.all([
+        tokenContract.name(),
+        tokenContract.symbol(),
+        tokenContract.decimals(),
+      ]);
+      return { name, symbol, decimals };
+    } catch (error) {
+      console.error("Error fetching token info:", error);
+      throw error;
+    }
+  };
+
   return {
     contract,
     isConnected,
@@ -305,5 +327,6 @@ export const useContract = () => {
     fulfilProjectCampaign,
     discardCampaign,
     transferToken,
+    getERC20TokenInfo,
   };
 };
