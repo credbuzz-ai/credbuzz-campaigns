@@ -879,22 +879,15 @@ export default function CollaborateDialog({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="bg-gray-800 border-gray-600">
-                          {getAvailableTokens()
-                            .filter(
-                              (token) =>
-                                token.symbol === "WETH" ||
-                                token.symbol === "USDC" ||
-                                token.symbol === "USDT"
-                            )
-                            .map((token) => (
-                              <SelectItem
-                                key={token.value}
-                                value={token.value}
-                                className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
-                              >
-                                {token.symbol}
-                              </SelectItem>
-                            ))}
+                          {getAvailableTokens().map((token) => (
+                            <SelectItem
+                              key={token.value}
+                              value={token.value}
+                              className="text-gray-100 focus:bg-gray-700 focus:text-gray-100"
+                            >
+                              {token.symbol}
+                            </SelectItem>
+                          ))}
                           <SelectItem
                             value="add_new_token"
                             className="text-gray-100"
