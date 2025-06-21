@@ -102,7 +102,7 @@ export default function MindshareVisualization({
     return [
       {
         data: validData.map((item) => ({
-          x: `${item.user_info.name}\n${item.mindshare_percent.toFixed(1)}%`,
+          x: item.user_info.name, // Simplified x value since we're not showing it
           y: Number(item.mindshare_percent.toFixed(4)),
           author_handle: item.author_handle || "",
           twitter_name: item.user_info.name || "",
@@ -138,8 +138,107 @@ export default function MindshareVisualization({
         },
       },
       events: {
-        mounted: function () {
+        mounted: function (chart: any) {
           setIsLoading(false);
+
+          // Add profile images after chart is mounted
+          const series = chart.w.config.series[0].data;
+
+          setTimeout(() => {
+            // First make all cells semi-transparent and remove borders
+            const allCells = chart.el.querySelectorAll(
+              ".apexcharts-treemap-rect"
+            );
+            allCells.forEach((cell: SVGElement) => {
+              cell.style.fillOpacity = "0.60";
+              cell.setAttribute("stroke", "none");
+              cell.setAttribute("stroke-width", "0");
+            });
+
+            // Also remove any grid lines that might be present
+            const gridLines = chart.el.querySelectorAll(
+              ".apexcharts-grid line"
+            );
+            gridLines.forEach((line: SVGElement) => {
+              line.style.display = "none";
+            });
+
+            series.forEach((dataPoint: any, index: number) => {
+              if (!dataPoint.profile_image_url) {
+                return;
+              }
+
+              const cell = allCells[index];
+              if (!cell) return;
+
+              const bbox = cell.getBBox();
+
+              const svgNS = "http://www.w3.org/2000/svg";
+
+              // Create a foreignObject that matches cell dimensions exactly
+              const foreignObject = document.createElementNS(
+                svgNS,
+                "foreignObject"
+              );
+              foreignObject.setAttribute("x", String(bbox.x));
+              foreignObject.setAttribute("y", String(bbox.y));
+              foreignObject.setAttribute("width", String(bbox.width));
+              foreignObject.setAttribute("height", String(bbox.height));
+
+              // Create an HTML div that fills the entire space
+              const div = document.createElement("div");
+              div.style.width = "100%";
+              div.style.height = "100%";
+              div.style.position = "relative"; // For absolute positioning of text overlay
+
+              const img = document.createElement("img");
+              img.src = dataPoint.profile_image_url;
+              img.style.width = "100%";
+              img.style.height = "100%";
+              img.style.objectFit = "cover";
+
+              // Create text overlay container
+              const textOverlay = document.createElement("div");
+              textOverlay.style.position = "absolute";
+              textOverlay.style.top = "0";
+              textOverlay.style.left = "0";
+              textOverlay.style.right = "0";
+              textOverlay.style.padding = "8px";
+              textOverlay.style.background =
+                "linear-gradient(rgba(0,0,0,0.7), transparent)";
+              textOverlay.style.color = "white";
+              textOverlay.style.fontSize = bbox.width < 100 ? "10px" : "12px";
+              textOverlay.style.fontWeight = "500";
+              textOverlay.style.lineHeight = "1.2";
+              textOverlay.style.textShadow = "0 1px 2px rgba(0,0,0,0.5)";
+
+              const handle = document.createElement("div");
+              handle.textContent = `@${dataPoint.author_handle}`;
+              handle.style.overflow = "hidden";
+              handle.style.textOverflow = "ellipsis";
+              handle.style.whiteSpace = "nowrap";
+
+              const mindshare = document.createElement("div");
+              mindshare.textContent = `${dataPoint.y.toFixed(1)}%`;
+              mindshare.style.opacity = "0.9";
+              mindshare.style.fontSize = bbox.width < 100 ? "9px" : "11px";
+
+              textOverlay.appendChild(handle);
+              textOverlay.appendChild(mindshare);
+
+              div.appendChild(img);
+              div.appendChild(textOverlay);
+              foreignObject.appendChild(div);
+
+              const series = chart.el.querySelector(
+                ".apexcharts-treemap-series"
+              );
+              if (series) {
+                // Insert the image before the first child to place it behind the cells
+                series.insertBefore(foreignObject, series.firstChild);
+              }
+            });
+          }, 500);
         },
         click: function (event: any, chartContext: any, config: any) {
           if (config.dataPointIndex >= 0) {
@@ -248,30 +347,12 @@ export default function MindshareVisualization({
         fontWeight: "normal",
       },
       formatter: function (text: string, op: any) {
-        const words = text.split(" ");
-        let result = "";
-        let line = "";
-        let lineCount = 0;
-        const maxLines = 2;
+        const data = op.w.config.series[0].data[op.dataPointIndex];
+        const profileImage = data.profile_image_url;
 
-        for (let i = 0; i < words.length; i++) {
-          const testLine = line + words[i] + " ";
-          if (testLine.length > 15 && line.length > 0) {
-            result += line.trim() + "\n";
-            line = words[i] + " ";
-            lineCount++;
-            if (lineCount >= maxLines) {
-              result = result.trim() + "...";
-              break;
-            }
-          } else {
-            line = testLine;
-          }
-        }
-        if (lineCount < maxLines && line.length > 0) {
-          result += line.trim();
-        }
-        return result;
+        // Return empty string to not show any text
+        // We'll handle the image rendering in a custom way
+        return "";
       },
     },
     tooltip: {
@@ -520,30 +601,54 @@ export default function MindshareVisualization({
       const area = Math.abs(d3.polygonArea(clippedCell as [number, number][]));
 
       if (area > 1000) {
-        const text = cellGroup
-          .append("text")
-          .attr("x", centroid[0])
-          .attr("y", centroid[1])
-          .attr("text-anchor", "middle")
-          .attr("dominant-baseline", "middle")
-          .attr("fill", "#f8fafc")
-          .attr("font-size", Math.min(14, Math.sqrt(area) / 8))
-          .attr("font-weight", "500")
-          .style("pointer-events", "none");
+        // Replace text with profile image
+        const imageSize = Math.min(40, Math.sqrt(area) / 4);
 
-        const name = site.data.user_info.name;
-        const mindshareText = `${site.data.mindshare_percent.toFixed(1)}%`;
+        // Create clip path for circular image
+        const clipId = `clip-${i}`;
+        cellGroup
+          .append("defs")
+          .append("clipPath")
+          .attr("id", clipId)
+          .append("circle")
+          .attr("cx", centroid[0])
+          .attr("cy", centroid[1])
+          .attr("r", imageSize / 2);
 
-        text
-          .append("tspan")
-          .attr("x", centroid[0])
-          .attr("dy", "-0.3em")
-          .text(name.length > 15 ? name.substring(0, 12) + "..." : name);
-        text
-          .append("tspan")
-          .attr("x", centroid[0])
-          .attr("dy", "1.2em")
-          .text(mindshareText);
+        // Add profile image or fallback circle
+        if (site.data.user_info.profile_image_url) {
+          cellGroup
+            .append("image")
+            .attr("x", centroid[0] - imageSize / 2)
+            .attr("y", centroid[1] - imageSize / 2)
+            .attr("width", imageSize)
+            .attr("height", imageSize)
+            .attr("clip-path", `url(#${clipId})`)
+            .attr("href", site.data.user_info.profile_image_url)
+            .style("pointer-events", "none");
+        } else {
+          cellGroup
+            .append("circle")
+            .attr("cx", centroid[0])
+            .attr("cy", centroid[1])
+            .attr("r", imageSize / 2)
+            .attr("fill", "#374151")
+            .attr("stroke", "#4B5563")
+            .attr("stroke-width", 2)
+            .style("pointer-events", "none");
+
+          // Add user icon emoji as text
+          cellGroup
+            .append("text")
+            .attr("x", centroid[0])
+            .attr("y", centroid[1])
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "middle")
+            .attr("fill", "#6B7280")
+            .attr("font-size", imageSize / 2)
+            .text("👤")
+            .style("pointer-events", "none");
+        }
       }
 
       cellGroup
