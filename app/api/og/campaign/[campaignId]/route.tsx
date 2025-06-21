@@ -1,53 +1,91 @@
-import { ImageResponse } from 'next/og'
-import { NextRequest } from 'next/server'
+import { ImageResponse } from "next/og";
+import { NextRequest } from "next/server";
 
-export const runtime = 'edge'
+export const runtime = "edge";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_TRENDSAGE_API_URL || process.env.NEXT_PUBLIC_CREDBUZZ_API_URL || 'https://api.cred.buzz'
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_TRENDSAGE_API_URL ||
+  process.env.NEXT_PUBLIC_CREDBUZZ_API_URL ||
+  "https://api.cred.buzz";
+
+// Simple function to get image URL based on handle
+const getImageUrlForHandle = (handle: string) => {
+  const images = [
+    {
+      handle: "infinex",
+      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1004507388.jpg",
+    },
+    {
+      handle: "boopdotfun",
+      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1009622081.jpg",
+    },
+    {
+      handle: "vmfcoin",
+      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1011002498.jpg",
+    },
+    {
+      handle: "jessexbt_ai",
+      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1018173201.jpg",
+    },
+  ];
+
+  const match = images.find((img) => img.handle === handle);
+  return match ? match.imageUrl : images[0].imageUrl;
+};
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { campaignId: string } }
 ) {
   try {
-    const { campaignId } = params
-    
+    const { campaignId } = params;
+
     // Fetch campaign data
-    const campaignResponse = await fetch(`${API_BASE_URL}/campaign/get-campaigns`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        campaign_id: campaignId,
-      }),
-    })
+    const campaignResponse = await fetch(
+      `${API_BASE_URL}/campaign/get-campaigns`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          campaign_id: campaignId,
+        }),
+      }
+    );
 
     if (!campaignResponse.ok) {
-      throw new Error('Failed to fetch campaign')
+      throw new Error("Failed to fetch campaign");
     }
 
-    const campaignData = await campaignResponse.json()
-    const campaign = campaignData?.result?.[0]
+    const campaignData = await campaignResponse.json();
+    const campaign = campaignData?.result?.[0];
 
     if (!campaign) {
-      throw new Error('Campaign not found')
+      throw new Error("Campaign not found");
     }
 
+    // Get handle-based image
+    const handleImageUrl = campaign.target_x_handle
+      ? getImageUrlForHandle(
+          campaign.target_x_handle.replace("@", "").toLowerCase()
+        )
+      : null;
+
     // Fetch mindshare data if available
-    let mindshareData = null
+    let mindshareData = null;
     if (campaign.target_x_handle) {
       try {
-        const handle = campaign.target_x_handle.replace('@', '').toLowerCase()
+        const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
         const mindshareResponse = await fetch(
           `${API_BASE_URL}/mindshare?project_name=${handle}&limit=5&period=30d`
-        )
+        );
         if (mindshareResponse.ok) {
-          const data = await mindshareResponse.json()
-          mindshareData = data?.result?.mindshare_data?.slice(0, 5) || []
+          const data = await mindshareResponse.json();
+          mindshareData = data?.result?.mindshare_data?.slice(0, 5) || [];
         }
       } catch (error) {
-        console.error('Failed to fetch mindshare:', error)
+        console.error("Failed to fetch mindshare:", error);
       }
     }
 
@@ -56,168 +94,188 @@ export async function GET(
       (
         <div
           style={{
-            height: '100%',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#111827',
-            backgroundImage: 'radial-gradient(circle at 25px 25px, #374151 2px, transparent 0), radial-gradient(circle at 75px 75px, #374151 2px, transparent 0)',
-            backgroundSize: '100px 100px',
-            padding: '40px',
+            height: "100%",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#111827",
+            backgroundImage:
+              "radial-gradient(circle at 25px 25px, #374151 2px, transparent 0), radial-gradient(circle at 75px 75px, #374151 2px, transparent 0)",
+            backgroundSize: "100px 100px",
+            padding: "40px",
           }}
         >
-          {/* Header */}
+          {/* Header with Handle Image */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: '40px',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginBottom: "40px",
+              gap: "24px",
             }}
           >
-            <h1
+            {/* Handle Image */}
+            {handleImageUrl && (
+              <div
+                style={{
+                  width: "120px",
+                  height: "120px",
+                  borderRadius: "24px",
+                  backgroundImage: `url(${handleImageUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  border: "3px solid #00D992",
+                  boxShadow: "0 8px 32px rgba(0, 217, 146, 0.3)",
+                }}
+              />
+            )}
+
+            {/* Campaign Title */}
+            <div
               style={{
-                fontSize: '48px',
-                fontWeight: 'bold',
-                color: '#F9FAFB',
-                textAlign: 'center',
-                margin: 0,
-                maxWidth: '800px',
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                maxWidth: "600px",
               }}
             >
-              {campaign.campaign_name}
-            </h1>
+              <h1
+                style={{
+                  fontSize: "48px",
+                  fontWeight: "bold",
+                  color: "#F9FAFB",
+                  textAlign: "center",
+                  margin: 0,
+                  marginBottom: "8px",
+                }}
+              >
+                {campaign.campaign_name}
+              </h1>
+              {campaign.target_x_handle && (
+                <span
+                  style={{
+                    fontSize: "24px",
+                    color: "#00D992",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {campaign.target_x_handle}
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Campaign Info */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '40px',
-              marginBottom: '40px',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "40px",
+              marginBottom: "40px",
             }}
           >
             <div
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                backgroundColor: '#1F2937',
-                borderRadius: '12px',
-                padding: '16px 24px',
-                border: '1px solid #374151',
+                display: "flex",
+                alignItems: "center",
+                backgroundColor: "#1F2937",
+                borderRadius: "12px",
+                padding: "16px 24px",
+                border: "1px solid #374151",
               }}
             >
               <span
                 style={{
-                  fontSize: '24px',
-                  color: '#00D992',
-                  fontWeight: 'bold',
+                  fontSize: "24px",
+                  color: "#00D992",
+                  fontWeight: "bold",
                 }}
               >
                 💰 {campaign.amount} {campaign.payment_token}
               </span>
             </div>
-            {campaign.target_x_handle && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  backgroundColor: '#1F2937',
-                  borderRadius: '12px',
-                  padding: '16px 24px',
-                  border: '1px solid #374151',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '24px',
-                    color: '#9CA3AF',
-                  }}
-                >
-                  🎯 {campaign.target_x_handle}
-                </span>
-              </div>
-            )}
           </div>
 
           {/* Mindshare Data */}
           {mindshareData && mindshareData.length > 0 && (
             <div
               style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                width: '100%',
-                maxWidth: '900px',
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                width: "100%",
+                maxWidth: "900px",
               }}
             >
               <h2
                 style={{
-                  fontSize: '32px',
-                  color: '#00D992',
-                  marginBottom: '24px',
-                  fontWeight: 'bold',
+                  fontSize: "32px",
+                  color: "#00D992",
+                  marginBottom: "24px",
+                  fontWeight: "bold",
                 }}
               >
                 Community Mindshare Leaders
               </h2>
               <div
                 style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '16px',
-                  justifyContent: 'center',
-                  alignItems: 'center',
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "16px",
+                  justifyContent: "center",
+                  alignItems: "center",
                 }}
               >
                 {mindshareData.map((influencer: any, index: number) => (
                   <div
                     key={index}
                     style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      backgroundColor: '#1F2937',
-                      borderRadius: '16px',
-                      padding: '20px',
-                      border: '1px solid #374151',
-                      minWidth: '160px',
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      backgroundColor: "#1F2937",
+                      borderRadius: "16px",
+                      padding: "20px",
+                      border: "1px solid #374151",
+                      minWidth: "160px",
                     }}
                   >
                     <div
                       style={{
-                        width: '64px',
-                        height: '64px',
-                        borderRadius: '50%',
-                        backgroundColor: '#374151',
-                        marginBottom: '12px',
-                        backgroundImage: influencer.user_info?.profile_image_url 
+                        width: "64px",
+                        height: "64px",
+                        borderRadius: "50%",
+                        backgroundColor: "#374151",
+                        marginBottom: "12px",
+                        backgroundImage: influencer.user_info?.profile_image_url
                           ? `url(${influencer.user_info.profile_image_url})`
                           : undefined,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
                       }}
                     />
                     <span
                       style={{
-                        fontSize: '18px',
-                        color: '#F9FAFB',
-                        fontWeight: 'bold',
-                        textAlign: 'center',
-                        marginBottom: '4px',
+                        fontSize: "18px",
+                        color: "#F9FAFB",
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        marginBottom: "4px",
                       }}
                     >
-                      {influencer.user_info?.name || influencer.author_handle || 'Unknown'}
+                      {influencer.user_info?.name ||
+                        influencer.author_handle ||
+                        "Unknown"}
                     </span>
                     <span
                       style={{
-                        fontSize: '16px',
-                        color: '#00D992',
-                        fontWeight: 'bold',
+                        fontSize: "16px",
+                        color: "#00D992",
+                        fontWeight: "bold",
                       }}
                     >
                       {influencer.mindshare_percent?.toFixed(1)}%
@@ -231,18 +289,18 @@ export async function GET(
           {/* Footer */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: 'auto',
-              paddingTop: '40px',
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              marginTop: "auto",
+              paddingTop: "40px",
             }}
           >
             <span
               style={{
-                fontSize: '24px',
-                color: '#6B7280',
-                fontWeight: 'bold',
+                fontSize: "24px",
+                color: "#6B7280",
+                fontWeight: "bold",
               }}
             >
               TrendSage - Web3 KOL Marketplace
@@ -254,39 +312,39 @@ export async function GET(
         width: 1200,
         height: 630,
       }
-    )
+    );
   } catch (error) {
-    console.error('Failed to generate OG image:', error)
-    
+    console.error("Failed to generate OG image:", error);
+
     // Return a fallback image
     return new ImageResponse(
       (
         <div
           style={{
-            height: '100%',
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#111827',
-            color: '#F9FAFB',
+            height: "100%",
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: "#111827",
+            color: "#F9FAFB",
           }}
         >
           <h1
             style={{
-              fontSize: '48px',
-              fontWeight: 'bold',
-              textAlign: 'center',
+              fontSize: "48px",
+              fontWeight: "bold",
+              textAlign: "center",
             }}
           >
             TrendSage Campaign
           </h1>
           <p
             style={{
-              fontSize: '24px',
-              color: '#9CA3AF',
-              textAlign: 'center',
+              fontSize: "24px",
+              color: "#9CA3AF",
+              textAlign: "center",
             }}
           >
             Web3 KOL Marketplace
@@ -297,6 +355,6 @@ export async function GET(
         width: 1200,
         height: 630,
       }
-    )
+    );
   }
-} 
+}
