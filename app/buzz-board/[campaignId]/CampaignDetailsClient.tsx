@@ -16,26 +16,15 @@ import { useEffect, useState } from "react";
 // Simple function to get image URL based on handle
 const getImageUrlForHandle = (handle: string) => {
   const images = [
-    {
-      handle: "infinex",
-      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1004507388.jpg",
-    },
-    {
-      handle: "boopdotfun",
-      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1009622081.jpg",
-    },
-    {
-      handle: "vmfcoin",
-      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1011002498.jpg",
-    },
-    {
-      handle: "jessexbt_ai",
-      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1018173201.jpg",
-    },
+    { handle: "infinex", id: "1004507388" },
+    { handle: "boopdotfun", id: "1009622081" },
+    { handle: "vmfcoin", id: "1011002498" },
+    { handle: "jessexbt_ai", id: "1018173201" },
   ];
 
   const match = images.find((img) => img.handle === handle);
-  return match ? match.imageUrl : images[0].imageUrl;
+  const imageId = match ? match.id : "1004507388"; // Default to infinex image
+  return `https://alliancehub.s3.eu-west-1.amazonaws.com/${imageId}.jpg`;
 };
 
 // Expandable Description component for campaign descriptions

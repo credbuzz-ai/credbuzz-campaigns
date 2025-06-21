@@ -1,4 +1,3 @@
-import { BASE_URL } from "@/lib/constants";
 import { Metadata } from "next";
 import CampaignDetailsClient from "./CampaignDetailsClient";
 
@@ -50,8 +49,10 @@ export async function generateMetadata({
         ? `${campaign.description.slice(0, 150)}...`
         : campaign.description;
 
-    const ogImageUrl = `${BASE_URL}/api/og/campaign/${campaignId}`;
-    const pageUrl = `${BASE_URL}/buzz-board/${campaignId}`;
+    // Ensure absolute URLs for images
+    const domain = process.env.NEXT_PUBLIC_APP_URL || "https://trendsage.xyz";
+    const ogImageUrl = `${domain}/api/og/campaign/${campaignId}`;
+    const pageUrl = `${domain}/buzz-board/${campaignId}`;
 
     // Create a more descriptive Twitter title
     const twitterTitle = campaign.target_x_handle
@@ -103,8 +104,10 @@ export async function generateMetadata({
   } catch (error) {
     console.error("Error generating metadata:", error);
 
-    // Fallback metadata
-    const fallbackImageUrl = `${BASE_URL}/api/og/campaign/default`;
+    // Fallback metadata with absolute URLs
+    const domain = process.env.NEXT_PUBLIC_APP_URL || "https://trendsage.xyz";
+    const fallbackImageUrl = `${domain}/api/og/campaign/default`;
+
     return {
       title: "TrendSage Campaign - Web3 KOL Marketplace",
       description:
