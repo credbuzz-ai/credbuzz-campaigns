@@ -37,7 +37,14 @@ export async function generateMetadata({
       throw new Error("Campaign not found");
     }
 
-    const title = `${campaign.campaign_name} - TrendSage Campaign`;
+    // Create an optimized title (30-60 characters)
+    const baseTitle = campaign.campaign_name;
+    const titleSuffix = " | TrendSage Campaign";
+    const title =
+      baseTitle.length > 40
+        ? `${baseTitle.substring(0, 37)}...${titleSuffix}`
+        : `${baseTitle}${titleSuffix}`;
+
     const description =
       campaign.description.length > 150
         ? `${campaign.description.slice(0, 150)}...`
@@ -45,6 +52,11 @@ export async function generateMetadata({
 
     const ogImageUrl = `${BASE_URL}/api/og/campaign/${campaignId}`;
     const pageUrl = `${BASE_URL}/buzz-board/${campaignId}`;
+
+    // Create a more descriptive Twitter title
+    const twitterTitle = campaign.target_x_handle
+      ? `${baseTitle} with ${campaign.target_x_handle}`
+      : baseTitle;
 
     return {
       title,
@@ -68,13 +80,20 @@ export async function generateMetadata({
       },
       twitter: {
         card: "summary_large_image",
-        title,
+        title: twitterTitle,
         description,
-        images: [ogImageUrl],
+        images: {
+          url: ogImageUrl,
+          alt: `${campaign.campaign_name} - Community Mindshare Campaign`,
+          width: 1200,
+          height: 630,
+        },
         creator: "@TrendSageApp",
         site: "@TrendSageApp",
       },
       other: {
+        "twitter:image": ogImageUrl,
+        "twitter:image:alt": `${campaign.campaign_name} - Community Mindshare Campaign`,
         "twitter:label1": "Reward",
         "twitter:data1": `${campaign.amount} ${campaign.payment_token}`,
         "twitter:label2": "Target",
@@ -85,6 +104,7 @@ export async function generateMetadata({
     console.error("Error generating metadata:", error);
 
     // Fallback metadata
+    const fallbackImageUrl = `${BASE_URL}/api/og/campaign/default`;
     return {
       title: "TrendSage Campaign - Web3 KOL Marketplace",
       description:
@@ -95,16 +115,34 @@ export async function generateMetadata({
         description:
           "Discover and participate in Web3 KOL campaigns on TrendSage",
         siteName: "TrendSage - Web3 KOL Marketplace",
+        images: [
+          {
+            url: fallbackImageUrl,
+            width: 1200,
+            height: 630,
+            alt: "TrendSage - Web3 KOL Marketplace",
+          },
+        ],
         locale: "en_US",
         type: "website",
       },
       twitter: {
-        card: "summary",
-        title: "TrendSage Campaign",
+        card: "summary_large_image",
+        title: "TrendSage - Web3 KOL Marketplace",
         description:
           "Discover and participate in Web3 KOL campaigns on TrendSage",
+        images: {
+          url: fallbackImageUrl,
+          alt: "TrendSage - Web3 KOL Marketplace",
+          width: 1200,
+          height: 630,
+        },
         creator: "@TrendSageApp",
         site: "@TrendSageApp",
+      },
+      other: {
+        "twitter:image": fallbackImageUrl,
+        "twitter:image:alt": "TrendSage - Web3 KOL Marketplace",
       },
     };
   }

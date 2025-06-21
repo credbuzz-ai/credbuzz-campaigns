@@ -5,7 +5,6 @@ import MentionsFeed from "@/app/components/MentionsFeed";
 import MindshareVisualization from "@/app/components/MindshareVisualization";
 import { MindshareResponse, UserProfileResponse } from "@/app/types";
 import { XLogo } from "@/components/icons/x-logo";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import apiClient from "@/lib/api";
@@ -209,13 +208,6 @@ export default function CampaignDetailsClient({
     ? campaign.target_x_handle.replace("@", "").toLowerCase()
     : campaign.owner_x_handle.replace("@", "").toLowerCase();
 
-  const handleXShare = () => {
-    const text =
-      "http://localhost:3001/api/credbuzz?username=0xSweep&type=analytics";
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank");
-  };
-
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="flex items-start">
@@ -257,11 +249,6 @@ export default function CampaignDetailsClient({
                     <div className="flex items-center gap-2 text-[#00D992] font-semibold text-sm">
                       <Clock className="w-4 h-4" />
                       <span>Ends: {getCampaignTimeRemaining()}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-[#00D992] font-semibold text-sm">
-                      <Button variant="outline" onClick={handleXShare}>
-                        Share
-                      </Button>
                     </div>
                   </div>
                 </div>
