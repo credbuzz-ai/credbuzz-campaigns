@@ -99,57 +99,58 @@ export async function GET(
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            justifyContent: "center",
-            backgroundColor: "#111827",
+            justifyContent: "flex-start",
+            backgroundColor: "#0A0F1A",
             backgroundImage:
-              "radial-gradient(circle at 25px 25px, #374151 2px, transparent 0), radial-gradient(circle at 75px 75px, #374151 2px, transparent 0)",
+              "radial-gradient(circle at 25px 25px, rgba(55, 65, 81, 0.15) 2px, transparent 0), radial-gradient(circle at 75px 75px, rgba(55, 65, 81, 0.1) 2px, transparent 0)",
             backgroundSize: "100px 100px",
-            padding: "40px",
+            padding: "48px 32px",
           }}
         >
-          {/* Header with Handle Image */}
+          {/* Header Section */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              marginBottom: "40px",
               gap: "24px",
+              marginBottom: "24px",
+              width: "100%",
+              maxWidth: "800px",
             }}
           >
-            {/* Handle Image */}
+            {/* Profile Image */}
             {handleImageUrl && (
               <div
                 style={{
                   width: "120px",
                   height: "120px",
-                  borderRadius: "24px",
+                  borderRadius: "20px",
                   backgroundImage: `url(${handleImageUrl})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
-                  border: "3px solid #00D992",
-                  boxShadow: "0 8px 32px rgba(0, 217, 146, 0.3)",
+                  border: "2px solid rgba(0, 217, 146, 0.6)",
+                  boxShadow: "0 0 20px rgba(0, 217, 146, 0.15)",
                 }}
               />
             )}
 
-            {/* Campaign Title */}
+            {/* Title and Handle */}
             <div
               style={{
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
-                maxWidth: "600px",
+                alignItems: "flex-start",
+                gap: "4px",
               }}
             >
               <h1
                 style={{
-                  fontSize: "48px",
+                  fontSize: "72px",
                   fontWeight: "bold",
                   color: "#F9FAFB",
-                  textAlign: "center",
                   margin: 0,
-                  marginBottom: "8px",
+                  lineHeight: 1,
                 }}
               >
                 {campaign.campaign_name}
@@ -157,42 +158,42 @@ export async function GET(
               {campaign.target_x_handle && (
                 <span
                   style={{
-                    fontSize: "24px",
+                    fontSize: "20px",
                     color: "#00D992",
-                    fontWeight: "bold",
+                    opacity: 0.9,
+                    fontWeight: "500",
                   }}
                 >
-                  {campaign.target_x_handle}
+                  {campaign.target_x_handle.replace("@", "")}
                 </span>
               )}
             </div>
           </div>
 
-          {/* Campaign Info */}
+          {/* Amount Badge */}
           <div
             style={{
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "40px",
-              marginBottom: "40px",
+              marginBottom: "48px",
             }}
           >
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                backgroundColor: "#1F2937",
+                backgroundColor: "rgba(17, 24, 39, 0.95)",
                 borderRadius: "12px",
-                padding: "16px 24px",
-                border: "1px solid #374151",
+                padding: "12px 20px",
+                border: "1px solid rgba(55, 65, 81, 0.3)",
               }}
             >
               <span
                 style={{
                   fontSize: "24px",
                   color: "#00D992",
-                  fontWeight: "bold",
+                  fontWeight: "500",
                 }}
               >
                 💰 {campaign.amount} {campaign.payment_token}
@@ -200,7 +201,7 @@ export async function GET(
             </div>
           </div>
 
-          {/* Mindshare Data */}
+          {/* Mindshare Section */}
           {mindshareData && mindshareData.length > 0 && (
             <div
               style={{
@@ -208,15 +209,14 @@ export async function GET(
                 flexDirection: "column",
                 alignItems: "center",
                 width: "100%",
-                maxWidth: "900px",
               }}
             >
               <h2
                 style={{
-                  fontSize: "32px",
+                  fontSize: "36px",
                   color: "#00D992",
-                  marginBottom: "24px",
-                  fontWeight: "bold",
+                  marginBottom: "32px",
+                  fontWeight: "600",
                 }}
               >
                 Community Mindshare Leaders
@@ -224,10 +224,11 @@ export async function GET(
               <div
                 style={{
                   display: "flex",
-                  flexWrap: "wrap",
-                  gap: "16px",
                   justifyContent: "center",
-                  alignItems: "center",
+                  gap: "24px",
+                  flexWrap: "wrap",
+                  width: "100%",
+                  maxWidth: "1000px",
                 }}
               >
                 {mindshareData.map((influencer: any, index: number) => (
@@ -237,20 +238,19 @@ export async function GET(
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      backgroundColor: "#1F2937",
+                      backgroundColor: "rgba(17, 24, 39, 0.7)",
                       borderRadius: "16px",
-                      padding: "20px",
-                      border: "1px solid #374151",
-                      minWidth: "160px",
+                      padding: "24px",
+                      minWidth: "220px",
+                      gap: "12px",
                     }}
                   >
                     <div
                       style={{
-                        width: "64px",
-                        height: "64px",
+                        width: "90px",
+                        height: "90px",
                         borderRadius: "50%",
                         backgroundColor: "#374151",
-                        marginBottom: "12px",
                         backgroundImage: influencer.user_info?.profile_image_url
                           ? `url(${influencer.user_info.profile_image_url})`
                           : undefined,
@@ -262,9 +262,8 @@ export async function GET(
                       style={{
                         fontSize: "18px",
                         color: "#F9FAFB",
-                        fontWeight: "bold",
+                        fontWeight: "500",
                         textAlign: "center",
-                        marginBottom: "4px",
                       }}
                     >
                       {influencer.user_info?.name ||
@@ -273,9 +272,9 @@ export async function GET(
                     </span>
                     <span
                       style={{
-                        fontSize: "16px",
+                        fontSize: "24px",
                         color: "#00D992",
-                        fontWeight: "bold",
+                        fontWeight: "600",
                       }}
                     >
                       {influencer.mindshare_percent?.toFixed(1)}%
@@ -285,27 +284,6 @@ export async function GET(
               </div>
             </div>
           )}
-
-          {/* Footer */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginTop: "auto",
-              paddingTop: "40px",
-            }}
-          >
-            <span
-              style={{
-                fontSize: "24px",
-                color: "#6B7280",
-                fontWeight: "bold",
-              }}
-            >
-              TrendSage - Web3 KOL Marketplace
-            </span>
-          </div>
         </div>
       ),
       {

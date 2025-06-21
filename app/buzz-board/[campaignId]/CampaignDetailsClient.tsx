@@ -13,20 +13,6 @@ import { differenceInHours } from "date-fns";
 import { Clock, Coins } from "lucide-react";
 import { useEffect, useState } from "react";
 
-// Simple function to get image URL based on handle
-const getImageUrlForHandle = (handle: string) => {
-  const images = [
-    { handle: "infinex", id: "1004507388" },
-    { handle: "boopdotfun", id: "1009622081" },
-    { handle: "vmfcoin", id: "1011002498" },
-    { handle: "jessexbt_ai", id: "1018173201" },
-  ];
-
-  const match = images.find((img) => img.handle === handle);
-  const imageId = match ? match.id : "1004507388"; // Default to infinex image
-  return `https://alliancehub.s3.eu-west-1.amazonaws.com/${imageId}.jpg`;
-};
-
 // Expandable Description component for campaign descriptions
 const ExpandableDescription = ({ description }: { description: string }) => {
   const [isExpanded, setIsExpanded] = useState(false);
