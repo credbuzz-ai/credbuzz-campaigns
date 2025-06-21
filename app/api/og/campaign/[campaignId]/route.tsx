@@ -8,31 +8,6 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_CREDBUZZ_API_URL ||
   "https://api.cred.buzz";
 
-// Simple function to get image URL based on handle
-const getImageUrlForHandle = (handle: string) => {
-  const images = [
-    {
-      handle: "infinex",
-      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1004507388.jpg",
-    },
-    {
-      handle: "boopdotfun",
-      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1009622081.jpg",
-    },
-    {
-      handle: "vmfcoin",
-      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1011002498.jpg",
-    },
-    {
-      handle: "jessexbt_ai",
-      imageUrl: "https://alliancehub.s3.eu-west-1.amazonaws.com/1018173201.jpg",
-    },
-  ];
-
-  const match = images.find((img) => img.handle === handle);
-  return match ? match.imageUrl : images[0].imageUrl;
-};
-
 export async function GET(
   request: NextRequest,
   { params }: { params: { campaignId: string } }
@@ -65,12 +40,22 @@ export async function GET(
       throw new Error("Campaign not found");
     }
 
-    // Get handle-based image
-    const handleImageUrl = campaign.target_x_handle
-      ? getImageUrlForHandle(
-          campaign.target_x_handle.replace("@", "").toLowerCase()
-        )
-      : null;
+    // Get profile image from user profile API
+    let profileImageUrl = null;
+    if (campaign.target_x_handle) {
+      try {
+        const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
+        const userProfileResponse = await fetch(
+          `${API_BASE_URL}/user/get-user-profile?handle=${handle}`
+        );
+        if (userProfileResponse.ok) {
+          const data = await userProfileResponse.json();
+          profileImageUrl = data?.result?.activity_data?.profile_image;
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error);
+      }
+    }
 
     // Fetch mindshare data if available
     let mindshareData = null;
@@ -120,20 +105,40 @@ export async function GET(
             }}
           >
             {/* Profile Image */}
-            {handleImageUrl && (
-              <div
-                style={{
-                  width: "120px",
-                  height: "120px",
-                  borderRadius: "20px",
-                  backgroundImage: `url(${handleImageUrl})`,
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
-                  border: "2px solid rgba(0, 217, 146, 0.6)",
-                  boxShadow: "0 0 20px rgba(0, 217, 146, 0.15)",
-                }}
-              />
-            )}
+            <div
+              style={{
+                width: "120px",
+                height: "120px",
+                borderRadius: "20px",
+                backgroundImage: profileImageUrl
+                  ? `url(${profileImageUrl})`
+                  : "linear-gradient(135deg, #00D992 0%, #00A97F 100%)",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                border: "2px solid rgba(0, 217, 146, 0.6)",
+                boxShadow: "0 0 20px rgba(0, 217, 146, 0.15)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {!profileImageUrl && (
+                <div
+                  style={{
+                    fontSize: "48px",
+                    color: "#FFFFFF",
+                    fontWeight: "bold",
+                  }}
+                >
+                  {campaign.target_x_handle
+                    ? campaign.target_x_handle
+                        .replace("@", "")
+                        .charAt(0)
+                        .toUpperCase()
+                    : "T"}
+                </div>
+              )}
+            </div>
 
             {/* Title and Handle */}
             <div
