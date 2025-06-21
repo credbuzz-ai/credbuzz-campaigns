@@ -11,9 +11,41 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "TrendSage - Web3 KOL Marketplace",
-  description: "Connecting brands with influential crypto voices",
-  generator: "v0.dev",
+  title: {
+    default: "TrendSage - Web3 KOL Marketplace",
+    template: "%s | TrendSage",
+  },
+  description:
+    "AI-powered decentralized marketplace connecting brands with authentic web3 Key Opinion Leaders. Build trust, drive engagement, and scale your campaigns with blockchain transparency.",
+  keywords:
+    "Web3, KOL, Influencer Marketing, Crypto, Blockchain, Decentralized, AI, Campaign Management",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "/",
+    title: "TrendSage - Web3 KOL Marketplace",
+    description:
+      "AI-powered decentralized marketplace connecting brands with authentic web3 Key Opinion Leaders. Build trust, drive engagement, and scale your campaigns with blockchain transparency.",
+    siteName: "TrendSage - Web3 KOL Marketplace",
+    images: [
+      {
+        url: "/api/og",
+        width: 1200,
+        height: 630,
+        alt: "TrendSage - Web3 KOL Marketplace",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TrendSage - Web3 KOL Marketplace",
+    description:
+      "AI-powered decentralized marketplace connecting brands with authentic web3 Key Opinion Leaders.",
+    creator: "@TrendSageApp",
+    site: "@TrendSageApp",
+    images: ["/api/og"],
+  },
+  generator: "Next.js",
   icons: {
     icon: "/favicon.ico",
     shortcut: "/favicon.ico",
