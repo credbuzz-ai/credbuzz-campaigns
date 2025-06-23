@@ -11,29 +11,57 @@ import { Skeleton } from "@/components/ui/skeleton";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
 import { differenceInHours } from "date-fns";
-import { Clock, ExternalLink, FileText, Globe, Wallet } from "lucide-react";
+import {
+  Clock,
+  ExternalLink,
+  FileText,
+  Globe,
+  Instagram,
+  Wallet,
+} from "lucide-react";
 import { useEffect, useState } from "react";
+
+function linkifyText(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  return text.split(urlRegex).map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#00D992] underline hover:text-[#00F5A8]"
+        >
+          {part}
+        </a>
+      );
+    } else {
+      return part;
+    }
+  });
+}
 
 // Expandable Description component for campaign descriptions
 const ExpandableDescription = ({ description }: { description: string }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const maxLength = 150; // Maximum characters to show initially
 
-  if (description.length <= maxLength) {
-    return (
-      <p className="text-sm text-gray-300 leading-relaxed">{description}</p>
-    );
-  }
+  const visibleText = isExpanded
+    ? description
+    : `${description.slice(0, maxLength)}...`;
 
   return (
     <div className="text-sm text-gray-300 leading-relaxed">
-      {isExpanded ? description : `${description.slice(0, maxLength)}...`}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="ml-1 text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors"
-      >
-        {isExpanded ? "Show less" : "Show more"}
-      </button>
+      <div style={{ whiteSpace: "pre-line" }}>{linkifyText(visibleText)}</div>
+      {description.length > maxLength && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mt-1 text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors"
+        >
+          {isExpanded ? "Show less" : "Show more"}
+        </button>
+      )}
     </div>
   );
 };
@@ -164,6 +192,47 @@ const InfoBadge = ({
     </div>
   );
 };
+
+// Function to extract social links from description
+function extractSocialLinks(description: string) {
+  const links = {
+    website: "",
+    telegram: "",
+    instagram: "",
+    discord: "",
+    twitter: "",
+    whitepaper: "",
+  };
+
+  // Regular expressions for different types of links
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const matches = description.match(urlRegex);
+
+  if (matches) {
+    matches.forEach((url) => {
+      if (url.includes("t.me/") || url.includes("telegram.")) {
+        links.telegram = url;
+      } else if (url.includes("instagram.com/")) {
+        links.instagram = url;
+      } else if (url.includes("discord.")) {
+        links.discord = url;
+      } else if (url.includes("twitter.com/") || url.includes("x.com/")) {
+        links.twitter = url;
+      } else if (
+        url.toLowerCase().includes("whitepaper") ||
+        url.toLowerCase().includes("docs.") ||
+        url.toLowerCase().includes("gitbook.")
+      ) {
+        links.whitepaper = url;
+      } else if (!links.website) {
+        // Use the first non-matching URL as website
+        links.website = url;
+      }
+    });
+  }
+
+  return links;
+}
 
 export default function CampaignDetailsClient({
   campaignId,
@@ -305,6 +374,9 @@ export default function CampaignDetailsClient({
     ? campaign.target_x_handle.replace("@", "").toLowerCase()
     : campaign.owner_x_handle.replace("@", "").toLowerCase();
 
+  // Extract social links from description
+  const socialLinks = extractSocialLinks(campaign.description);
+
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="flex items-start">
@@ -325,39 +397,47 @@ export default function CampaignDetailsClient({
                     </div>
                     <div className="flex items-center gap-2">
                       <SocialLink
-                        href={`https://twitter.com/${campaign.target_x_handle?.replace(
-                          "@",
-                          ""
-                        )}`}
+                        href={socialLinks.twitter}
                         icon={<XLogo className="w-5 h-5" />}
                         label="Twitter"
                       />
-                      <SocialLink
-                        href="https://t.me/example"
-                        icon={
-                          <svg
-                            className="w-5 h-5"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.241-1.865-.44-.751-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.141.119.098.152.228.166.331.016.119.031.283.02.441z" />
-                          </svg>
-                        }
-                        label="Telegram"
-                      />
-                      <SocialLink
-                        href="https://discord.gg/example"
-                        icon={
-                          <svg
-                            className="w-5 h-5"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                          >
-                            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" />
-                          </svg>
-                        }
-                        label="Discord"
-                      />
+                      {socialLinks?.telegram && (
+                        <SocialLink
+                          href={socialLinks.telegram}
+                          icon={
+                            <svg
+                              className="w-5 h-5"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.241-1.865-.44-.751-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.141.119.098.152.228.166.331.016.119.031.283.02.441z" />
+                            </svg>
+                          }
+                          label="Telegram"
+                        />
+                      )}
+                      {socialLinks?.discord && (
+                        <SocialLink
+                          href={socialLinks.discord}
+                          icon={
+                            <svg
+                              className="w-5 h-5"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" />
+                            </svg>
+                          }
+                          label="Discord"
+                        />
+                      )}
+                      {socialLinks?.instagram && (
+                        <SocialLink
+                          href={socialLinks.instagram}
+                          icon={<Instagram className="w-5 h-5" />}
+                          label="Instagram"
+                        />
+                      )}
                     </div>
                   </div>
 
@@ -375,18 +455,22 @@ export default function CampaignDetailsClient({
 
                   {/* Info Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    <InfoBadge
-                      icon={<Globe className="w-4 h-4" />}
-                      label="Website"
-                      href="https://example.com"
-                      detail="example.com"
-                    />
-                    <InfoBadge
-                      icon={<FileText className="w-4 h-4" />}
-                      label="Whitepaper"
-                      href="https://docs.example.com"
-                      detail="View Documentation"
-                    />
+                    {socialLinks?.website && (
+                      <InfoBadge
+                        icon={<Globe className="w-4 h-4" />}
+                        label="Website"
+                        href={socialLinks.website}
+                        detail={new URL(socialLinks.website).hostname}
+                      />
+                    )}
+                    {socialLinks?.whitepaper && (
+                      <InfoBadge
+                        icon={<FileText className="w-4 h-4" />}
+                        label="Whitepaper"
+                        href={socialLinks.whitepaper}
+                        detail="View Documentation"
+                      />
+                    )}
                     <InfoBadge
                       icon={<Wallet className="w-4 h-4" />}
                       label="Contract Status"
