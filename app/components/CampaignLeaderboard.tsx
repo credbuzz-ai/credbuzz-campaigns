@@ -12,28 +12,32 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, Send } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 interface CampaignLeaderboardProps {
   data: MindshareResponse["result"]["mindshare_data"];
+  totalResults: number;
   campaignId: string;
   selectedTimePeriod?: "30d" | "7d" | "1d";
+  onPageChange?: (page: number) => void;
+  currentPage?: number;
+  pageSize?: number;
 }
 
 export default function CampaignLeaderboard({
   data,
+  totalResults,
   campaignId,
   selectedTimePeriod = "30d",
+  onPageChange,
+  currentPage = 1,
+  pageSize = 100,
 }: CampaignLeaderboardProps) {
   const router = useRouter();
   const { toast } = useToast();
-
-  // Sort data by mindshare percentage and get top 10
-  const topContributors = [...data]
-    .sort((a, b) => b.mindshare_percent - a.mindshare_percent)
-    .slice(0, 10);
+  const totalPages = Math.ceil(totalResults / pageSize);
 
   const handleInvite = (authorHandle: string) => {
     // TODO: Implement invite functionality
@@ -41,6 +45,12 @@ export default function CampaignLeaderboard({
     toast({
       title: "Invite Feature Coming Soon",
     });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages && onPageChange) {
+      onPageChange(newPage);
+    }
   };
 
   return (
@@ -75,7 +85,7 @@ export default function CampaignLeaderboard({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {topContributors.map((contributor, index) => (
+              {data.map((contributor, index) => (
                 <TableRow
                   key={contributor.author_handle}
                   className="border-gray-700 hover:bg-gray-700/30 transition-colors"
@@ -83,7 +93,7 @@ export default function CampaignLeaderboard({
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#00D992]/10 text-[#00D992] text-sm font-semibold">
-                        {index + 1}
+                        {(currentPage - 1) * pageSize + index + 1}
                       </div>
                       <div className="flex items-center gap-2">
                         {contributor.user_info.profile_image_url ? (
@@ -117,19 +127,19 @@ export default function CampaignLeaderboard({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="font-medium text-[#00D992]">
-                      {contributor.mindshare_percent.toFixed(2)}%
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Buzz Score: {contributor.author_buzz.toFixed(1)}
+                      {new Intl.NumberFormat("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(contributor.mindshare_percent)}
+                      %
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="font-medium text-gray-100">
-                      {contributor.user_info.smart_followers_count.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Engagement:{" "}
-                      {contributor.user_info.engagement_score.toFixed(1)}
+                      {new Intl.NumberFormat("en-US", {
+                        notation: "compact",
+                        maximumFractionDigits: 1,
+                      }).format(contributor.user_info.smart_followers_count)}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
@@ -147,6 +157,39 @@ export default function CampaignLeaderboard({
               ))}
             </TableBody>
           </Table>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between px-2 py-4">
+              <div className="text-sm text-gray-400">
+                Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                {Math.min(currentPage * pageSize, totalResults)} of{" "}
+                {totalResults} results
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="border border-gray-600 bg-gray-800/50 text-gray-300 hover:bg-[#00D992]/10 hover:text-white hover:border-[#00D992]"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-gray-400">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="border border-gray-600 bg-gray-800/50 text-gray-300 hover:bg-[#00D992]/10 hover:text-white hover:border-[#00D992]"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </Card>

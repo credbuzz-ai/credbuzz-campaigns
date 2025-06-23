@@ -11,7 +11,9 @@ import {
   MindshareResponse,
   UserProfileResponse,
 } from "@/app/types";
+import { Button } from "@/components/ui/button";
 import apiClient from "@/lib/api";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import ProjectProfileHeader from "../../../components/ProjectProfileHeader";
@@ -25,14 +27,19 @@ export default function ProjectPage({
 }) {
   const { projectName } = params;
   const [authorData, setAuthorData] = useState<AuthorData | null>(null);
+  const [loading, setLoading] = useState(false);
   const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
+    null
+  );
+  const [treemapData, setTreemapData] = useState<MindshareResponse | null>(
     null
   );
   const [timeframe, setTimeframe] = useState<"30d" | "7d" | "24h">("30d");
   const [activityData, setActivityData] = useState<
     UserProfileResponse["result"]["activity_data"] | null
   >(null);
-  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
 
   const fetchProjectDetails = async () => {
     try {
@@ -83,10 +90,22 @@ export default function ProjectPage({
   const fetchMindshare = async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get(
-        `/mindshare?project_name=${projectName}&limit=100&timeframe=${timeframe}`
+      const period = timeframe === "24h" ? "1d" : timeframe;
+      const offset = (currentPage - 1) * pageSize;
+
+      // Fetch paginated data for the table
+      const paginatedResponse = await apiClient.get(
+        `/mindshare?project_name=${projectName}&limit=${pageSize}&offset=${offset}&period=${period}`
       );
-      setMindshareData(response.data);
+      setMindshareData(paginatedResponse.data);
+
+      // Fetch complete data for the treemap only when timeframe changes or on initial load
+      if (currentPage === 1) {
+        const treemapResponse = await apiClient.get(
+          `/mindshare?project_name=${projectName}&limit=100&period=${period}`
+        );
+        setTreemapData(treemapResponse.data);
+      }
     } catch (err) {
       console.error("Error fetching mindshare:", err);
     } finally {
@@ -98,7 +117,11 @@ export default function ProjectPage({
     fetchProjectDetails();
     fetchMindshare();
     fetchActivityData();
-  }, [projectName, timeframe]);
+  }, [projectName, timeframe, currentPage]);
+
+  useEffect(() => {
+    console.log("Current mindshare data:", mindshareData);
+  }, [mindshareData]);
 
   if (!authorData || loading) {
     return (
@@ -174,9 +197,10 @@ export default function ProjectPage({
                       {["30d", "7d", "24h"].map((period) => (
                         <button
                           key={period}
-                          onClick={() =>
-                            setTimeframe(period as "30d" | "7d" | "24h")
-                          }
+                          onClick={() => {
+                            setTimeframe(period as "30d" | "7d" | "24h");
+                            setCurrentPage(1); // Reset to first page when changing timeframe
+                          }}
                           className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                             timeframe === period
                               ? "bg-[#00D992] text-black"
@@ -189,8 +213,52 @@ export default function ProjectPage({
                     </div>
                   </div>
                   <MindshareTreemap
-                    data={mindshareData.result.mindshare_data}
+                    data={treemapData?.result?.mindshare_data || []}
+                    projectName={params.projectName}
                   />
+                  {mindshareData.result.total_results > pageSize && (
+                    <div className="flex items-center justify-between mt-4 px-2">
+                      <div className="text-sm text-gray-400">
+                        Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                        {Math.min(
+                          currentPage * pageSize,
+                          mindshareData.result.total_results
+                        )}{" "}
+                        of {mindshareData.result.total_results} results
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="border border-gray-600 bg-gray-800/50 text-gray-300 hover:bg-[#00D992]/10 hover:text-white hover:border-[#00D992]"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="text-sm text-gray-400">
+                          Page {currentPage} of{" "}
+                          {Math.ceil(
+                            mindshareData.result.total_results / pageSize
+                          )}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(currentPage + 1)}
+                          disabled={
+                            currentPage ===
+                            Math.ceil(
+                              mindshareData.result.total_results / pageSize
+                            )
+                          }
+                          className="border border-gray-600 bg-gray-800/50 text-gray-300 hover:bg-[#00D992]/10 hover:text-white hover:border-[#00D992]"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
