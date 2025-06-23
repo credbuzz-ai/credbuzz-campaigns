@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
 // @ts-ignore
 import * as d3 from "d3";
-import html2canvas from "html2canvas";
-import { Download } from "lucide-react";
+import MindshareHistoryChart from "./MindshareHistoryChart";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
@@ -48,15 +47,23 @@ interface MindshareVisualizationProps {
   selectedTimePeriod?: string;
   onTimePeriodChange?: (period: string) => void;
   loading?: boolean;
+  projectName: string;
+  projectHandle: string;
 }
 
 type ViewType = "treemap" | "voronoi";
+type Period = "1d" | "7d" | "30d";
+type HistoryDataType = {
+  [key in Period]: any[];
+};
 
 export default function MindshareVisualization({
   data,
   selectedTimePeriod,
   onTimePeriodChange,
   loading: externalLoading,
+  projectName,
+  projectHandle,
 }: MindshareVisualizationProps) {
   const router = useRouter();
   const svgRef = useRef<SVGSVGElement>(null);
@@ -64,7 +71,13 @@ export default function MindshareVisualization({
   const chartRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentView, setCurrentView] = useState<ViewType>("treemap");
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
+  const [historyData, setHistoryData] = useState<HistoryDataType>({
+    "1d": [],
+    "7d": [],
+    "30d": [],
+  });
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
 
   // Validate and clean data
   const validData = React.useMemo(() => {
@@ -245,7 +258,8 @@ export default function MindshareVisualization({
             const dataPoint =
               chartContext.w.config.series[0].data[config.dataPointIndex];
             if (dataPoint?.author_handle) {
-              router.push(`/kols/${dataPoint.author_handle}`);
+              setSelectedAuthor(dataPoint.author_handle);
+              fetchMindshareHistory(dataPoint.author_handle);
             }
           }
         },
@@ -737,7 +751,8 @@ export default function MindshareVisualization({
           }
         })
         .on("click", function () {
-          router.push(`/kols/${site.data.author_handle}`);
+          setSelectedAuthor(site.data.author_handle);
+          fetchMindshareHistory(site.data.author_handle);
         });
     });
 
@@ -784,48 +799,42 @@ export default function MindshareVisualization({
     isExternalLoading || (isLoading && hasData && !isExternalLoading);
   const showNoDataMessage = !isExternalLoading && !hasData;
 
-  const handleDownload = async () => {
-    if (!chartRef.current) return;
-
+  const fetchMindshareHistory = async (authorHandle: string) => {
     try {
-      setIsDownloading(true);
-
-      // Hide tooltip if visible
-      if (tooltipRef.current) {
-        tooltipRef.current.style.opacity = "0";
+      console.log("projectHandle", projectHandle);
+      console.log("authorHandle", authorHandle);
+      if (!projectHandle) {
+        console.error("Project handle is undefined");
+        return;
       }
+      const handle = projectHandle.replace("@", "").toLowerCase();
 
-      const canvas = await html2canvas(chartRef.current, {
-        backgroundColor: "#111827", // Match the background
-        scale: 2, // Higher quality
-      });
+      // Fetch data for all periods
+      const periods: Period[] = ["1d"];
+      const results = await Promise.all(
+        periods.map(async (period) => {
+          const response = await fetch(
+            `/api/mindshare/history/${handle}/${authorHandle}?period=${period}`
+          );
+          const data = await response.json();
+          return { period, data: data.result.mindshare_history || [] };
+        })
+      );
 
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          resolve(blob!);
-        }, "image/png");
-      });
+      // Set data for all periods
+      const newHistoryData = results.reduce<HistoryDataType>(
+        (acc, { period, data }) => {
+          acc[period] = data;
+          return acc;
+        },
+        { "1d": [], "7d": [], "30d": [] }
+      );
 
-      // Create download link
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `mindshare-${currentView}-${
-        selectedTimePeriod || "all"
-      }.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      setHistoryData(newHistoryData);
+      setIsHistoryModalOpen(true);
     } catch (error) {
-      console.error("Error downloading image:", error);
-    } finally {
-      setIsDownloading(false);
-      // Restore tooltip visibility
-      if (tooltipRef.current) {
-        tooltipRef.current.style.opacity = "1";
-      }
+      console.error("Error fetching mindshare history:", error);
+      setHistoryData({ "1d": [], "7d": [], "30d": [] });
     }
   };
 
@@ -892,22 +901,6 @@ export default function MindshareVisualization({
             >
               Voronoi
             </button>
-
-            {/* Download Button */}
-            {hasData && (
-              <button
-                onClick={handleDownload}
-                disabled={isDownloading}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                  isDownloading
-                    ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                    : "bg-gray-800 text-gray-300 hover:bg-gray-700"
-                }`}
-              >
-                <Download className="w-4 h-4" />
-                {isDownloading ? "Downloading..." : "Download"}
-              </button>
-            )}
           </div>
         </div>
       </div>
@@ -971,6 +964,19 @@ export default function MindshareVisualization({
           </div>
         )}
       </div>
+
+      {selectedAuthor && (
+        <MindshareHistoryChart
+          isOpen={isHistoryModalOpen}
+          onClose={() => {
+            setIsHistoryModalOpen(false);
+            setSelectedAuthor(null);
+          }}
+          data={historyData}
+          projectName={projectName}
+          authorHandle={selectedAuthor}
+        />
+      )}
     </div>
   );
 }

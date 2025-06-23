@@ -40,6 +40,7 @@ export interface Campaign {
   project_insta?: string;
   project_discord?: string;
   project_gitbook?: string;
+  project_categories?: string;
 }
 
 export type UserType = {

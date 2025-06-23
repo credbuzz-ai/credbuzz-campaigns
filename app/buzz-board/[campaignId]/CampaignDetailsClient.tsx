@@ -234,11 +234,15 @@ export default function CampaignDetailsClient({
   const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
     null
   );
+  const [visualizationData, setVisualizationData] =
+    useState<MindshareResponse | null>(null);
   const [selectedTimePeriod, setSelectedTimePeriod] =
     useState<TimePeriod>("30d");
   const [activityData, setActivityData] = useState<
     UserProfileResponse["result"]["activity_data"] | null
   >(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 100;
 
   useEffect(() => {
     const fetchCampaignDetails = async () => {
@@ -256,8 +260,8 @@ export default function CampaignDetailsClient({
           setError("Campaign not found");
         }
       } catch (err) {
+        console.error("Error fetching campaign details:", err);
         setError("Failed to load campaign details");
-        console.error("Error fetching campaign:", err);
       } finally {
         setLoading(false);
       }
@@ -273,13 +277,25 @@ export default function CampaignDetailsClient({
       try {
         setLoading(true);
         const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
-        const response = await apiClient.get(
-          `/mindshare?project_name=${handle}&limit=100&period=${period}`
+        const offset = (currentPage - 1) * pageSize;
+
+        // Fetch paginated data for the leaderboard
+        const paginatedResponse = await apiClient.get(
+          `/mindshare?project_name=${handle}&limit=${pageSize}&offset=${offset}&period=${period}`
         );
-        setMindshareData(response.data);
+        setMindshareData(paginatedResponse.data);
+
+        // Fetch complete data for visualization only when timeframe changes or on initial load
+        if (currentPage === 1) {
+          const visualizationResponse = await apiClient.get(
+            `/mindshare?project_name=${handle}&limit=100&period=${period}`
+          );
+          setVisualizationData(visualizationResponse.data);
+        }
       } catch (err) {
         console.error(`Error fetching mindshare for ${period}:`, err);
         setMindshareData(null);
+        setVisualizationData(null);
       } finally {
         setLoading(false);
       }
@@ -288,7 +304,7 @@ export default function CampaignDetailsClient({
     if (campaign?.target_x_handle) {
       fetchMindshare(selectedTimePeriod);
     }
-  }, [campaign?.target_x_handle, selectedTimePeriod]);
+  }, [campaign?.target_x_handle, selectedTimePeriod, currentPage]);
 
   useEffect(() => {
     const fetchActivityData = async () => {
@@ -321,16 +337,20 @@ export default function CampaignDetailsClient({
     }
   }, [campaign?.target_x_handle]);
 
-  if (loading) {
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  if (loading || !campaign) {
     return <CampaignSkeleton />;
   }
 
-  if (error || !campaign) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-400 mb-2">Error</h2>
-          <p className="text-gray-400">{error || "Campaign not found"}</p>
+          <p className="text-gray-400">{error}</p>
         </div>
       </div>
     );
@@ -437,9 +457,9 @@ export default function CampaignDetailsClient({
 
                   {/* Categories */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <CategoryTag label="DeFi" />
-                    <CategoryTag label="Web3" />
-                    <CategoryTag label="Gaming" />
+                    {campaign.project_categories?.split(",").map((category) => (
+                      <CategoryTag key={category} label={category} />
+                    ))}
                   </div>
 
                   {/* Description */}
@@ -493,12 +513,15 @@ export default function CampaignDetailsClient({
             {/* Community Mindshare */}
             <div className="mb-8 mt-8">
               <MindshareVisualization
-                data={mindshareData?.result?.mindshare_data || []}
+                data={visualizationData?.result?.mindshare_data || []}
                 selectedTimePeriod={selectedTimePeriod}
-                onTimePeriodChange={(period) =>
-                  setSelectedTimePeriod(period as TimePeriod)
-                }
+                onTimePeriodChange={(period) => {
+                  setSelectedTimePeriod(period as TimePeriod);
+                  setCurrentPage(1); // Reset to first page when changing period
+                }}
                 loading={loading}
+                projectName={campaignId}
+                projectHandle={campaign?.target_x_handle || ""}
               />
             </div>
 
@@ -517,8 +540,12 @@ export default function CampaignDetailsClient({
                 <div className="mb-8">
                   <CampaignLeaderboard
                     data={mindshareData.result.mindshare_data}
+                    totalResults={mindshareData.result.total_results}
                     campaignId={campaignId}
                     selectedTimePeriod={selectedTimePeriod}
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
                   />
                 </div>
               )}

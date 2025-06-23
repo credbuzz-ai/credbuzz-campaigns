@@ -1,7 +1,9 @@
 "use client";
 
+import MindshareHistoryChart, {
+  MindshareHistoryData,
+} from "@/app/components/MindshareHistoryChart";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
 import React from "react";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
@@ -41,15 +43,37 @@ interface MindshareData {
 
 interface MindshareTreemapProps {
   data: MindshareData[];
+  projectName: string;
 }
 
-export default function MindshareTreemap({ data }: MindshareTreemapProps) {
-  const router = useRouter();
+export default function MindshareTreemap({
+  data,
+  projectName,
+}: MindshareTreemapProps) {
   const [isLoading, setIsLoading] = React.useState(true);
+  const [selectedAuthor, setSelectedAuthor] = React.useState<string | null>(
+    null
+  );
+  const [historyData, setHistoryData] = React.useState<{
+    "1d": MindshareHistoryData[];
+    "7d": MindshareHistoryData[];
+    "30d": MindshareHistoryData[];
+  }>({
+    "1d": [],
+    "7d": [],
+    "30d": [],
+  });
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = React.useState(false);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log("MindshareTreemap data:", data);
+    console.log("MindshareTreemap projectName:", projectName);
+  }, [data, projectName]);
 
   // Validate and clean data to prevent null values
   const validData = React.useMemo(() => {
-    return data.filter(
+    const filtered = data.filter(
       (item) =>
         item &&
         item.user_info &&
@@ -57,14 +81,16 @@ export default function MindshareTreemap({ data }: MindshareTreemapProps) {
         typeof item.mindshare_percent === "number" &&
         !isNaN(item.mindshare_percent)
     );
+    console.log("Filtered valid data:", filtered);
+    return filtered;
   }, [data]);
 
   const chartData = React.useMemo(() => {
-    return [
+    const processedData = [
       {
         data: validData.map((item) => ({
           x: item.user_info.name || "Unknown",
-          y: Number(item.mindshare_percent.toFixed(4)), // Ensure number and limit decimal places
+          y: Number(item.mindshare_percent.toFixed(4)),
           author_handle: item.author_handle || "",
           author_buzz: item.author_buzz || 0,
           profile_image_url: item.user_info.profile_image_url || null,
@@ -75,10 +101,55 @@ export default function MindshareTreemap({ data }: MindshareTreemapProps) {
         })),
       },
     ];
+    console.log("Processed chart data:", processedData);
+    return processedData;
   }, [validData]);
+
+  const fetchMindshareHistory = async (authorHandle: string) => {
+    try {
+      console.log("Fetching mindshare history for:", authorHandle);
+
+      // Fetch data for all periods
+      const periods: ("1d" | "7d" | "30d")[] = ["1d"];
+      const results = await Promise.all(
+        periods.map(async (period) => {
+          const response = await fetch(
+            `/api/mindshare/history/${projectName}/${authorHandle}?period=${period}`
+          );
+          const data = await response.json();
+          return { period, data: data.result.mindshare_history || [] };
+        })
+      );
+
+      // Combine data for all periods
+      const newHistoryData = results.reduce(
+        (acc, { period, data }) => {
+          acc[period] = data;
+          return acc;
+        },
+        { "1d": [], "7d": [], "30d": [] } as {
+          "1d": MindshareHistoryData[];
+          "7d": MindshareHistoryData[];
+          "30d": MindshareHistoryData[];
+        }
+      );
+
+      console.log("Combined history data:", newHistoryData);
+      setHistoryData(newHistoryData);
+      setIsHistoryModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching mindshare history:", error);
+      setHistoryData({
+        "1d": [],
+        "7d": [],
+        "30d": [],
+      });
+    }
+  };
 
   // If no valid data, show a message
   if (validData.length === 0) {
+    console.log("No valid data available");
     return (
       <div className="w-full h-[300px] flex items-center justify-center text-gray-400">
         No valid mindshare data available
@@ -114,7 +185,8 @@ export default function MindshareTreemap({ data }: MindshareTreemapProps) {
             const dataPoint =
               chartContext.w.config.series[0].data[config.dataPointIndex];
             if (dataPoint?.author_handle) {
-              router.push(`/kols/${dataPoint.author_handle}`);
+              setSelectedAuthor(dataPoint.author_handle);
+              fetchMindshareHistory(dataPoint.author_handle);
             }
           }
         },
@@ -291,7 +363,7 @@ export default function MindshareTreemap({ data }: MindshareTreemapProps) {
                 )}</div>
               </div>
             </div>
-            <div class="mt-2 text-xs text-center text-gray-400">Click to view detailed profile</div>
+            <div class="mt-2 text-xs text-center text-gray-400">Click to view mindshare history</div>
           </div>
         `;
       },
@@ -337,6 +409,19 @@ export default function MindshareTreemap({ data }: MindshareTreemapProps) {
           height="100%"
         />
       </div>
+
+      {selectedAuthor && (
+        <MindshareHistoryChart
+          isOpen={isHistoryModalOpen}
+          onClose={() => {
+            setIsHistoryModalOpen(false);
+            setSelectedAuthor(null);
+          }}
+          data={historyData}
+          projectName={projectName}
+          authorHandle={selectedAuthor}
+        />
+      )}
     </div>
   );
 }

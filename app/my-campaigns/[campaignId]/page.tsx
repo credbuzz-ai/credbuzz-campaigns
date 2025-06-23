@@ -21,6 +21,7 @@ type TimePeriod = "30d" | "7d" | "1d";
 
 export default function CampaignDetailsPage() {
   const params = useParams();
+  const campaignId = params.campaignId as string;
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,11 +60,15 @@ export default function CampaignDetailsPage() {
 
   useEffect(() => {
     const fetchMindshare = async () => {
-      if (!campaign?.influencer_x_handle) return;
+      if (!campaign) return;
 
       try {
         setLoading(true);
-        const handle = campaign.influencer_x_handle
+        const handle = (
+          campaign.project_handle ||
+          campaign.target_x_handle ||
+          campaign.owner_x_handle
+        )
           .replace("@", "")
           .toLowerCase();
         const response = await apiClient.get(
@@ -106,11 +111,11 @@ export default function CampaignDetailsPage() {
       }
     };
 
-    if (campaign?.influencer_x_handle) {
+    if (campaign) {
       fetchMindshare();
       fetchActivityData();
     }
-  }, [campaign?.influencer_x_handle, selectedTimePeriod]);
+  }, [campaign, selectedTimePeriod]);
 
   if (loading) {
     return <CampaignSkeleton />;
@@ -360,7 +365,15 @@ export default function CampaignDetailsPage() {
                 </div>
               ) : mindshareData?.result?.mindshare_data &&
                 mindshareData.result.mindshare_data.length > 0 ? (
-                <MindshareVisualization data={mindshareData.result.mindshare_data} />
+                <MindshareVisualization
+                  data={mindshareData.result.mindshare_data}
+                  projectName={campaignId}
+                  projectHandle={
+                    campaign.project_handle ||
+                    campaign.target_x_handle ||
+                    campaign.owner_x_handle
+                  }
+                />
               ) : (
                 <div className="text-center py-8 text-gray-400">
                   No mindshare data available for{" "}
