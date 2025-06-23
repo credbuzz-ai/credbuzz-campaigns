@@ -150,7 +150,7 @@ export default function MindshareVisualization({
               ".apexcharts-treemap-rect"
             );
             allCells.forEach((cell: SVGElement) => {
-              cell.style.fillOpacity = "0.60";
+              cell.style.fillOpacity = "0.20";
               cell.setAttribute("stroke", "none");
               cell.setAttribute("stroke-width", "0");
             });

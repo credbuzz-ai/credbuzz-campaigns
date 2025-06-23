@@ -28,7 +28,9 @@ export default function BuzzBoard() {
   const fetchCampaigns = async () => {
     const campaigns = await apiClient.post("/campaign/get-campaigns", {
       campaign_type: "Public",
+      is_visible: true,
     });
+    console.log(campaigns.data.result);
     setCampaigns(campaigns.data.result);
   };
 
@@ -130,9 +132,12 @@ export default function BuzzBoard() {
         </div>
         {/* Campaign Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCampaigns.map((campaign) => (
-            <CampaignCard key={campaign.campaign_id} campaign={campaign} />
-          ))}
+          {filteredCampaigns.map(
+            (campaign) =>
+              campaign.is_visible && (
+                <CampaignCard key={campaign.campaign_id} campaign={campaign} />
+              )
+          )}
         </div>
 
         {filteredCampaigns.length === 0 && (
