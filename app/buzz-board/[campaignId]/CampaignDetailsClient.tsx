@@ -22,7 +22,7 @@ import {
 import { useEffect, useState } from "react";
 
 function linkifyText(text: string) {
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urlRegex = /(https?:\/\/[^\s]+?)(?=[.,;:!?\)\]\}]*(?:\s|$))/g;
   return text.split(urlRegex).map((part, index) => {
     if (part.match(urlRegex)) {
       return (
