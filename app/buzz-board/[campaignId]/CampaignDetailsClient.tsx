@@ -457,9 +457,9 @@ export default function CampaignDetailsClient({
 
                   {/* Categories */}
                   <div className="flex flex-wrap items-center gap-2">
-                    <CategoryTag label="DeFi" />
-                    <CategoryTag label="Web3" />
-                    <CategoryTag label="Gaming" />
+                    {campaign.project_categories?.split(",").map((category) => (
+                      <CategoryTag key={category} label={category} />
+                    ))}
                   </div>
 
                   {/* Description */}
