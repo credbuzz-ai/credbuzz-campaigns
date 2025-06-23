@@ -32,6 +32,7 @@ export interface Campaign {
   project_wallet: string;
   influencer_wallet: string;
   verified_tweet_id?: string;
+  is_visible: boolean;
 }
 
 export type UserType = {
