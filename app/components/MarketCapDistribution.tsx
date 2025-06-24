@@ -5,6 +5,8 @@ import { TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 // Type definitions
+type TimePeriod = "1day" | "7day" | "30day" | "all_time";
+
 interface Token {
   symbol: string;
   marketcap: number;
@@ -87,6 +89,7 @@ const TIME_PERIODS = [
   { value: "1day", label: "24H" },
   { value: "7day", label: "7D" },
   { value: "30day", label: "30D" },
+  { value: "all_time", label: "All Time" },
 ];
 
 // Constants
@@ -144,13 +147,11 @@ export default function MarketCapDistribution({
   );
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [timePeriod, setTimePeriod] = useState<"1day" | "7day" | "30day">(
-    "30day"
-  );
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>("30day");
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Fetch data
-  const fetchData = async (interval: "1day" | "7day" | "30day") => {
+  const fetchData = async (interval: TimePeriod) => {
     try {
       setLoading(true);
       setError(null);
@@ -193,7 +194,7 @@ export default function MarketCapDistribution({
   }, [authorHandle, timePeriod]);
 
   // Handle time period change
-  const handleTimePeriodChange = (period: "1day" | "7day" | "30day") => {
+  const handleTimePeriodChange = (period: TimePeriod) => {
     setTimePeriod(period);
   };
 
@@ -550,7 +551,7 @@ export default function MarketCapDistribution({
                 key={period.value}
                 onClick={() =>
                   handleTimePeriodChange(
-                    period.value as "1day" | "7day" | "30day"
+                    period.value as TimePeriod
                   )
                 }
                 className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
@@ -615,7 +616,7 @@ export default function MarketCapDistribution({
               key={period.value}
               onClick={() =>
                 handleTimePeriodChange(
-                  period.value as "1day" | "7day" | "30day"
+                  period.value as TimePeriod
                 )
               }
               className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
