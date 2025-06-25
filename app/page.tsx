@@ -1,4 +1,3 @@
-import Header from "@/app/components/Header";
 import ReferralHandler from "@/app/components/ReferralHandler";
 import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
@@ -11,7 +10,6 @@ export default function LandingPage({
 }) {
   return (
     <div className="min-h-screen bg-gray-900">
-      <Header />
       <Suspense fallback={null}>
         <ReferralHandler code={searchParams?.referral_code} />
       </Suspense>
