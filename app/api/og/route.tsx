@@ -8,7 +8,6 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const referralCode = searchParams.get("referral_code");
 
-    // Create the Open Graph image
     return new ImageResponse(
       (
         <div
@@ -22,6 +21,7 @@ export async function GET(request: NextRequest) {
             background: "linear-gradient(135deg, #0A0F1A 0%, #111827 100%)",
             position: "relative",
             overflow: "hidden",
+            padding: "40px",
           }}
         >
           {/* Background Pattern */}
@@ -65,124 +65,124 @@ export async function GET(request: NextRequest) {
             }}
           />
 
-          {/* Main Content Container */}
+          {/* Main Content */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              gap: referralCode ? "40px" : "48px",
-              padding: "64px",
-              width: "100%",
-              height: "100%",
-              position: "relative",
+              gap: "32px",
+              maxWidth: "90%",
               zIndex: 1,
             }}
           >
-            {referralCode ? (
-              // Referral-specific content
-              <>
-                {/* Referral Header */}
-                <div
+            {/* Title */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "16px",
+              }}
+            >
+              <h1
+                style={{
+                  fontSize: "72px",
+                  fontWeight: "bold",
+                  color: "#FFFFFF",
+                  margin: 0,
+                  lineHeight: 1.2,
+                  textAlign: "center",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                Unlock Your Web3
+                <span
                   style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "16px",
+                    background: "linear-gradient(to right, #00D992, #00F5A8)",
+                    backgroundClip: "text",
+                    color: "transparent",
+                    marginLeft: "12px",
                   }}
                 >
-                  <div
-                    style={{
-                      fontSize: "32px",
-                      color: "#00D992",
-                      fontWeight: "500",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.1em",
-                    }}
-                  >
-                    Special Invitation
-                  </div>
-                  <h1
-                    style={{
-                      fontSize: "72px",
-                      fontWeight: "bold",
-                      background:
-                        "linear-gradient(to bottom, #FFFFFF 0%, #E5E7EB 100%)",
-                      backgroundClip: "text",
-                      color: "transparent",
-                      margin: 0,
-                      lineHeight: 1.1,
-                      textAlign: "center",
-                      textShadow: "0 2px 10px rgba(255, 255, 255, 0.1)",
-                    }}
-                  >
-                    Join TrendSage
-                  </h1>
-                </div>
+                  Influence
+                </span>
+              </h1>
+              <p
+                style={{
+                  fontSize: "28px",
+                  color: "#9CA3AF",
+                  textAlign: "center",
+                  margin: 0,
+                  lineHeight: 1.5,
+                  maxWidth: "80%",
+                  marginTop: "16px",
+                }}
+              >
+                Turn Your Crypto Knowledge Into Rewards
+              </p>
+            </div>
 
-                {/* Referral Code Display */}
+            {/* Rewards Section */}
+            {!referralCode && (
+              <div
+                style={{
+                  gap: "24px",
+                  padding: "32px 48px",
+                  background:
+                    "linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(17, 24, 39, 0.4) 100%)",
+                  borderRadius: "16px",
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                }}
+              >
                 <div
                   style={{
-                    padding: "24px 48px",
-                    background:
-                      "linear-gradient(135deg, rgba(0, 217, 146, 0.15) 0%, rgba(0, 245, 168, 0.08) 100%)",
-                    borderRadius: "20px",
-                    border: "2px solid rgba(0, 217, 146, 0.3)",
-                    boxShadow: "0 8px 32px rgba(0, 217, 146, 0.15)",
+                    fontSize: "36px",
+                    color: "#00D992",
+                    fontWeight: "600",
+                    textAlign: "center",
+                    marginBottom: "8px",
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: "36px",
-                      background: "linear-gradient(to right, #00D992, #00F5A8)",
-                      backgroundClip: "text",
-                      color: "transparent",
-                      fontWeight: "600",
-                      textShadow: "0 2px 10px rgba(0, 217, 146, 0.2)",
-                    }}
-                  >
-                    Referral Code: {referralCode}
-                  </span>
+                  💎 Exclusive Benefits
                 </div>
-
-                {/* Benefits */}
                 <div
                   style={{
                     display: "flex",
                     gap: "32px",
                     justifyContent: "center",
-                    marginTop: "16px",
                   }}
                 >
-                  {["Early Access", "Special Rewards", "Premium Features"].map(
-                    (benefit, index) => (
+                  {["Early Access", "Token Rewards", "Premium Campaigns"].map(
+                    (benefit, i) => (
                       <div
-                        key={index}
+                        key={i}
                         style={{
                           display: "flex",
                           alignItems: "center",
                           gap: "12px",
-                          padding: "16px 32px",
-                          background:
-                            "linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(17, 24, 39, 0.4) 100%)",
-                          borderRadius: "16px",
-                          border: "1px solid rgba(255, 255, 255, 0.1)",
+                          padding: "12px 24px",
+                          background: "rgba(0, 217, 146, 0.1)",
+                          borderRadius: "12px",
+                          border: "1px solid rgba(0, 217, 146, 0.2)",
                         }}
                       >
                         <div
                           style={{
-                            width: "24px",
-                            height: "24px",
+                            width: "8px",
+                            height: "8px",
                             borderRadius: "50%",
-                            background:
-                              "linear-gradient(to right, #00D992, #00F5A8)",
+                            background: "#00D992",
                           }}
                         />
                         <span
                           style={{
-                            fontSize: "24px",
-                            color: "#D1D5DB",
+                            fontSize: "20px",
+                            color: "#E5E7EB",
                             fontWeight: "500",
                           }}
                         >
@@ -192,118 +192,121 @@ export async function GET(request: NextRequest) {
                     )
                   )}
                 </div>
-              </>
-            ) : (
-              // Regular landing page content
-              <>
-                {/* Title Section */}
+              </div>
+            )}
+
+            {/* Referral Code */}
+            {referralCode && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "24px",
+                  width: "100%",
+                  maxWidth: "100%",
+                  background:
+                    "linear-gradient(180deg, rgba(17, 24, 39, 0.9) 0%, rgba(17, 24, 39, 0.6) 100%)",
+                  borderRadius: "24px",
+                  border: "1px solid rgba(0, 217, 146, 0.2)",
+                  padding: "40px",
+                  boxShadow: "0 0 40px rgba(0, 217, 146, 0.1)",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                {/* Background Glow */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    width: "120%",
+                    height: "120%",
+                    background:
+                      "radial-gradient(circle, rgba(0, 217, 146, 0.15) 0%, transparent 70%)",
+                    filter: "blur(40px)",
+                    zIndex: 0,
+                  }}
+                />
+
+                <div
+                  style={{
+                    fontSize: "32px",
+                    color: "#F3F4F6",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "12px",
+                    zIndex: 1,
+                  }}
+                >
+                  <span style={{ color: "#00D992" }}>🎁</span>
+                  Your Exclusive Invite
+                </div>
+
+                <div
+                  style={{
+                    padding: "24px 48px",
+                    background:
+                      "linear-gradient(135deg, rgba(0, 217, 146, 0.2) 0%, rgba(0, 245, 168, 0.1) 100%)",
+                    borderRadius: "16px",
+                    border: "2px solid rgba(0, 217, 146, 0.4)",
+                    boxShadow: "0 0 30px rgba(0, 217, 146, 0.15)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "48px",
+                      background: "linear-gradient(to right, #00D992, #00F5A8)",
+                      backgroundClip: "text",
+                      color: "transparent",
+                      fontWeight: "700",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {referralCode}
+                  </span>
+                </div>
+
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: "24px",
+                    gap: "8px",
+                    zIndex: 1,
                   }}
                 >
-                  <h1
-                    style={{
-                      fontSize: "80px",
-                      fontWeight: "bold",
-                      background:
-                        "linear-gradient(to bottom, #FFFFFF 0%, #E5E7EB 100%)",
-                      backgroundClip: "text",
-                      color: "transparent",
-                      margin: 0,
-                      lineHeight: 1.1,
-                      textAlign: "center",
-                      textShadow: "0 2px 10px rgba(255, 255, 255, 0.1)",
-                    }}
-                  >
-                    The Future of
-                    <span
-                      style={{
-                        display: "block",
-                        background:
-                          "linear-gradient(to right, #00D992, #00F5A8)",
-                        backgroundClip: "text",
-                        color: "transparent",
-                        textShadow: "0 2px 10px rgba(0, 217, 146, 0.2)",
-                      }}
-                    >
-                      Web3 Influence
-                    </span>
-                  </h1>
-                  <p
+                  <div
                     style={{
                       fontSize: "24px",
-                      color: "#9CA3AF",
-                      textAlign: "center",
-                      maxWidth: "800px",
-                      margin: 0,
-                      lineHeight: 1.5,
-                      textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
+                      color: "#F3F4F6",
+                      fontWeight: "500",
                     }}
                   >
-                    AI-powered decentralized marketplace connecting brands with
-                    authentic web3 Key Opinion Leaders
-                  </p>
+                    Join The Top 1% of Web3 KOLs
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "20px",
+                      color: "#00D992",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <span>⚡️</span>
+                    Limited Time Early Access
+                  </div>
                 </div>
-
-                {/* Stats Container */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "64px",
-                    padding: "32px",
-                    background:
-                      "linear-gradient(180deg, rgba(17, 24, 39, 0.8) 0%, rgba(17, 24, 39, 0.4) 100%)",
-                    borderRadius: "24px",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                    boxShadow: "0 8px 32px rgba(0, 0, 0, 0.2)",
-                  }}
-                >
-                  {[
-                    { value: "10K+", label: "Verified KOLs" },
-                    { value: "500+", label: "Active Campaigns" },
-                    { value: "98%", label: "Success Rate" },
-                  ].map((stat, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: "8px",
-                        padding: "0 24px",
-                        position: "relative",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "56px",
-                          fontWeight: "bold",
-                          background:
-                            "linear-gradient(to bottom, #00D992 0%, #00A97F 100%)",
-                          backgroundClip: "text",
-                          color: "transparent",
-                          textShadow: "0 2px 10px rgba(0, 217, 146, 0.2)",
-                        }}
-                      >
-                        {stat.value}
-                      </span>
-                      <span
-                        style={{
-                          fontSize: "20px",
-                          color: "#D1D5DB",
-                          fontWeight: "500",
-                        }}
-                      >
-                        {stat.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
+              </div>
             )}
           </div>
         </div>
@@ -316,7 +319,6 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Failed to generate OG image:", error);
 
-    // Return a fallback image with enhanced design
     return new ImageResponse(
       (
         <div
@@ -340,7 +342,6 @@ export async function GET(request: NextRequest) {
               color: "transparent",
               textAlign: "center",
               marginBottom: "24px",
-              textShadow: "0 2px 10px rgba(0, 217, 146, 0.2)",
             }}
           >
             TrendSage
@@ -350,10 +351,9 @@ export async function GET(request: NextRequest) {
               fontSize: "28px",
               color: "#D1D5DB",
               textAlign: "center",
-              textShadow: "0 2px 4px rgba(0, 0, 0, 0.2)",
             }}
           >
-            Web3 KOL Marketplace
+            Join & Earn Rewards
           </p>
         </div>
       ),
