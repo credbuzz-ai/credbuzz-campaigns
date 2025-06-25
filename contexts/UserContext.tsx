@@ -2,31 +2,22 @@
 
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
+import { UserType } from "@/lib/types";
 import { usePrivy } from "@privy-io/react-auth";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-interface User {
-  x_handle: string;
-  evm_wallet: string;
-  solana_wallet: string;
-  referral_code: string;
-  referral_code_used: string;
-  x_follow_claimed: boolean;
-  total_points?: number;
-}
-
 interface UserContextType {
-  user: User | null;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  user: UserType | null;
+  setUser: React.Dispatch<React.SetStateAction<UserType | null>>;
   refreshUser: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserType | null>(null);
   const { ready, authenticated } = usePrivy();
   const { toast } = useToast();
   const router = useRouter();

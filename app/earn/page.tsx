@@ -1,32 +1,9 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { usePrivy } from "@privy-io/react-auth";
@@ -59,7 +36,7 @@ const EarnPage = () => {
   const { login, ready } = usePrivy();
 
   const referralCode = user?.referral_code || "0xtrendsage";
-  const referralUrl = `${window.location.origin}/register?referral_code=${referralCode}`;
+  const referralUrl = `${window.location.origin}/?referral_code=${referralCode}`;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [completedTasks, setCompletedTasks] = useState(user ? 1 : 0);
   const [referralCount, setReferralCount] = useState(
@@ -70,6 +47,7 @@ const EarnPage = () => {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [isCopied, setIsCopied] = useState(false);
 
   // Mock leaderboard data
   const [leaderboardData] = useState<LeaderboardUser[]>([
@@ -118,7 +96,16 @@ const EarnPage = () => {
 
   const claimXFollow = async () => {
     try {
-      const response = await fetch("/api/user/claim-x-follow");
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
+
+      // Make the request with authorization header
+      const response = await fetch("/api/user/claim-x-follow", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -156,7 +143,7 @@ const EarnPage = () => {
         id: 2,
         title: "X Follow",
         description: "Follow @0xtrendsage on X",
-        points: 100,
+        points: 50,
         icon: <Award className="h-5 w-5 text-blue-400" />,
         completed: user?.x_follow_claimed || false,
         link: "https://x.com/0xtrendsage",
@@ -166,7 +153,7 @@ const EarnPage = () => {
         id: 3,
         title: "Refer 5 Friends",
         description: "Get 5 friends to sign up using your referral code",
-        points: 500,
+        points: 100,
         icon: <Award className="h-5 w-5 text-yellow-500" />,
         completed: (user?.total_referrals || 0) >= 5 ? true : false,
       },
@@ -195,9 +182,15 @@ const EarnPage = () => {
 
   const copyReferralCode = () => {
     navigator.clipboard.writeText(referralUrl);
+    setIsCopied(true);
     toast({
       title: "Referral link copied to clipboard!",
     });
+
+    // Reset after 2 seconds
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
   };
 
   const shareOnX = () => {
@@ -224,7 +217,7 @@ const EarnPage = () => {
     const updatedTasks = tasks.map((task) => {
       if (task.id === taskId && !task.completed) {
         toast({
-          title: `Task completed! +${task.points} Buzz Points`,
+          title: `Task completed! +${task.points} SAGE`,
         });
         setCompletedTasks((prev) => prev + 1);
         return { ...task, completed: true };
@@ -246,9 +239,7 @@ const EarnPage = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-100 mb-4">
-            Earn Buzz Points
-          </h1>
+          <h1 className="text-4xl font-bold text-gray-100 mb-4">Earn SAGE</h1>
           <p className="text-xl text-gray-300">
             Complete tasks and earn rewards for your engagement
           </p>
@@ -259,7 +250,7 @@ const EarnPage = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-100">
                 <Award className="h-6 w-6 text-[#00D992]" />
-                Your Buzz Points
+                Your SAGE
               </CardTitle>
               <p className="text-gray-300">
                 Complete tasks and refer friends to earn more points
@@ -300,7 +291,7 @@ const EarnPage = () => {
                 Complete Tasks to Earn
               </CardTitle>
               <p className="text-sm text-gray-400">
-                Finish all tasks to maximize your Buzz Points
+                Finish all tasks to maximize your SAGE
               </p>
             </CardHeader>
             <CardContent className="pt-6">
@@ -318,7 +309,7 @@ const EarnPage = () => {
                         <h3 className="font-medium text-gray-100">
                           {task.title}
                         </h3>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 max-w-[200px]">
                           {task.description}
                         </p>
 
@@ -328,7 +319,7 @@ const EarnPage = () => {
                               <span>
                                 {user?.total_referrals || 0 < 5
                                   ? user?.total_referrals || 0
-                                  : 5}
+                                  : 5}{" "}
                                 of 5 referrals
                               </span>
                               <span>
@@ -351,7 +342,7 @@ const EarnPage = () => {
                         variant="outline"
                         className="bg-gray-800/50 border-gray-600/30 text-gray-300"
                       >
-                        +{task.points} points
+                        +{task.points} SAGE
                       </Badge>
                       <Button
                         onClick={() => {
@@ -399,8 +390,8 @@ const EarnPage = () => {
                 Share Your Referral Link
               </CardTitle>
               <p className="text-sm text-gray-400">
-                You and your friends earn 500 points each when they join using
-                your referral link
+                You and your friends earn 10 points each when they join using
+                your referral link and follows @0xtrendsage on X
               </p>
             </CardHeader>
 
@@ -423,7 +414,15 @@ const EarnPage = () => {
                           className="bg-gray-800/50 hover:bg-gray-700 text-gray-300 border border-gray-600/30"
                           size="sm"
                         >
-                          <Copy className="h-4 w-4 mr-1" /> Copy
+                          {isCopied ? (
+                            <>
+                              <Check className="h-4 w-4" /> Copied!
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-4 w-4 mr-1" /> Copy
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -512,13 +511,13 @@ const EarnPage = () => {
           </Card>
         </div>
 
-        <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30 mb-8">
+        {/* <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30 mb-8">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl text-gray-100">
-              Buzz Points Leaderboard
+              SAGE Leaderboard
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Top users ranked by buzz points
+              Top users ranked by SAGE
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -531,7 +530,7 @@ const EarnPage = () => {
                     </TableHead>
                     <TableHead className="text-gray-400">Name</TableHead>
                     <TableHead className="text-center text-gray-400">
-                      Buzz Points
+                      SAGE
                     </TableHead>
                     <TableHead className="text-center text-gray-400">
                       Cred Score
@@ -637,7 +636,7 @@ const EarnPage = () => {
               </Pagination>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </div>
   );

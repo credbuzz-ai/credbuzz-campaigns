@@ -61,7 +61,7 @@ export default function CollaborateDialog({
   } = usePrivyDatabaseSync();
 
   // Get user data from UserContext
-  const { user, fetchUserData } = useUser();
+  const { user, refreshUser } = useUser();
 
   // Add signup context for creator temp signup
   const { fastSignup } = useSignup();
@@ -446,7 +446,7 @@ export default function CollaborateDialog({
   }, [form]);
 
   useEffect(() => {
-    fetchUserData();
+    refreshUser();
   }, []);
 
   // Handle connect wallet button click

@@ -1,16 +1,44 @@
-import apiClient from "@/lib/api";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+const EXTERNAL_API_BASE =
+  process.env.NEXT_PUBLIC_TRENDSAGE_API_URL ||
+  process.env.NEXT_PUBLIC_CREDBUZZ_API_URL ||
+  "https://api.cred.buzz";
+
+export async function GET(request: NextRequest) {
   try {
-    const { data } = await apiClient.get("/user/claim-x-follow");
+    // Get the authorization header from the incoming request
+    const authHeader = request.headers.get("Authorization");
 
+    if (!authHeader) {
+      return NextResponse.json(
+        { error: "Authorization header is required" },
+        { status: 401 }
+      );
+    }
+
+    const response = await fetch(`${EXTERNAL_API_BASE}/user/claim-x-follow`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: authHeader,
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
     return NextResponse.json(data);
   } catch (error: any) {
     console.error("Error claiming X follow:", error);
     return NextResponse.json(
-      { error: error.response?.data?.message || "Internal server error" },
-      { status: error.response?.status || 500 }
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 }
     );
   }
 }
