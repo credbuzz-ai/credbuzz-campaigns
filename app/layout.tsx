@@ -1,5 +1,6 @@
 import PrivyProvider from "@/components/PrivyProvider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { UserProvider } from "@/contexts/UserContext";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type React from "react";
@@ -77,7 +78,9 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={false}
         >
-          <PrivyProvider>{children}</PrivyProvider>
+          <PrivyProvider>
+            <UserProvider>{children}</UserProvider>
+          </PrivyProvider>
         </ThemeProvider>
       </body>
     </html>
