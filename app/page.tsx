@@ -1,11 +1,14 @@
-"use client";
-
 import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense } from "react";
 
-export default function LandingPage() {
+// Client component to handle search params
+function ReferralHandler() {
+  "use client";
+
+  const { useSearchParams } = require("next/navigation");
+  const { useEffect } = require("react");
+
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -15,8 +18,16 @@ export default function LandingPage() {
     }
   }, [searchParams]);
 
+  return null;
+}
+
+export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gray-900">
+      <Suspense fallback={null}>
+        <ReferralHandler />
+      </Suspense>
+
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
