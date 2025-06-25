@@ -1,25 +1,7 @@
+import ReferralHandler from "@/app/components/ReferralHandler";
 import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
-
-// Client component to handle search params
-function ReferralHandler() {
-  "use client";
-
-  const { useSearchParams } = require("next/navigation");
-  const { useEffect } = require("react");
-
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const referralCode = searchParams.get("referral_code");
-    if (referralCode && typeof window !== "undefined") {
-      localStorage.setItem("referral_code", referralCode);
-    }
-  }, [searchParams]);
-
-  return null;
-}
 
 export default function LandingPage() {
   return (
