@@ -17,6 +17,7 @@ const initialSignupData: UserType = {
   evm_wallet: "",
   solana_wallet: "",
   referral_code_used: "",
+  referral_code: "",
 };
 
 const SignupContext = createContext<SignupContextType | undefined>(undefined);

@@ -131,7 +131,7 @@ export default function Header() {
                         className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 hover:text-[#00D992] transition-colors flex items-center gap-2"
                       >
                         <Briefcase className="w-4 h-4" />
-                        My Campaigns
+                        Profile & Campaigns
                       </Link>
                       <button
                         onClick={() => {
