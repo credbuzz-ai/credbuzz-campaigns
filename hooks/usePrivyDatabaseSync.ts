@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export const usePrivyDatabaseSync = () => {
   const { ready, authenticated, user: privyUser, login, logout } = usePrivy();
-  const { user, fetchUserData } = useUser();
+  const { user, refreshUser } = useUser();
   const { fastSignup } = useSignup();
   const { toast } = useToast();
   const router = useRouter();
@@ -59,7 +59,7 @@ export const usePrivyDatabaseSync = () => {
           if (typeof window !== "undefined") {
             localStorage.setItem("token", response.data.result.token);
           }
-          await fetchUserData();
+          await refreshUser();
           syncSuccessRef.current = true; // Mark as successful
           return;
         }
@@ -67,7 +67,7 @@ export const usePrivyDatabaseSync = () => {
         // New user - handle signup with lowercase handle
         const user_id = await fastSignup(twitterUsername);
         if (user_id) {
-          await fetchUserData();
+          await refreshUser();
           syncSuccessRef.current = true; // Mark as successful
           toast({
             title: "Account created!",
@@ -93,7 +93,7 @@ export const usePrivyDatabaseSync = () => {
     authenticated,
     privyUser?.twitter?.username,
     isProcessing,
-    fetchUserData,
+    refreshUser,
     fastSignup,
     toast,
   ]);
