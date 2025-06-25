@@ -36,7 +36,7 @@ const EarnPage = () => {
   const { login, ready } = usePrivy();
 
   const referralCode = user?.referral_code || "0xtrendsage";
-  const referralUrl = `${window.location.origin}/?referral_code=${referralCode}`;
+  const [referralUrl, setReferralUrl] = useState("");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [completedTasks, setCompletedTasks] = useState(user ? 1 : 0);
   const [referralCount, setReferralCount] = useState(
@@ -179,6 +179,11 @@ const EarnPage = () => {
       setTasks(updatedTasks);
     }
   }, [referralCount, tasks]);
+
+  useEffect(() => {
+    // Set referral URL after component mounts on client side
+    setReferralUrl(`${window.location.origin}/?referral_code=${referralCode}`);
+  }, [referralCode]);
 
   const copyReferralCode = () => {
     navigator.clipboard.writeText(referralUrl);
