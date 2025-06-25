@@ -2,42 +2,47 @@
 
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
-import { UserType } from "@/lib/types";
+import { usePrivy } from "@privy-io/react-auth";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+interface User {
+  x_handle: string;
+  evm_wallet: string;
+  solana_wallet: string;
+  referral_code: string;
+  referral_code_used: string;
+  x_follow_claimed: boolean;
+  total_points?: number;
+}
 
 interface UserContextType {
-  user: UserType | null;
-  loading: boolean;
-  fetchUserData: () => Promise<UserType | null>;
+  user: User | null;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  refreshUser: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [user, setUser] = useState<UserType | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+export function UserProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const { ready, authenticated } = usePrivy();
   const { toast } = useToast();
   const router = useRouter();
 
-  const fetchUserData = async (): Promise<UserType | null> => {
+  const fetchUser = async () => {
     try {
-      setLoading(true);
-      const response = await apiClient.get(`/user/get-user`);
-
-      if (response.status === 200) {
-        const userData = response.data.result;
-        setUser(userData);
+      const response = await apiClient.get("/user/get-user");
+      if (response.status === 200 && response.data.result) {
+        setUser(response.data.result);
         if (typeof window !== "undefined") {
-          localStorage.setItem("referral_code", userData.referral_code_used);
+          localStorage.setItem(
+            "referral_code",
+            response.data.result.referral_code_used
+          );
         }
-        setLoading(false);
-        return userData;
       }
-      return null;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
         if (typeof window !== "undefined") {
@@ -49,26 +54,35 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({
           description: "Please sign up to access your account.",
           duration: 1000,
         });
-        return null;
-      } else {
-        return null;
       }
     }
   };
 
+  const refreshUser = async () => {
+    if (ready && authenticated) {
+      await fetchUser();
+    }
+  };
+
+  useEffect(() => {
+    if (ready && authenticated) {
+      fetchUser();
+    }
+  }, [ready, authenticated]);
+
   const value: UserContextType = {
     user,
-    loading,
-    fetchUserData,
+    setUser,
+    refreshUser,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
-};
+}
 
-export const useUser = (): UserContextType => {
+export function useUser() {
   const context = useContext(UserContext);
   if (context === undefined) {
     throw new Error("useUser must be used within a UserProvider");
   }
   return context;
-};
+}

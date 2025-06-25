@@ -47,10 +47,14 @@ export type UserType = {
   x_handle: string;
   evm_wallet: string;
   solana_wallet: string;
+  referral_code: string;
   referral_code_used: string;
   chart_data?: GraphDataPoint[];
   activity_data?: HeatmapData;
   cred_score?: number;
+  total_referrals?: number;
+  x_follow_claimed?: boolean;
+  total_points?: number;
 };
 
 export interface HeatmapData {
