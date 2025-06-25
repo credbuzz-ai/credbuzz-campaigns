@@ -1,13 +1,19 @@
+import Header from "@/app/components/Header";
 import ReferralHandler from "@/app/components/ReferralHandler";
 import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
-export default function LandingPage() {
+export default function LandingPage({
+  searchParams,
+}: {
+  searchParams: { referral_code?: string };
+}) {
   return (
     <div className="min-h-screen bg-gray-900">
+      <Header />
       <Suspense fallback={null}>
-        <ReferralHandler />
+        <ReferralHandler code={searchParams?.referral_code} />
       </Suspense>
 
       {/* Hero Section */}

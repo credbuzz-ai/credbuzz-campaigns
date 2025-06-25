@@ -1,8 +1,5 @@
-import Header from "@/components/Header";
 import PrivyProvider from "@/components/PrivyProvider";
-import { Toaster } from "@/components/ui/toaster";
-import { SignupProvider } from "@/contexts/CreatorSignupContext";
-import { UserProvider } from "@/contexts/UserContext";
+import { ThemeProvider } from "@/components/ui/use-theme";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import type React from "react";
@@ -12,10 +9,10 @@ const inter = Inter({ subsets: ["latin"] });
 
 // Generate metadata with dynamic OG image URL based on referral code
 export async function generateMetadata({
-  searchParams = {},
+  searchParams,
 }: {
-  searchParams?: { referral_code?: string };
-} = {}): Promise<Metadata> {
+  searchParams: { referral_code?: string };
+}): Promise<Metadata> {
   const domain = process.env.NEXT_PUBLIC_APP_URL || "https://trendsage.xyz";
   const ogImageUrl = searchParams?.referral_code
     ? `${domain}/api/og?referral_code=${searchParams.referral_code}`
@@ -74,21 +71,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <head>
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" href="/logo-green.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/logo-green.svg" />
-      </head>
-      <body className={`${inter.className} bg-gray-900 min-h-screen`}>
-        <PrivyProvider>
-          <UserProvider>
-            <SignupProvider>
-              <Header />
-              <main>{children}</main>
-              <Toaster />
-            </SignupProvider>
-          </UserProvider>
-        </PrivyProvider>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+        >
+          <PrivyProvider>{children}</PrivyProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
