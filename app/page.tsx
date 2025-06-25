@@ -1,7 +1,20 @@
+"use client";
+
 import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LandingPage() {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const referralCode = searchParams.get("referral_code");
+    if (referralCode && typeof window !== "undefined") {
+      localStorage.setItem("referral_code", referralCode);
+    }
+  }, [searchParams]);
+
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Hero Section */}

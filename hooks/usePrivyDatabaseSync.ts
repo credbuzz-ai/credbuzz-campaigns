@@ -69,10 +69,6 @@ export const usePrivyDatabaseSync = () => {
         if (user_id) {
           await refreshUser();
           syncSuccessRef.current = true; // Mark as successful
-          toast({
-            title: "Account created!",
-            description: "Your brand account has been set up successfully",
-          });
           return;
         }
       }
