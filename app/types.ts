@@ -159,6 +159,8 @@ export interface MindshareResponse {
       period: string;
       created_at: string;
       tweet_count: number;
+      current_rank: number;
+      previous_rank: number;
       user_info: {
         name: string;
         handle: string;

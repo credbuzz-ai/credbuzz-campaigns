@@ -12,7 +12,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft, ChevronRight, Send } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Send,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -92,10 +98,31 @@ export default function CampaignLeaderboard({
                 >
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#00D992]/10 text-[#00D992] text-sm font-semibold">
-                        {(currentPage - 1) * pageSize + index + 1}
-                      </div>
                       <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-center">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-[#00D992]/10 text-[#00D992] text-sm font-semibold">
+                            {contributor.current_rank}
+                          </div>
+                          {contributor.current_rank !==
+                            contributor.previous_rank && (
+                            <div className="flex items-center mt-1">
+                              {contributor.current_rank <
+                              contributor.previous_rank ? (
+                                <div className="flex items-center text-green-500 text-xs">
+                                  <TrendingUp className="w-3 h-3 mr-0.5" />
+                                  {contributor.previous_rank -
+                                    contributor.current_rank}
+                                </div>
+                              ) : (
+                                <div className="flex items-center text-red-500 text-xs">
+                                  <TrendingDown className="w-3 h-3 mr-0.5" />
+                                  {contributor.current_rank -
+                                    contributor.previous_rank}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         {contributor.user_info.profile_image_url ? (
                           <Image
                             src={contributor.user_info.profile_image_url}
