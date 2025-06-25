@@ -12,12 +12,12 @@ const inter = Inter({ subsets: ["latin"] });
 
 // Generate metadata with dynamic OG image URL based on referral code
 export async function generateMetadata({
-  searchParams,
+  searchParams = {},
 }: {
-  searchParams: { referral_code?: string };
-}): Promise<Metadata> {
+  searchParams?: { referral_code?: string };
+} = {}): Promise<Metadata> {
   const domain = process.env.NEXT_PUBLIC_APP_URL || "https://trendsage.xyz";
-  const ogImageUrl = searchParams.referral_code
+  const ogImageUrl = searchParams?.referral_code
     ? `${domain}/api/og?referral_code=${searchParams.referral_code}`
     : `${domain}/api/og`;
 
@@ -33,7 +33,7 @@ export async function generateMetadata({
     openGraph: {
       type: "website",
       locale: "en_US",
-      url: searchParams.referral_code
+      url: searchParams?.referral_code
         ? `${domain}?referral_code=${searchParams.referral_code}`
         : domain,
       title: "TrendSage - Web3 KOL Marketplace",
