@@ -1,22 +1,15 @@
-"use client";
-
+import ReferralHandler from "@/app/components/ReferralHandler";
 import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { Suspense } from "react";
 
 export default function LandingPage() {
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const referralCode = searchParams.get("referral_code");
-    if (referralCode && typeof window !== "undefined") {
-      localStorage.setItem("referral_code", referralCode);
-    }
-  }, [searchParams]);
-
   return (
     <div className="min-h-screen bg-gray-900">
+      <Suspense fallback={null}>
+        <ReferralHandler />
+      </Suspense>
+
       {/* Hero Section */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
