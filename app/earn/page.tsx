@@ -2,12 +2,33 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+} from "@/components/ui/pagination";
 import { Progress } from "@/components/ui/progress";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { usePrivy } from "@privy-io/react-auth";
-import { Award, Check, Copy, Share2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { Award, Check, Copy, Share, Share2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 
 interface Task {
@@ -22,13 +43,39 @@ interface Task {
 }
 
 interface LeaderboardUser {
-  id: number;
+  author_handle: string;
   name: string;
-  username: string;
-  buzzPoints: number;
-  credScore: number;
-  avatar?: string;
+  score: number;
+  followers: number;
+  smart_followers: number;
+  avg_views: number;
+  profile_image_url: string;
 }
+
+interface LeaderboardResponse {
+  result: {
+    data: LeaderboardUser[];
+    total: number;
+    start: number;
+    limit: number;
+  };
+  message: string;
+}
+
+const formatNumber = (num: number, maxDecimals: number = 1): string => {
+  const formatDecimal = (value: number) => {
+    const fixed = value.toFixed(maxDecimals);
+    return fixed.replace(/\.?0+$/, ""); // Remove trailing zeros and decimal point if no decimals
+  };
+
+  if (num >= 1000000) {
+    return formatDecimal(num / 1000000) + "M";
+  }
+  if (num >= 1000) {
+    return formatDecimal(num / 1000) + "K";
+  }
+  return formatDecimal(num);
+};
 
 const EarnPage = () => {
   const { user } = useUser();
@@ -46,53 +93,66 @@ const EarnPage = () => {
     (referralCount / 5) * 100
   );
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
+  const itemsPerPage = 20;
   const [isCopied, setIsCopied] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardUser[]>([]);
+  const [totalLeaderboardItems, setTotalLeaderboardItems] = useState(0);
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
+  const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
 
-  // Mock leaderboard data
-  const [leaderboardData] = useState<LeaderboardUser[]>([
-    {
-      id: 1,
-      name: "Elon Musk",
-      username: "@elonmusk",
-      buzzPoints: 15420,
-      credScore: 98,
-    },
-    {
-      id: 2,
-      name: "Naval Ravikant",
-      username: "@naval",
-      buzzPoints: 12835,
-      credScore: 96,
-    },
-    {
-      id: 3,
-      name: "Sam Altman",
-      username: "@sama",
-      buzzPoints: 11750,
-      credScore: 94,
-    },
-    {
-      id: 4,
-      name: "Paul Graham",
-      username: "@paulg",
-      buzzPoints: 10580,
-      credScore: 92,
-    },
-    {
-      id: 5,
-      name: "Trung Phan",
-      username: "@trungphan",
-      buzzPoints: 9870,
-      credScore: 91,
-    },
-  ]);
+  const fetchLeaderboard = async (page: number) => {
+    setIsLeaderboardLoading(true);
+    setLeaderboardError(null);
+    try {
+      const start = (page - 1) * itemsPerPage;
+      const response = await fetch(
+        "https://api.cred.buzz/user/get-score-leaderboard",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            start,
+            limit: itemsPerPage,
+            author_handle: user?.x_handle || "",
+          }),
+        }
+      );
 
-  // Calculate pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = leaderboardData.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(leaderboardData.length / itemsPerPage);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.detail || `HTTP error! status: ${response.status}`
+        );
+      }
+
+      const data: LeaderboardResponse = await response.json();
+      setLeaderboardData(data.result.data);
+      setTotalLeaderboardItems(data.result.total);
+    } catch (error) {
+      console.error("Failed to fetch leaderboard:", error);
+      setLeaderboardError(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch leaderboard data"
+      );
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch leaderboard data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLeaderboardLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeaderboard(currentPage);
+  }, [currentPage, user?.x_handle]);
 
   const claimXFollow = async () => {
     try {
@@ -154,7 +214,7 @@ const EarnPage = () => {
         title: "Refer 5 Friends",
         description: "Get 5 friends to sign up using your referral code",
         points: 100,
-        icon: <Award className="h-5 w-5 text-yellow-500" />,
+        icon: <Share className="h-5 w-5 text-yellow-500" />,
         completed: (user?.total_referrals || 0) >= 5 ? true : false,
       },
     ];
@@ -234,6 +294,9 @@ const EarnPage = () => {
     }
   };
 
+  const totalPages = Math.ceil(totalLeaderboardItems / itemsPerPage);
+  const showPagination = totalLeaderboardItems > itemsPerPage;
+
   return (
     <div className="min-h-screen bg-gray-900/30 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -250,10 +313,10 @@ const EarnPage = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-100">
                 <Award className="h-6 w-6 text-[#00D992]" />
-                Your SAGE
+                Your Stats
               </CardTitle>
               <p className="text-gray-300">
-                Complete tasks and refer friends to earn more points
+                Complete tasks and refer friends to earn more SAGE
               </p>
             </CardHeader>
             <CardContent>
@@ -261,7 +324,7 @@ const EarnPage = () => {
                 <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600/30">
                   <p className="text-sm text-gray-400 mb-1">Total Points</p>
                   <p className="text-3xl font-bold text-gray-100">
-                    {user?.total_points || 0}
+                    {formatNumber(user?.total_points || 0, 2)}
                   </p>
                 </div>
                 <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600/30">
@@ -273,7 +336,7 @@ const EarnPage = () => {
                 <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600/30">
                   <p className="text-sm text-gray-400 mb-1">Referrals</p>
                   <p className="text-3xl font-bold text-gray-100">
-                    {user?.total_referrals || 0}
+                    {formatNumber(user?.total_referrals || 0)}
                   </p>
                 </div>
               </div>
@@ -322,10 +385,7 @@ const EarnPage = () => {
                                   : 5}{" "}
                                 of 5 referrals
                               </span>
-                              <span>
-                                {Math.round(referralProgress)}
-                                %
-                              </span>
+                              <span>{Math.round(referralProgress)}%</span>
                             </div>
                             <Progress
                               value={referralProgress}
@@ -340,7 +400,7 @@ const EarnPage = () => {
                         variant="outline"
                         className="bg-gray-800/50 border-gray-600/30 text-gray-300"
                       >
-                        +{task.points} SAGE
+                        +{formatNumber(task.points, 2)} SAGE
                       </Badge>
                       <Button
                         onClick={() => {
@@ -509,13 +569,13 @@ const EarnPage = () => {
           </Card>
         </div>
 
-        {/* <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30 mb-8">
+        <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30 mb-8">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl text-gray-100">
-              SAGE Leaderboard
+              Buzz Leaderboard
             </CardTitle>
             <CardDescription className="text-gray-400">
-              Top users ranked by SAGE
+              Top users ranked by Buzz points
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -528,113 +588,185 @@ const EarnPage = () => {
                     </TableHead>
                     <TableHead className="text-gray-400">Name</TableHead>
                     <TableHead className="text-center text-gray-400">
-                      SAGE
+                      Buzz Score
                     </TableHead>
                     <TableHead className="text-center text-gray-400">
-                      Cred Score
+                      Smart Followers
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentItems.map((user, index) => (
-                    <TableRow key={user.id} className="border-gray-700/30">
-                      <TableCell className="font-medium text-gray-300">
-                        {indexOfFirstItem + index + 1}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-8 w-8 border border-gray-600/30">
-                            <AvatarImage
-                              src={
-                                user.avatar ||
-                                `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`
-                              }
-                            />
-                            <AvatarFallback className="bg-gray-700/30 text-gray-300">
-                              {user.name.slice(0, 2)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium text-gray-100">
-                              {user.name}
-                            </div>
-                            <div className="text-xs text-gray-400">
-                              {user.username}
-                            </div>
-                          </div>
+                  {isLeaderboardLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8">
+                        <div className="flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-center font-medium text-gray-300">
-                        {user.buzzPoints.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-center text-gray-300">
-                        {user.credScore}
+                    </TableRow>
+                  ) : leaderboardError ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-8 text-red-400"
+                      >
+                        {leaderboardError}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : leaderboardData.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-8 text-gray-400"
+                      >
+                        No data available
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    leaderboardData.map((user, index) => (
+                      <TableRow
+                        key={user.author_handle}
+                        className="border-gray-700/30"
+                      >
+                        <TableCell className="font-medium text-gray-300">
+                          {(currentPage - 1) * itemsPerPage + index + 1}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage
+                                className="rounded-full"
+                                src={
+                                  user.profile_image_url ||
+                                  `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.author_handle}`
+                                }
+                              />
+                              <AvatarFallback className="bg-gray-700/30 text-gray-300">
+                                {user.name?.slice(0, 2) ||
+                                  user.author_handle.slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <div className="font-medium text-gray-100">
+                                {user.name || user.author_handle}
+                              </div>
+                              <div className="text-xs text-gray-400">
+                                @{user.author_handle}
+                              </div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center font-medium text-gray-300">
+                          {formatNumber(user.score, 2)}
+                        </TableCell>
+                        <TableCell className="text-center text-gray-300">
+                          {formatNumber(user.smart_followers)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
 
-            <div className="mt-4">
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                      className={`
-                        ${
-                          currentPage === 1
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
-                        }
-                        text-gray-300 hover:text-gray-100 bg-gray-700/30 border-gray-600/30
-                      `}
-                    />
-                  </PaginationItem>
-
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (page) => (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          isActive={page === currentPage}
-                          onClick={() => setCurrentPage(page)}
+            {showPagination && (
+              <div className="mt-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-400">
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      totalLeaderboardItems
+                    )}{" "}
+                    of {totalLeaderboardItems} entries
+                  </p>
+                  <Pagination>
+                    <PaginationContent>
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setCurrentPage((prev) => Math.max(prev - 1, 1))
+                          }
+                          disabled={currentPage === 1 || isLeaderboardLoading}
                           className={`
                             ${
-                              page === currentPage
-                                ? "bg-[#00D992]/90 text-gray-900"
-                                : "text-gray-300 hover:text-gray-100 bg-gray-700/30 border-gray-600/30"
+                              currentPage === 1
+                                ? "opacity-50"
+                                : "hover:bg-[#00D992]/10 hover:text-white hover:border-[#00D992]"
                             }
+                            text-gray-300 bg-gray-700/30 border-gray-600/30
                           `}
                         >
-                          {page}
-                        </PaginationLink>
+                          Previous
+                        </Button>
                       </PaginationItem>
-                    )
-                  )}
 
-                  <PaginationItem>
-                    <PaginationNext
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
-                      className={`
-                        ${
-                          currentPage === totalPages
-                            ? "pointer-events-none opacity-50"
-                            : "cursor-pointer"
+                      {Array.from(
+                        { length: Math.min(5, totalPages) },
+                        (_, i) => {
+                          let pageNum;
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          return pageNum;
                         }
-                        text-gray-300 hover:text-gray-100 bg-gray-700/30 border-gray-600/30
-                      `}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
-            </div>
+                      ).map((page) => (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            isActive={page === currentPage}
+                            onClick={() => setCurrentPage(page)}
+                            className={`
+                              ${
+                                page === currentPage
+                                  ? "bg-[#00D992]/90 text-gray-900"
+                                  : "text-gray-300 hover:text-gray-100 bg-gray-700/30 border-gray-600/30"
+                              }
+                            `}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+
+                      <PaginationItem>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setCurrentPage((prev) =>
+                              Math.min(prev + 1, totalPages)
+                            )
+                          }
+                          disabled={
+                            currentPage === totalPages || isLeaderboardLoading
+                          }
+                          className={`
+                            ${
+                              currentPage === totalPages
+                                ? "opacity-50"
+                                : "hover:bg-[#00D992]/10 hover:text-white hover:border-[#00D992]"
+                            }
+                            text-gray-300 bg-gray-700/30 border-gray-600/30
+                          `}
+                        >
+                          Next
+                        </Button>
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                </div>
+              </div>
+            )}
           </CardContent>
-        </Card> */}
+        </Card>
       </div>
     </div>
   );
