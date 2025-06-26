@@ -37,20 +37,8 @@ export default function MindshareHistoryChart({
   projectName,
   authorHandle,
 }: MindshareHistoryChartProps) {
-  // Add debug logging
-  React.useEffect(() => {
-    console.log("MindshareHistoryChart props:", {
-      isOpen,
-      data,
-      projectName,
-      authorHandle,
-    });
-  }, [isOpen, data, projectName, authorHandle]);
-
   const chartData = React.useMemo(() => {
-    console.log("Processing chart data:", data);
     if (!data) {
-      console.log("No data available");
       return [];
     }
 
@@ -93,7 +81,7 @@ export default function MindshareHistoryChart({
 
   const chartOptions: ApexCharts.ApexOptions = {
     chart: {
-      type: "bar",
+      type: "line",
       background: "transparent",
       toolbar: {
         show: false,
@@ -101,26 +89,26 @@ export default function MindshareHistoryChart({
       animations: {
         enabled: true,
         dynamicAnimation: {
+          enabled: true,
           speed: 350,
         },
       },
-      stacked: false,
       fontFamily: "Inter, sans-serif",
       height: "100%",
       parentHeightOffset: 0,
     },
+    stroke: {
+      curve: "smooth",
+      width: 2,
+    },
     theme: {
       mode: "dark",
     },
-    plotOptions: {
-      bar: {
-        borderRadius: 4,
-        columnWidth: 15,
-        distributed: false,
-        rangeBarOverlap: true,
-        dataLabels: {
-          position: "top",
-        },
+    markers: {
+      size: 0,
+      hover: {
+        size: 4,
+        sizeOffset: 0,
       },
     },
     dataLabels: {
@@ -132,15 +120,12 @@ export default function MindshareHistoryChart({
       labels: {
         style: {
           colors: "#9CA3AF",
-          fontSize: "12px",
+          fontSize: "11px",
           fontFamily: "Inter, sans-serif",
         },
-        format: "MMM dd HH:mm",
-        rotateAlways: false,
+        format: "HH:mm",
+        datetimeUTC: false,
         hideOverlappingLabels: true,
-        offsetY: 10,
-        trim: false,
-        minHeight: 40,
       },
       axisBorder: {
         show: false,
@@ -154,37 +139,24 @@ export default function MindshareHistoryChart({
         stroke: {
           color: "#374151",
           width: 1,
-          dashArray: 3,
+          dashArray: 0,
         },
       },
       tooltip: {
-        enabled: true,
+        enabled: false,
       },
     },
     yaxis: {
-      title: {
-        text: "Mindshare %",
-        style: {
-          color: "#9CA3AF",
-          fontSize: "13px",
-          fontFamily: "Inter, sans-serif",
-          fontWeight: 500,
-        },
-      },
       labels: {
         style: {
           colors: "#9CA3AF",
-          fontSize: "12px",
+          fontSize: "11px",
           fontFamily: "Inter, sans-serif",
         },
         formatter: (value) => value.toFixed(1) + "%",
       },
       min: 0,
-      max: (maxValue) =>
-        Math.min(
-          Math.ceil(maxValue + maxValue * 0.1),
-          Math.max(4, maxValue * 1.2)
-        ),
+      max: (maxValue) => Math.ceil(maxValue + maxValue * 0.1),
       tickAmount: 4,
       forceNiceScale: true,
       floating: false,
@@ -192,11 +164,11 @@ export default function MindshareHistoryChart({
     grid: {
       show: true,
       borderColor: "#1f2937",
-      strokeDashArray: 3,
+      strokeDashArray: 0,
       position: "back",
       xaxis: {
         lines: {
-          show: true,
+          show: false,
         },
       },
       yaxis: {
@@ -205,100 +177,71 @@ export default function MindshareHistoryChart({
         },
       },
       padding: {
-        top: 20,
-        right: 15,
-        bottom: 20,
-        left: 10,
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
       },
     },
     tooltip: {
       enabled: true,
       shared: false,
-      intersect: true,
+      intersect: false,
       custom: function ({ series, seriesIndex, dataPointIndex }: any) {
         const point = chartData[seriesIndex].data[dataPointIndex];
         return `
-          <div class="p-4 bg-[#111827] border border-gray-800 rounded-lg shadow-xl" style="backdrop-filter: blur(8px);">
-            <div class="mb-3">
-              <div class="flex items-baseline gap-1.5">
-                <span class="font-semibold text-[#10B981] text-xl">${series[
-                  seriesIndex
-                ][dataPointIndex].toFixed(2)}%</span>
-                <span class="text-xs text-gray-400 font-medium">mindshare</span>
-              </div>
-              <div class="text-xs text-gray-500 mt-1">${new Date(
+          <div class="p-2.5 bg-[#111827] border border-gray-800 rounded-lg shadow-xl">
+            <div class="flex items-baseline gap-1.5">
+              <span class="font-medium text-[#10B981] text-base">${series[
+                seriesIndex
+              ][dataPointIndex].toFixed(2)}%</span>
+              <span class="text-xs text-gray-500">${new Date(
                 point.x
-              ).toLocaleString()}</div>
+              ).toLocaleTimeString()}</span>
             </div>
-            <div class="space-y-2.5">
-              <div class="flex justify-between items-center">
-                <div class="text-gray-400 text-xs font-medium">Tweets</div>
-                <div class="font-semibold text-white text-sm">${
-                  point.tweet_count
-                }</div>
+            <div class="mt-2 space-y-1 text-xs">
+              <div class="flex justify-between items-center gap-4">
+                <div class="text-gray-400">Tweets</div>
+                <div class="text-white">${point.tweet_count}</div>
               </div>
-              <div class="flex justify-between items-center">
-                <div class="text-gray-400 text-xs font-medium">Author Buzz</div>
-                <div class="font-semibold text-white text-sm">${point.author_buzz.toFixed(
-                  2
-                )}</div>
+              <div class="flex justify-between items-center gap-4">
+                <div class="text-gray-400">Author Buzz</div>
+                <div class="text-white">${point.author_buzz.toFixed(1)}</div>
               </div>
-              <div class="flex justify-between items-center">
-                <div class="text-gray-400 text-xs font-medium">Project Buzz</div>
-                <div class="font-semibold text-white text-sm">${point.project_buzz.toFixed(
-                  2
-                )}</div>
+              <div class="flex justify-between items-center gap-4">
+                <div class="text-gray-400">Project Buzz</div>
+                <div class="text-white">${point.project_buzz.toFixed(1)}</div>
               </div>
             </div>
           </div>
         `;
       },
     },
+    fill: {
+      type: "gradient",
+      gradient: {
+        shade: "dark",
+        type: "vertical",
+        opacityFrom: 0.2,
+        opacityTo: 0,
+        stops: [0, 100],
+      },
+    },
     legend: {
       show: false,
-      position: "top",
-      horizontalAlign: "right",
-      offsetY: 0,
-      height: 40,
-      labels: {
-        colors: "#9CA3AF",
-        useSeriesColors: true,
-      },
-      markers: {
-        size: 8,
-        strokeWidth: 0,
-        fillColors: ["#10B981"],
-        shape: "circle",
-        offsetX: 0,
-        offsetY: 0,
-      },
-      itemMargin: {
-        horizontal: 16,
-      },
     },
     states: {
       hover: {
         filter: {
-          type: "lighten",
+          type: "none",
         },
       },
       active: {
         filter: {
-          type: "darken",
+          type: "none",
         },
       },
     },
-    responsive: [
-      {
-        breakpoint: 480,
-        options: {
-          legend: {
-            position: "bottom",
-            offsetY: 0,
-          },
-        },
-      },
-    ],
   };
 
   return (
@@ -312,11 +255,11 @@ export default function MindshareHistoryChart({
             Historical mindshare data for @{authorHandle}
           </DialogDescription>
         </DialogHeader>
-        <div className="h-[450px] pb-10">
+        <div className="h-[400px] pb-6">
           <ReactApexChart
             options={chartOptions}
             series={chartData}
-            type="bar"
+            type="area"
             height="100%"
           />
         </div>
