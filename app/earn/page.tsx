@@ -165,7 +165,7 @@ const EarnPage = () => {
   }, [user]);
 
   useEffect(() => {
-    const progress = Math.min((referralCount / 5) * 100, 100);
+    const progress = (referralCount / 5) * 100;
     setReferralProgress(progress);
 
     if (referralCount >= 5) {
@@ -323,9 +323,7 @@ const EarnPage = () => {
                                 of 5 referrals
                               </span>
                               <span>
-                                {Math.round(
-                                  (user?.total_referrals || 0 / 5) * 100
-                                )}
+                                {Math.round(referralProgress)}
                                 %
                               </span>
                             </div>
