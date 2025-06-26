@@ -11,7 +11,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from "../../lib/constants";
 import type { TopTweetsResponse, Tweet } from "../types";
 
@@ -54,13 +54,20 @@ export default function SmartFeed({
   const [sortBy, setSortBy] = useState<SortBy>("view_count_desc");
   const [expandedTweets, setExpandedTweets] = useState<Set<string>>(new Set());
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const LIMIT = 20;
 
-  const fetchTweets = async (attempt = 0) => {
-    setLoading(true);
+  const fetchTweets = async (attempt = 0, loadMore = false) => {
+    if (!loadMore) {
+      setLoading(true);
+    }
     setError(null);
+
     try {
       const response = await fetch(
-        `${API_BASE_URL}/user/get-top-tweets?author_handle=${authorHandle}&interval=${interval}&sort_by=${sortBy}&limit=100`,
+        `${API_BASE_URL}/user/get-top-tweets?author_handle=${authorHandle}&interval=${interval}&sort_by=${sortBy}&limit=${LIMIT}&offset=${offset}`,
         {
           headers: {
             Accept: "application/json",
@@ -84,7 +91,15 @@ export default function SmartFeed({
             sentiment: tweet.sentiment,
             tweet_category: tweet.tweet_category || null,
           }));
-          setTweets(sanitizedTweets);
+
+          if (loadMore) {
+            setTweets((prev) => [...prev, ...sanitizedTweets]);
+          } else {
+            setTweets(sanitizedTweets);
+            setOffset(0);
+          }
+
+          setHasMore(sanitizedTweets.length === LIMIT);
           setRetryCount(0);
         } else {
           throw new Error("Invalid response format");
@@ -101,7 +116,7 @@ export default function SmartFeed({
         setError(`Retrying... (${attempt + 1}/${MAX_RETRIES})`);
 
         setTimeout(() => {
-          fetchTweets(attempt + 1);
+          fetchTweets(attempt + 1, loadMore);
         }, delay);
         return;
       }
@@ -112,6 +127,35 @@ export default function SmartFeed({
       setLoading(false);
     }
   };
+
+  const loadMore = useCallback(() => {
+    if (hasMore && !loading) {
+      setOffset((prev) => prev + LIMIT);
+      fetchTweets(0, true);
+    }
+  }, [hasMore, loading, offset]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [loadMore]);
 
   useEffect(() => {
     fetchTweets();
@@ -305,8 +349,8 @@ export default function SmartFeed({
         </div>
       )}
 
-      {/* Loading state */}
-      {loading && (
+      {/* Loading state for initial load */}
+      {loading && tweets.length === 0 && (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
             <div
@@ -318,6 +362,12 @@ export default function SmartFeed({
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-gray-700 rounded w-3/4"></div>
                   <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+                  <div className="h-3 bg-gray-700 rounded w-1/4"></div>
+                  <div className="flex gap-3 mt-3">
+                    <div className="h-2 bg-gray-700 rounded w-12"></div>
+                    <div className="h-2 bg-gray-700 rounded w-12"></div>
+                    <div className="h-2 bg-gray-700 rounded w-12"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -326,7 +376,7 @@ export default function SmartFeed({
       )}
 
       {/* Tweet list */}
-      <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
+      <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar relative">
         {tweets.map((tweet, index) => {
           const isExpanded = expandedTweets.has(tweet.tweet_id);
           const shouldTruncate = tweet.body.length > 200;
@@ -411,6 +461,21 @@ export default function SmartFeed({
             </div>
           );
         })}
+
+        {/* Intersection Observer Target */}
+        <div ref={observerTarget} className="h-4" aria-hidden="true" />
+
+        {/* Loading indicator at bottom */}
+        {loading && tweets.length > 0 && (
+          <div className="sticky bottom-0 left-0 right-0 py-4 bg-gradient-to-t from-gray-900 to-transparent">
+            <div className="flex items-center justify-center gap-2">
+              <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#00D992] border-t-transparent"></div>
+              <span className="text-sm text-gray-400">
+                Loading more tweets...
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Empty state */}

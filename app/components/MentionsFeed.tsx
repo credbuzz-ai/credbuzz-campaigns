@@ -12,7 +12,7 @@ import {
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { MentionsResponse, PaginationInfo, TweetMentionData } from "../types";
 
 interface MentionsFeedProps {
@@ -54,6 +54,8 @@ export default function MentionsFeed({
     limit: 20,
     has_more: false,
   });
+
+  const observerTarget = useRef<HTMLDivElement>(null);
 
   const fetchTweets = async (attempt = 0, start = 0, append = false) => {
     if (!append) {
@@ -133,15 +135,37 @@ export default function MentionsFeed({
     }
   };
 
-  useEffect(() => {
-    fetchTweets();
-  }, [sortBy, interval, authorHandle]);
-
-  const loadMore = () => {
+  const loadMore = useCallback(() => {
     if (pagination.has_more && !loading) {
       fetchTweets(0, pagination.next_start || 0, true);
     }
-  };
+  }, [pagination.has_more, loading, pagination.next_start]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [loadMore]);
+
+  useEffect(() => {
+    fetchTweets();
+  }, [sortBy, interval, authorHandle]);
 
   const formatNumber = (num: number | null | undefined): string => {
     if (num === null || num === undefined || isNaN(num)) {
@@ -258,7 +282,7 @@ export default function MentionsFeed({
   };
 
   return (
-    <div className="card-trendsage sticky top-8">
+    <div className="card-trendsage sticky top-8 h-full">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <AtSign className="w-5 h-5 text-[#00D992]" />
@@ -317,7 +341,7 @@ export default function MentionsFeed({
         </div>
       )}
 
-      {/* Loading state */}
+      {/* Loading state for initial load */}
       {loading && tweets.length === 0 && (
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
@@ -330,6 +354,12 @@ export default function MentionsFeed({
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-gray-700 rounded w-3/4"></div>
                   <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+                  <div className="h-3 bg-gray-700 rounded w-1/4"></div>
+                  <div className="flex gap-3 mt-3">
+                    <div className="h-2 bg-gray-700 rounded w-12"></div>
+                    <div className="h-2 bg-gray-700 rounded w-12"></div>
+                    <div className="h-2 bg-gray-700 rounded w-12"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -338,7 +368,7 @@ export default function MentionsFeed({
       )}
 
       {/* Tweet list */}
-      <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
+      <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar relative">
         {tweets.map((tweet, index) => {
           const isExpanded = expandedTweets.has(tweet.tweet_id);
           const shouldTruncate = tweet.body.length > 200;
@@ -423,20 +453,22 @@ export default function MentionsFeed({
             </div>
           );
         })}
-      </div>
 
-      {/* Load more button */}
-      {pagination.has_more && (
-        <div className="mt-4 text-center">
-          <button
-            onClick={loadMore}
-            disabled={loading}
-            className="px-4 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Loading..." : "Load More"}
-          </button>
-        </div>
-      )}
+        {/* Intersection Observer Target */}
+        <div ref={observerTarget} className="h-4" aria-hidden="true" />
+
+        {/* Loading indicator at bottom */}
+        {loading && tweets.length > 0 && (
+          <div className="sticky bottom-0 left-0 right-0 py-4 bg-gradient-to-t from-gray-900 to-transparent">
+            <div className="flex items-center justify-center gap-2">
+              <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#00D992] border-t-transparent"></div>
+              <span className="text-sm text-gray-400">
+                Loading more tweets...
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Empty state */}
       {!loading && tweets.length === 0 && (
