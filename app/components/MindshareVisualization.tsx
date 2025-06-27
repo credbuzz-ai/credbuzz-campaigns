@@ -97,6 +97,20 @@ export default function MindshareVisualization({
   });
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
 
+  // Reset loading state when data changes
+  useEffect(() => {
+    if (data) {
+      setIsLoading(false);
+    }
+  }, [data]);
+
+  // Reset loading state when external loading changes
+  useEffect(() => {
+    if (!externalLoading && isLoading) {
+      setIsLoading(false);
+    }
+  }, [externalLoading, isLoading]);
+
   // Validate and clean data
   const validData = React.useMemo<MindshareData[]>(() => {
     return data.filter(
@@ -777,13 +791,6 @@ export default function MindshareVisualization({
     dodecagon.attr("filter", "url(#dodecagon-glow)");
   }, [currentView, voronoiData, router, getColorForMindshare]);
 
-  // Clear internal loading when external loading finishes
-  useEffect(() => {
-    if (!externalLoading && isLoading) {
-      setIsLoading(false);
-    }
-  }, [externalLoading, isLoading]);
-
   // Handle loading states properly
   const hasData = validData.length > 0;
   const isExternalLoading = externalLoading === true;
@@ -806,7 +813,7 @@ export default function MindshareVisualization({
       }
 
       // Fetch data for all periods
-      const periods: Period[] = ["1d"];
+      const periods: Period[] = ["1d", "7d", "30d"];
       const results = await Promise.all(
         periods.map(async (period) => {
           const url = `/api/mindshare/history/${handle}/${authorHandle}?period=${period}`;
