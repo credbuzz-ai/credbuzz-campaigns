@@ -1,22 +1,22 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Coins, TrendingUp, Hash, Calendar, DollarSign } from "lucide-react"
-import * as d3 from "d3"
-import type { TokenOverviewResponse, TokenData } from "../types"
-import { API_BASE_URL } from '../../lib/constants'
+import * as d3 from "d3";
+import { Coins, Hash, TrendingUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { API_BASE_URL } from "../../lib/constants";
+import type { TokenData, TokenOverviewResponse } from "../types";
 
 interface TokenOverviewProps {
-  authorHandle: string
+  authorHandle: string;
 }
 
-type Interval = "1day" | "7day" | "30day"
+type Interval = "1day" | "7day" | "30day";
 
 const intervalOptions = [
   { value: "1day" as Interval, label: "24H" },
   { value: "7day" as Interval, label: "7D" },
   { value: "30day" as Interval, label: "30D" },
-]
+];
 
 const narrativeColors: Record<string, string> = {
   ai: "#3B82F6",
@@ -34,36 +34,40 @@ const narrativeColors: Record<string, string> = {
   socialfi: "#7C3AED",
   metaverse: "#C026D3",
   zkproof: "#64748B",
-}
+};
 
 interface HierarchyNode {
-  name: string
-  children?: HierarchyNode[]
-  value?: number
-  narrative?: string
-  symbol?: string
-  icon?: string | null
-  volume_24hr?: number
-  first_tweet_time?: string
-  total_tweets?: number
+  name: string;
+  children?: HierarchyNode[];
+  value?: number;
+  narrative?: string;
+  symbol?: string;
+  icon?: string | null;
+  volume_24hr?: number;
+  first_tweet_time?: string;
+  total_tweets?: number;
 }
 
 export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
-  const [retryCount, setRetryCount] = useState(0)
-  const MAX_RETRIES = 3
-  const RETRY_DELAY = 1000
-  const [data, setData] = useState<TokenOverviewResponse["result"] | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [interval, setInterval] = useState<Interval>("7day")
-  const [selectedNarrative, setSelectedNarrative] = useState<string | null>(null)
-  const [hoveredToken, setHoveredToken] = useState<string | null>(null)
-  const [showAllLegends, setShowAllLegends] = useState(false)
-  const svgRef = useRef<SVGSVGElement>(null)
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000;
+  const [data, setData] = useState<TokenOverviewResponse["result"] | null>(
+    null
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [interval, setInterval] = useState<Interval>("7day");
+  const [selectedNarrative, setSelectedNarrative] = useState<string | null>(
+    null
+  );
+  const [hoveredToken, setHoveredToken] = useState<string | null>(null);
+  const [showAllLegends, setShowAllLegends] = useState(false);
+  const svgRef = useRef<SVGSVGElement>(null);
 
   const fetchTokenData = async (attempt = 0) => {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
     try {
       const response = await fetch(
         `${API_BASE_URL}/user/author-token-overview?author_handle=${authorHandle}&interval=${interval}`,
@@ -74,36 +78,39 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           },
           cache: "no-store",
           signal: AbortSignal.timeout(5000),
-        },
-      )
+        }
+      );
 
       if (response.ok) {
-        const result = (await response.json()) as TokenOverviewResponse
+        const result = (await response.json()) as TokenOverviewResponse;
         if (result.result) {
-          setData(result.result)
-          setRetryCount(0)
+          setData(result.result);
+          setRetryCount(0);
         } else {
-          throw new Error("Invalid response format")
+          throw new Error("Invalid response format");
         }
       } else {
-        throw new Error(`API Error: ${response.status}`)
+        throw new Error(`API Error: ${response.status}`);
       }
     } catch (error) {
-      console.error(`Failed to fetch token data (attempt ${attempt + 1}):`, error)
+      console.error(
+        `Failed to fetch token data (attempt ${attempt + 1}):`,
+        error
+      );
 
       if (attempt < MAX_RETRIES) {
-        const delay = RETRY_DELAY * Math.pow(2, attempt)
-        setRetryCount(attempt + 1)
-        setError(`Retrying... (${attempt + 1}/${MAX_RETRIES})`)
+        const delay = RETRY_DELAY * Math.pow(2, attempt);
+        setRetryCount(attempt + 1);
+        setError(`Retrying... (${attempt + 1}/${MAX_RETRIES})`);
 
         setTimeout(() => {
-          fetchTokenData(attempt + 1)
-        }, delay)
-        return
+          fetchTokenData(attempt + 1);
+        }, delay);
+        return;
       }
 
-      setError("Failed to fetch token data")
-      setRetryCount(0)
+      setError("Failed to fetch token data");
+      setRetryCount(0);
       // Fallback data for demo
       setData({
         unique_token_count: 14,
@@ -158,30 +165,32 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
             volume_24hr: 286131360,
           },
         ],
-      })
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const prepareHierarchyData = (): HierarchyNode => {
-    if (!data) return { name: "root", children: [] }
+    if (!data) return { name: "root", children: [] };
 
     // Create a map to store narrative nodes
-    const narrativeMap = new Map<string, HierarchyNode>()
-    
+    const narrativeMap = new Map<string, HierarchyNode>();
+
     // Initialize narrative nodes from narrative_breakdown
-    Object.entries(data.narrative_breakdown || {}).forEach(([narrative, count]) => {
-      // If a narrative is selected, only include that narrative
-      if (selectedNarrative && narrative !== selectedNarrative) return
-      
-      narrativeMap.set(narrative, {
-        name: narrative,
-        narrative: narrative,
-        value: 0, // Will be calculated from children
-        children: []
-      })
-    })
+    Object.entries(data.narrative_breakdown || {}).forEach(
+      ([narrative, count]) => {
+        // If a narrative is selected, only include that narrative
+        if (selectedNarrative && narrative !== selectedNarrative) return;
+
+        narrativeMap.set(narrative, {
+          name: narrative,
+          narrative: narrative,
+          value: 0, // Will be calculated from children
+          children: [],
+        });
+      }
+    );
 
     // Add tokens to their respective narratives
     data.tokens?.forEach((token: TokenData) => {
@@ -193,8 +202,8 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
               name: "other",
               narrative: "other",
               value: 0,
-              children: []
-            })
+              children: [],
+            });
           }
           narrativeMap.get("other")!.children!.push({
             name: token.symbol,
@@ -203,91 +212,101 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
             icon: token.icon,
             volume_24hr: token.volume_24hr,
             first_tweet_time: token.first_tweet_time,
-            total_tweets: token.total_tweets
-          })
+            total_tweets: token.total_tweets,
+          });
         }
       } else {
         // Add token to each of its narratives
         token.narratives.forEach((narrative: string) => {
           // Only include tokens that match the selected narrative (if any)
-          if (selectedNarrative && narrative !== selectedNarrative) return
-          
+          if (selectedNarrative && narrative !== selectedNarrative) return;
+
           if (narrativeMap.has(narrative)) {
             narrativeMap.get(narrative)!.children!.push({
               name: token.symbol,
               symbol: token.symbol,
               // When filtering to a specific narrative, show full mention count
               // When showing all narratives, distribute mentions across narratives
-              value: selectedNarrative ? token.total_tweets : Math.ceil(token.total_tweets / token.narratives.length),
+              value: selectedNarrative
+                ? token.total_tweets
+                : Math.ceil(token.total_tweets / token.narratives.length),
               icon: token.icon,
               volume_24hr: token.volume_24hr,
               first_tweet_time: token.first_tweet_time,
-              total_tweets: token.total_tweets
-            })
+              total_tweets: token.total_tweets,
+            });
           }
-        })
+        });
       }
-    })
+    });
 
     // Calculate narrative values from children and filter out empty narratives
     const narratives = Array.from(narrativeMap.values())
-      .filter(narrative => narrative.children!.length > 0)
-      .map(narrative => ({
+      .filter((narrative) => narrative.children!.length > 0)
+      .map((narrative) => ({
         ...narrative,
-        value: narrative.children!.reduce((sum, child) => sum + (child.value || 0), 0)
-      }))
+        value: narrative.children!.reduce(
+          (sum, child) => sum + (child.value || 0),
+          0
+        ),
+      }));
 
     return {
       name: "root",
-      children: narratives
-    }
-  }
+      children: narratives,
+    };
+  };
 
   const renderCircularPacking = () => {
-    if (!data || !svgRef.current) return
+    if (!data || !svgRef.current) return;
 
-    const svg = d3.select(svgRef.current)
-    svg.selectAll("*").remove()
+    const svg = d3.select(svgRef.current);
+    svg.selectAll("*").remove();
 
-    const width = 600
-    const height = 400
-    const margin = 10
+    const width = 600;
+    const height = 400;
+    const margin = 10;
 
-    svg.attr("width", width).attr("height", height)
+    svg.attr("width", width).attr("height", height);
 
-    const hierarchyData = prepareHierarchyData()
-    
+    const hierarchyData = prepareHierarchyData();
+
     // Create hierarchy and calculate layout
-    const root = d3.hierarchy(hierarchyData)
-      .sum(d => d.value || 0)
-      .sort((a, b) => (b.value || 0) - (a.value || 0))
+    const root = d3
+      .hierarchy(hierarchyData)
+      .sum((d) => d.value || 0)
+      .sort((a, b) => (b.value || 0) - (a.value || 0));
 
-    const pack = d3.pack<HierarchyNode>()
+    const pack = d3
+      .pack<HierarchyNode>()
       .size([width - margin, height - margin])
-      .padding(1)
+      .padding(1);
 
-    const packedRoot = pack(root)
+    const packedRoot = pack(root);
 
     // Create main container group with smaller margin
-    const container = svg.append("g")
-      .attr("transform", `translate(${margin/2}, ${margin/2})`)
+    const container = svg
+      .append("g")
+      .attr("transform", `translate(${margin / 2}, ${margin / 2})`);
 
     // Create zoomable group
-    const zoomGroup = container.append("g")
-      .attr("class", "zoom-group")
+    const zoomGroup = container.append("g").attr("class", "zoom-group");
 
     // Create zoom behavior with better scale range for larger bubbles
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.3, 4])
       .on("zoom", (event) => {
-        zoomGroup.attr("transform", event.transform)
-      })
+        zoomGroup.attr("transform", event.transform);
+      });
 
     // Apply zoom behavior to SVG
-    svg.call(zoom)
+    svg.call(zoom);
 
     // Create tooltip
-    const tooltip = d3.select("body").append("div")
+    const tooltip = d3
+      .select("body")
+      .append("div")
       .attr("class", "tooltip")
       .style("position", "absolute")
       .style("visibility", "hidden")
@@ -297,74 +316,86 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
       .style("border-radius", "4px")
       .style("font-size", "12px")
       .style("pointer-events", "none")
-      .style("z-index", "1000")
+      .style("z-index", "1000");
 
     // Draw narrative circles (parent nodes) - now in zoomGroup
-    const narrativeNodes = zoomGroup.selectAll(".narrative")
+    const narrativeNodes = zoomGroup
+      .selectAll(".narrative")
       .data(packedRoot.children || [])
-      .enter().append("g")
+      .enter()
+      .append("g")
       .attr("class", "narrative")
-      .attr("transform", d => `translate(${d.x}, ${d.y})`)
+      .attr("transform", (d) => `translate(${d.x}, ${d.y})`);
 
-    narrativeNodes.append("circle")
-      .attr("r", d => d.r!)
-      .attr("fill", d => {
-        const narrative = d.data.narrative || "other"
-        return narrativeColors[narrative] || "#6B7280"
+    narrativeNodes
+      .append("circle")
+      .attr("r", (d) => d.r!)
+      .attr("fill", (d) => {
+        const narrative = d.data.narrative || "other";
+        return narrativeColors[narrative] || "#6B7280";
       })
       .attr("fill-opacity", 0.8)
-      .attr("stroke", d => {
-        const narrative = d.data.narrative || "other"
-        return narrativeColors[narrative] || "#6B7280"
+      .attr("stroke", (d) => {
+        const narrative = d.data.narrative || "other";
+        return narrativeColors[narrative] || "#6B7280";
       })
       .attr("stroke-width", 2)
       .style("cursor", "pointer")
       .style("transition", "all 0.3s ease")
       .on("click", (event, d) => {
-        const narrative = d.data.narrative || "other"
-        setSelectedNarrative(selectedNarrative === narrative ? null : narrative)
+        const narrative = d.data.narrative || "other";
+        setSelectedNarrative(
+          selectedNarrative === narrative ? null : narrative
+        );
       })
-      .on("mouseover", function(event, d) {
+      .on("mouseover", function (event, d) {
         d3.select(this)
           .transition()
           .duration(200)
           .attr("fill-opacity", 1.0)
           .attr("stroke-width", 3)
-          .style("filter", "drop-shadow(0 4px 8px rgba(0,0,0,0.2))")
-        
+          .style("filter", "drop-shadow(0 4px 8px rgba(0,0,0,0.2))");
+
         // Show narrative name in tooltip
-        const narrative = d.data.narrative || "other"
-        tooltip.style("visibility", "visible")
-          .html(`
+        const narrative = d.data.narrative || "other";
+        tooltip
+          .style("visibility", "visible")
+          .html(
+            `
             <div style="text-align: center;">
               <div style="font-weight: bold; font-size: 14px; margin-bottom: 4px; text-transform: capitalize;">
                 ${narrative.replace("-", " ")}
               </div>
               <div style="font-size: 11px; color: #ccc;">
-                ${d.children?.length || 0} tokens • ${d.value || 0} total mentions
+                ${d.children?.length || 0} tokens • ${
+              d.value || 0
+            } total mentions
               </div>
             </div>
-          `)
-          .style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 10) + "px")
+          `
+          )
+          .style("left", event.pageX + 10 + "px")
+          .style("top", event.pageY - 10 + "px");
       })
-      .on("mousemove", function(event) {
-        tooltip.style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 10) + "px")
+      .on("mousemove", function (event) {
+        tooltip
+          .style("left", event.pageX + 10 + "px")
+          .style("top", event.pageY - 10 + "px");
       })
-      .on("mouseout", function(event, d) {
+      .on("mouseout", function (event, d) {
         d3.select(this)
           .transition()
           .duration(200)
           .attr("fill-opacity", 0.8)
           .attr("stroke-width", 2)
-          .style("filter", "none")
-        
-        tooltip.style("visibility", "hidden")
-      })
+          .style("filter", "none");
+
+        tooltip.style("visibility", "hidden");
+      });
 
     // Add subtle floating animation to narrative circles
-    narrativeNodes.selectAll("circle")
+    narrativeNodes
+      .selectAll("circle")
       .transition()
       .duration(2000 + Math.random() * 1000)
       .ease(d3.easeSinInOut)
@@ -383,47 +414,55 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           .duration(2000 + Math.random() * 1000)
           .ease(d3.easeSinInOut)
           .attr("transform", "translate(0, 2)")
-          .on("end", repeat)
-      })
+          .on("end", repeat);
+      });
 
     // Draw token circles (child nodes) - now in zoomGroup
-    const tokenNodes = zoomGroup.selectAll(".token")
-      .data(packedRoot.descendants().filter(d => d.depth === 2))
-      .enter().append("g")
+    const tokenNodes = zoomGroup
+      .selectAll(".token")
+      .data(packedRoot.descendants().filter((d) => d.depth === 2))
+      .enter()
+      .append("g")
       .attr("class", "token")
-      .attr("transform", d => `translate(${d.x}, ${d.y})`)
+      .attr("transform", (d) => `translate(${d.x}, ${d.y})`);
 
     // Create circle backgrounds
-    tokenNodes.append("circle")
-      .attr("r", d => d.r!)
-      .attr("fill", d => {
-        const narrative = d.parent?.data.narrative || "other"
-        return narrativeColors[narrative] || "#6B7280"
+    tokenNodes
+      .append("circle")
+      .attr("r", (d) => d.r!)
+      .attr("fill", (d) => {
+        const narrative = d.parent?.data.narrative || "other";
+        return narrativeColors[narrative] || "#6B7280";
       })
       .attr("fill-opacity", 0.9)
       .attr("stroke", "white")
       .attr("stroke-width", 2)
       .style("cursor", "pointer")
-      .style("transition", "all 0.2s ease")
+      .style("transition", "all 0.2s ease");
 
     // Add token icons
-    tokenNodes.each(function(d) {
-      const node = d3.select(this)
-      const iconUrl = d.data.icon
+    tokenNodes.each(function (d) {
+      const node = d3.select(this);
+      const iconUrl = d.data.icon;
 
       if (iconUrl && iconUrl.trim() !== "") {
         // Create a clip path for circular image
-        const clipId = `clip-${d.data.symbol}-${Math.random().toString(36).substr(2, 9)}`
-        
-        svg.append("defs").append("clipPath")
+        const clipId = `clip-${d.data.symbol}-${Math.random()
+          .toString(36)
+          .substr(2, 9)}`;
+
+        svg
+          .append("defs")
+          .append("clipPath")
           .attr("id", clipId)
           .append("circle")
           .attr("r", d.r! - 2) // Slightly smaller than the background circle
           .attr("cx", 0)
-          .attr("cy", 0)
+          .attr("cy", 0);
 
         // Add the image
-        node.append("image")
+        node
+          .append("image")
           .attr("href", iconUrl)
           .attr("x", -d.r! + 4)
           .attr("y", -d.r! + 4)
@@ -431,32 +470,37 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           .attr("height", (d.r! - 4) * 2)
           .attr("clip-path", `url(#${clipId})`)
           .style("cursor", "pointer")
-          .on("error", function() {
+          .on("error", function () {
             // If image fails to load, show fallback
-            d3.select(this).remove()
-            showTokenFallback(node, d)
-          })
+            d3.select(this).remove();
+            showTokenFallback(node, d);
+          });
       } else {
         // No icon available, show fallback
-        showTokenFallback(node, d)
+        showTokenFallback(node, d);
       }
-    })
+    });
 
     // Function to show fallback token representation
-    function showTokenFallback(node: any, d: d3.HierarchyCircularNode<HierarchyNode>) {
-      node.append("circle")
+    function showTokenFallback(
+      node: any,
+      d: d3.HierarchyCircularNode<HierarchyNode>
+    ) {
+      node
+        .append("circle")
         .attr("r", d.r! - 4)
         .attr("fill", () => {
-          const narrative = d.parent?.data.narrative || "other"
-          return narrativeColors[narrative] || "#6B7280"
+          const narrative = d.parent?.data.narrative || "other";
+          return narrativeColors[narrative] || "#6B7280";
         })
         .attr("fill-opacity", 0.9)
         .attr("stroke", "white")
         .attr("stroke-width", 2)
-        .style("cursor", "pointer")
+        .style("cursor", "pointer");
 
       // Add token symbol text
-      node.append("text")
+      node
+        .append("text")
         .attr("text-anchor", "middle")
         .attr("dy", "0.35em")
         .attr("font-size", Math.min(d.r! / 2.5, 10))
@@ -465,69 +509,92 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         .style("pointer-events", "none")
         .style("text-shadow", "1px 1px 1px rgba(0,0,0,0.7)")
         .text(() => {
-          const symbol = d.data.symbol || ""
-          return d.r! > 15 ? symbol.toUpperCase() : ""
-        })
+          const symbol = d.data.symbol || "";
+          return d.r! > 15 ? symbol.toUpperCase() : "";
+        });
     }
 
     // Add hover effects to all token nodes
     tokenNodes
-      .on("mouseover", function(event, d) {
-        setHoveredToken(d.data.symbol || null)
-        
+      .on("mouseover", function (event, d) {
+        setHoveredToken(d.data.symbol || null);
+
         // Animate the hovered token
         d3.select(this)
           .transition()
           .duration(150)
           .attr("transform", `translate(${d.x}, ${d.y}) scale(1.2)`)
-          .style("filter", "brightness(1.2) drop-shadow(0 2px 4px rgba(0,0,0,0.3))")
+          .style(
+            "filter",
+            "brightness(1.2) drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+          );
 
         // Find the original token data to get narratives
-        const originalToken = data.tokens?.find(token => token.symbol === d.data.symbol)
-        const narratives = originalToken?.narratives || []
+        const originalToken = data.tokens?.find(
+          (token) => token.symbol === d.data.symbol
+        );
+        const narratives = originalToken?.narratives || [];
 
-        tooltip.style("visibility", "visible")
-          .html(`
+        tooltip.style("visibility", "visible").html(`
             <div><strong>$${(d.data.symbol || "").toUpperCase()}</strong></div>
             <div>Mentions: ${d.data.total_tweets}</div>
-            ${d.data.volume_24hr ? `<div>24h Volume: ${formatNumber(d.data.volume_24hr!)}</div>` : ""}
-            ${d.data.first_tweet_time ? `<div>Since: ${formatDate(d.data.first_tweet_time!)}</div>` : ""}
-            ${narratives.length > 0 ? `
+            ${
+              d.data.volume_24hr
+                ? `<div>24h Volume: ${formatNumber(d.data.volume_24hr!)}</div>`
+                : ""
+            }
+            ${
+              d.data.first_tweet_time
+                ? `<div>Since: ${formatDate(d.data.first_tweet_time!)}</div>`
+                : ""
+            }
+            ${
+              narratives.length > 0
+                ? `
               <div style="margin-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 6px;">
                 <div style="font-size: 10px; color: #ccc; margin-bottom: 4px;">Categories:</div>
                 <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                  ${narratives.map(narrative => `
+                  ${narratives
+                    .map(
+                      (narrative) => `
                     <span style="
-                      background: ${narrativeColors[narrative] || '#6B7280'}; 
+                      background: ${narrativeColors[narrative] || "#6B7280"}; 
                       color: white; 
                       padding: 2px 6px; 
                       border-radius: 8px; 
                       font-size: 9px;
                       text-transform: capitalize;
                     ">${narrative.replace("-", " ")}</span>
-                  `).join('')}
+                  `
+                    )
+                    .join("")}
                 </div>
               </div>
-            ` : ""}
-          `)
+            `
+                : ""
+            }
+          `);
       })
       .on("mousemove", (event) => {
-        tooltip.style("top", (event.pageY - 10) + "px")
-          .style("left", (event.pageX + 10) + "px")
+        tooltip
+          .style("top", event.pageY - 10 + "px")
+          .style("left", event.pageX + 10 + "px");
       })
-      .on("mouseout", function() {
-        setHoveredToken(null)
-        
+      .on("mouseout", function () {
+        setHoveredToken(null);
+
         // Reset the token appearance
         d3.select(this)
           .transition()
           .duration(150)
-          .attr("transform", function(d: any) { return `translate(${d.x}, ${d.y}) scale(1)` })
-          .style("filter", "none")
+          .attr("transform", function (d: any) {
+            return `translate(${d.x}, ${d.y}) scale(1)`;
+          })
+          .style("filter", "none");
 
-        tooltip.style("visibility", "hidden")
+        tooltip.style("visibility", "hidden");
       })
-      .on("click", function(event, d) {
+      .on("click", function (event, d) {
         // Add click animation
         d3.select(this)
           .transition()
@@ -535,8 +602,8 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           .attr("transform", `translate(${d.x}, ${d.y}) scale(0.9)`)
           .transition()
           .duration(100)
-          .attr("transform", `translate(${d.x}, ${d.y}) scale(1)`)
-      })
+          .attr("transform", `translate(${d.x}, ${d.y}) scale(1)`);
+      });
 
     // Add subtle pulsing animation to token circles
     tokenNodes
@@ -544,81 +611,55 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
       .transition()
       .delay((d, i) => i * 50) // Stagger the appearance
       .duration(500)
-      .style("opacity", 1)
+      .style("opacity", 1);
 
     // Cleanup tooltip on unmount
     return () => {
-      tooltip.remove()
-    }
-  }
+      tooltip.remove();
+    };
+  };
 
   useEffect(() => {
-    fetchTokenData()
-  }, [interval, authorHandle])
+    fetchTokenData();
+  }, [interval, authorHandle]);
 
   useEffect(() => {
     if (data && !loading) {
-      const cleanup = renderCircularPacking()
-      return cleanup
+      const cleanup = renderCircularPacking();
+      return cleanup;
     }
-  }, [data, loading, selectedNarrative])
+  }, [data, loading, selectedNarrative]);
 
   const formatNumber = (num: number): string => {
-    if (num >= 1000000000) return `$${(num / 1000000000).toFixed(1)}B`
-    if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`
-    if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`
-    return `$${num.toFixed(0)}`
-  }
+    if (num >= 1000000000) return `$${(num / 1000000000).toFixed(1)}B`;
+    if (num >= 1000000) return `$${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`;
+    return `$${num.toFixed(0)}`;
+  };
 
   const formatDate = (dateString: string): string => {
     try {
-      const date = new Date(dateString)
-      return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
     } catch {
-      return "Unknown"
+      return "Unknown";
     }
-  }
+  };
 
   if (loading) {
-    return (
-      <div className="card-trendsage">
-        <div className="animate-pulse">
-          <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-20 bg-gray-700 rounded"></div>
-            ))}
-          </div>
-          <div className="h-96 bg-gray-700 rounded"></div>
-        </div>
-      </div>
-    )
+    return null;
   }
 
   if (!error && data && Object.keys(data).length === 0) {
-    return null
+    return null;
   }
 
   if (error || !data) {
-    return (
-      <div className="card-trendsage">
-        <div className="text-center">
-          <Coins className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-300 mb-3">{retryCount > 0 ? `${error}` : error || "No token data available"}</p>
-          <button
-            onClick={() => fetchTokenData()}
-            disabled={retryCount > 0}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              retryCount > 0
-                ? "bg-gray-700 text-gray-400 cursor-not-allowed"
-                : "bg-gray-700 hover:bg-gray-600 text-gray-100"
-            }`}
-          >
-            {retryCount > 0 ? "Retrying..." : "Retry"}
-          </button>
-        </div>
-      </div>
-    )
+    return null;
   }
 
   return (
@@ -629,7 +670,9 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           <div className="p-2 bg-[#00D992]/20 rounded-xl">
             <Coins className="w-5 h-5 text-[#00D992]" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-100">Token Overview</h3>
+          <h3 className="text-lg font-semibold text-gray-100">
+            Token Overview
+          </h3>
         </div>
 
         {/* Interval Selector */}
@@ -639,7 +682,9 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
               key={option.value}
               onClick={() => setInterval(option.value)}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-                interval === option.value ? "bg-[#00D992] text-gray-900" : "text-gray-300 hover:text-gray-100"
+                interval === option.value
+                  ? "bg-[#00D992] text-gray-900"
+                  : "text-gray-300 hover:text-gray-100"
               }`}
             >
               {option.label}
@@ -652,38 +697,54 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="text-center p-2 bg-[#00D992]/20 rounded-lg border border-[#00D992]/30">
           <Hash className="w-4 h-4 text-[#00D992] mx-auto mb-1" />
-          <div className="text-lg font-bold text-gray-100">{data.unique_token_count}</div>
+          <div className="text-lg font-bold text-gray-100">
+            {data.unique_token_count}
+          </div>
           <div className="text-xs text-gray-400">Unique Tokens</div>
         </div>
         <div className="text-center p-2 bg-green-500/20 rounded-lg border border-green-500/30">
           <TrendingUp className="w-4 h-4 text-green-400 mx-auto mb-1" />
-          <div className="text-lg font-bold text-gray-100">{data.total_mentions}</div>
+          <div className="text-lg font-bold text-gray-100">
+            {data.total_mentions}
+          </div>
           <div className="text-xs text-gray-400">Total Mentions</div>
         </div>
         <div className="text-center p-2 bg-orange-500/20 rounded-lg border border-orange-500/30">
           <Coins className="w-4 h-4 text-orange-400 mx-auto mb-1" />
           <div className="text-sm font-bold text-gray-100 uppercase">
-            {data.most_mentioned_token ? `$${data.most_mentioned_token.symbol}` : "N/A"}
+            {data.most_mentioned_token
+              ? `$${data.most_mentioned_token.symbol}`
+              : "N/A"}
           </div>
           <div className="text-xs text-gray-400">
-            {data.most_mentioned_token ? `${data.most_mentioned_token.mention_count} mentions` : "-"}
+            {data.most_mentioned_token
+              ? `${data.most_mentioned_token.mention_count} mentions`
+              : "-"}
           </div>
         </div>
       </div>
 
       {/* Circular Packing Visualization */}
       <div className="mb-6">
-        <h4 className="text-md font-semibold text-gray-100 mb-3">Token Narratives Map</h4>
+        <h4 className="text-md font-semibold text-gray-100 mb-3">
+          Token Narratives Map
+        </h4>
         <div className="flex flex-col lg:flex-row gap-6 bg-gray-800 rounded-xl p-4 border border-gray-700">
           {/* Visualization Container */}
           <div className="flex-1 overflow-x-auto">
-            <svg ref={svgRef} className="w-full" style={{ minHeight: "400px" }}></svg>
-      </div>
+            <svg
+              ref={svgRef}
+              className="w-full"
+              style={{ minHeight: "400px" }}
+            ></svg>
+          </div>
 
           {/* Legend on the right side */}
           <div className="lg:w-48 lg:flex-shrink-0">
             <div className="flex items-center justify-between mb-3">
-              <h5 className="text-sm font-semibold text-gray-100">Narrative Legend</h5>
+              <h5 className="text-sm font-semibold text-gray-100">
+                Narrative Legend
+              </h5>
               {selectedNarrative && (
                 <button
                   onClick={() => setSelectedNarrative(null)}
@@ -691,92 +752,112 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
                 >
                   Show All
                 </button>
-                  )}
-                </div>
+              )}
+            </div>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 lg:space-y-1 lg:gap-0">
               {(() => {
                 // Sort narratives by mention count (descending)
                 const sortedNarratives = Object.entries(narrativeColors)
                   .filter(([narrative]) => {
-                    return data?.narrative_breakdown?.[narrative] > 0 || 
-                      (narrative === "other" && data?.tokens?.some(t => t.narratives.length === 0))
+                    return (
+                      data?.narrative_breakdown?.[narrative] > 0 ||
+                      (narrative === "other" &&
+                        data?.tokens?.some((t) => t.narratives.length === 0))
+                    );
                   })
                   .sort(([a], [b]) => {
-                    const countA = data?.narrative_breakdown?.[a] || 0
-                    const countB = data?.narrative_breakdown?.[b] || 0
-                    return countB - countA
-                  })
-                
+                    const countA = data?.narrative_breakdown?.[a] || 0;
+                    const countB = data?.narrative_breakdown?.[b] || 0;
+                    return countB - countA;
+                  });
+
                 // Show only top 6 if not expanded
-                const narrativesToShow = showAllLegends ? sortedNarratives : sortedNarratives.slice(0, 6)
-                
+                const narrativesToShow = showAllLegends
+                  ? sortedNarratives
+                  : sortedNarratives.slice(0, 6);
+
                 return narrativesToShow.map(([narrative, color]) => {
-                  const isSelected = selectedNarrative === narrative
-                  const hasTokens = data?.narrative_breakdown?.[narrative] > 0 || 
-                    (narrative === "other" && data?.tokens?.some(t => t.narratives.length === 0))
-                  
+                  const isSelected = selectedNarrative === narrative;
+                  const hasTokens =
+                    data?.narrative_breakdown?.[narrative] > 0 ||
+                    (narrative === "other" &&
+                      data?.tokens?.some((t) => t.narratives.length === 0));
+
                   return (
-                    <div 
-                        key={narrative}
+                    <div
+                      key={narrative}
                       className={`flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer transition-all duration-200 ${
-                        isSelected 
-                          ? 'bg-gray-700 shadow-sm ring-2 ring-[#00D992]/50' 
-                          : hasTokens 
-                            ? 'hover:bg-gray-700/50' 
-                            : 'opacity-50 cursor-not-allowed'
+                        isSelected
+                          ? "bg-gray-700 shadow-sm ring-2 ring-[#00D992]/50"
+                          : hasTokens
+                          ? "hover:bg-gray-700/50"
+                          : "opacity-50 cursor-not-allowed"
                       }`}
                       onClick={() => {
                         if (hasTokens) {
-                          setSelectedNarrative(isSelected ? null : narrative)
+                          setSelectedNarrative(isSelected ? null : narrative);
                         }
                       }}
                     >
-                      <div 
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0" 
+                      <div
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
                         style={{ backgroundColor: color }}
                       ></div>
-                      <span className={`text-xs capitalize leading-tight ${
-                        isSelected ? 'text-gray-100 font-medium' : 'text-gray-300'
-                      }`}>
+                      <span
+                        className={`text-xs capitalize leading-tight ${
+                          isSelected
+                            ? "text-gray-100 font-medium"
+                            : "text-gray-300"
+                        }`}
+                      >
                         {narrative.replace("-", " ")}
                       </span>
                       {hasTokens && (
                         <span className="text-xs text-gray-400 ml-auto">
                           {data?.narrative_breakdown?.[narrative] || 0}
-                      </span>
-                    )}
-                  </div>
-                  )
-                })
+                        </span>
+                      )}
+                    </div>
+                  );
+                });
               })()}
-              
+
               {/* Show More/Less Button */}
               {(() => {
-                const totalNarratives = Object.entries(narrativeColors)
-                  .filter(([narrative]) => {
-                    return data?.narrative_breakdown?.[narrative] > 0 || 
-                      (narrative === "other" && data?.tokens?.some(t => t.narratives.length === 0))
-                  }).length
-                
+                const totalNarratives = Object.entries(narrativeColors).filter(
+                  ([narrative]) => {
+                    return (
+                      data?.narrative_breakdown?.[narrative] > 0 ||
+                      (narrative === "other" &&
+                        data?.tokens?.some((t) => t.narratives.length === 0))
+                    );
+                  }
+                ).length;
+
                 if (totalNarratives > 6) {
                   return (
                     <button
                       onClick={() => setShowAllLegends(!showAllLegends)}
                       className="flex items-center gap-1 py-1 px-2 text-xs text-[#00D992] hover:text-[#00C484] hover:bg-gray-700/50 rounded-md transition-colors duration-200 mt-1"
                     >
-                      <span>{showAllLegends ? 'Show less...' : `See more... (+${totalNarratives - 6})`}</span>
+                      <span>
+                        {showAllLegends
+                          ? "Show less..."
+                          : `See more... (+${totalNarratives - 6})`}
+                      </span>
                     </button>
-                  )
+                  );
                 }
-                return null
+                return null;
               })()}
             </div>
           </div>
         </div>
         <div className="mt-2 text-xs text-gray-400 text-center">
-          Click on narrative bubbles to highlight • Hover over tokens for details • Bubble size represents mentions
+          Click on narrative bubbles to highlight • Hover over tokens for
+          details • Bubble size represents mentions
         </div>
       </div>
     </div>
-  )
+  );
 }
