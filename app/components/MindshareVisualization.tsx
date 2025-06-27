@@ -396,10 +396,67 @@ export default function MindshareVisualization({
     },
     tooltip: {
       theme: "dark",
-      custom: function () {
+      custom: function ({ seriesIndex, dataPointIndex, w }: any) {
+        if (!w?.config?.series?.[seriesIndex]?.data?.[dataPointIndex]) {
+          return "";
+        }
+        const data = w.config.series[seriesIndex].data[dataPointIndex];
         return `
           <div class="p-4 bg-gray-900/95 border border-[#00D992]/20 rounded-lg shadow-lg backdrop-blur-sm">
-            <div class="text-center text-sm text-gray-400">Click to see the mindshare history</div>
+            <div class="flex items-center gap-3 mb-3">
+              ${
+                data.profile_image_url
+                  ? `<img src="${data.profile_image_url}" class="w-10 h-10 rounded-full bg-gray-800 object-cover" />`
+                  : '<div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-600">👤</div>'
+              }
+              <div>
+                <div class="font-semibold text-white">${
+                  data.twitter_name || ""
+                }</div>
+                <div class="text-sm text-gray-400">@${
+                  data.author_handle || ""
+                }</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Buzz Score</div>
+                <div class="font-medium text-white">${(
+                  data.author_buzz || 0
+                ).toFixed(2)}</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Mindshare</div>
+                <div class="font-medium text-white">${(data.y || 0).toFixed(
+                  2
+                )}%</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Followers</div>
+                <div class="font-medium text-white">${(
+                  data.followers_count || 0
+                ).toLocaleString()}</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Following</div>
+                <div class="font-medium text-white">${(
+                  data.followings_count || 0
+                ).toLocaleString()}</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Smart Followers</div>
+                <div class="font-medium text-white">${(
+                  data.smart_followers_count || 0
+                ).toLocaleString()}</div>
+              </div>
+              <div class="p-2 bg-gray-800/50 rounded-lg">
+                <div class="text-sm text-gray-400">Engagement Score</div>
+                <div class="font-medium text-white">${(
+                  data.engagement_score || 0
+                ).toFixed(2)}</div>
+              </div>
+            </div>
+            <div class="text-center text-xs text-gray-400 mt-2">Click to see the mindshare history</div>
           </div>
         `;
       },
