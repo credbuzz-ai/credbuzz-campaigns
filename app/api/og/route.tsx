@@ -3,11 +3,18 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_TRENDSAGE_API_URL ||
+  process.env.NEXT_PUBLIC_CREDBUZZ_API_URL ||
+  "https://api.cred.buzz";
+
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
+    // Get referral code from URL
+    const { searchParams } = new URL(request.url);
     const referralCode = searchParams.get("referral_code");
 
+    // Create the Open Graph image
     return new ImageResponse(
       (
         <div
@@ -319,6 +326,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Failed to generate OG image:", error);
 
+    // Return a fallback image
     return new ImageResponse(
       (
         <div
