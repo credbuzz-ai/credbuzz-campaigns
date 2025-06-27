@@ -12,15 +12,10 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 // Generate metadata with dynamic OG image URL based on referral code
-export async function generateMetadata({
-  searchParams = {},
-}: {
-  searchParams?: { referral_code?: string };
-} = {}): Promise<Metadata> {
+export async function generateMetadata(): Promise<Metadata> {
+  const headersList = await headers();
   const domain = process.env.NEXT_PUBLIC_APP_URL || "https://trendsage.xyz";
-  const ogImageUrl = searchParams?.referral_code
-    ? `${domain}/api/og?referral_code=${searchParams.referral_code}`
-    : `${domain}/api/og`;
+  const ogImageUrl = headersList.get("x-og-image") || `${domain}/api/og`;
 
   return {
     title: {
@@ -34,9 +29,7 @@ export async function generateMetadata({
     openGraph: {
       type: "website",
       locale: "en_US",
-      url: searchParams?.referral_code
-        ? `${domain}?referral_code=${searchParams.referral_code}`
-        : domain,
+      url: domain,
       title: "TrendSage - Web3 KOL Marketplace",
       description:
         "AI-powered decentralized marketplace connecting brands with authentic web3 Key Opinion Leaders. Build trust, drive engagement, and scale your campaigns with blockchain transparency.",
@@ -73,28 +66,12 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Get the OG image URL from middleware header or fallback to default
-  const headersList = await headers();
-  const ogImageUrl =
-    headersList.get("x-og-image") ||
-    `${process.env.NEXT_PUBLIC_APP_URL}/api/og`;
-
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/logo-green.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/logo-green.svg" />
-        <meta property="og:title" content="TrendSage - Web3 KOL Marketplace" />
-        <meta
-          property="og:description"
-          content="AI-powered decentralized marketplace connecting brands with authentic web3 Key Opinion Leaders."
-        />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={ogImageUrl} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta name="twitter:card" content="summary_large_image" />
       </head>
       <body className={`${inter.className} bg-gray-900 text-white`}>
         <PrivyProvider>
