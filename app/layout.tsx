@@ -5,9 +5,9 @@ import { SignupProvider } from "@/contexts/CreatorSignupContext";
 import { UserProvider } from "@/contexts/UserContext";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { headers } from "next/headers";
 import type React from "react";
 import "./globals.css";
-import { headers } from "next/headers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -74,7 +74,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   // Get the OG image URL from middleware header or fallback to default
-  const ogImageUrl = headers().get('x-og-image') || `${process.env.NEXT_PUBLIC_APP_URL}/api/og`
+  const headersList = await headers();
+  const ogImageUrl =
+    headersList.get("x-og-image") ||
+    `${process.env.NEXT_PUBLIC_APP_URL}/api/og`;
 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
@@ -88,12 +91,22 @@ export default function RootLayout({
           content="AI-powered decentralized marketplace connecting brands with authentic web3 Key Opinion Leaders."
         />
         <meta property="og:type" content="website" />
-        <meta
-          property="og:image"
-          content={ogImageUrl}
-        />
+        <meta property="og:image" content={ogImageUrl} />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
         <meta name="twitter:card" content="summary_large_image" />
       </head>
-      <body className={`
+      <body className={`${inter.className} bg-gray-900 text-white`}>
+        <PrivyProvider>
+          <UserProvider>
+            <SignupProvider>
+              <Header />
+              <main>{children}</main>
+              <Toaster />
+            </SignupProvider>
+          </UserProvider>
+        </PrivyProvider>
+      </body>
+    </html>
+  );
+}
