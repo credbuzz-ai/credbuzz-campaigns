@@ -84,6 +84,43 @@ export async function GET(request: NextRequest) {
               zIndex: 1,
             }}
           >
+            {/* Logo */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "24px",
+                marginBottom: "32px",
+              }}
+            >
+              <svg
+                width="96"
+                height="96"
+                viewBox="0 0 349 348"
+                fill="none"
+                style={{
+                  borderRadius: "20px",
+                }}
+              >
+                <rect width="348" height="348" rx="79" fill="#00D992" />
+                <path
+                  d="M271.333 86V80.5C271.333 69.7 262.333 67 257.833 67H180.833C175.633 67 171.667 71.6054 170.333 73.9082L163.352 86L150.073 109C146.265 115.596 141.728 113 139.419 109L130.181 93C128.941 90.8514 127.203 89.3211 125.333 88.2509C122.331 86.5318 118.991 86 116.833 86H90.3335C80.8335 86 77.3335 95 77.3335 99V164V172.5C77.3335 176 81.0335 183 87.8335 183H107.349H125.333V267.5C125.333 273.5 127.433 281 137.833 281H215.833C222.333 281 233.527 272 225.733 258.5L182.143 183L176.333 172.938C174.349 169.5 174.833 164 180.833 164H259.833C264.333 164 271.333 160.1 271.333 152.5V86Z"
+                  fill="#060F11"
+                />
+              </svg>
+              <span
+                style={{
+                  fontSize: "48px",
+                  background: "linear-gradient(to right, #00D992, #00F5A8)",
+                  backgroundClip: "text",
+                  color: "transparent",
+                  fontWeight: "700",
+                }}
+              >
+                TrendSage
+              </span>
+            </div>
+
             {/* Title */}
             <div
               style={{
@@ -281,38 +318,6 @@ export async function GET(request: NextRequest) {
                     {referralCode}
                   </span>
                 </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: "8px",
-                    zIndex: 1,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "24px",
-                      color: "#F3F4F6",
-                      fontWeight: "500",
-                    }}
-                  >
-                    Join The Top 1% of Web3 KOLs
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "20px",
-                      color: "#00D992",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                    }}
-                  >
-                    <span>⚡️</span>
-                    Limited Time Early Access
-                  </div>
-                </div>
               </div>
             )}
           </div>
@@ -341,6 +346,43 @@ export async function GET(request: NextRequest) {
             padding: "48px",
           }}
         >
+          {/* Logo */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "24px",
+              marginBottom: "32px",
+            }}
+          >
+            <svg
+              width="96"
+              height="96"
+              viewBox="0 0 349 348"
+              fill="none"
+              style={{
+                borderRadius: "20px",
+              }}
+            >
+              <rect width="348" height="348" rx="79" fill="#00D992" />
+              <path
+                d="M271.333 86V80.5C271.333 69.7 262.333 67 257.833 67H180.833C175.633 67 171.667 71.6054 170.333 73.9082L163.352 86L150.073 109C146.265 115.596 141.728 113 139.419 109L130.181 93C128.941 90.8514 127.203 89.3211 125.333 88.2509C122.331 86.5318 118.991 86 116.833 86H90.3335C80.8335 86 77.3335 95 77.3335 99V164V172.5C77.3335 176 81.0335 183 87.8335 183H107.349H125.333V267.5C125.333 273.5 127.433 281 137.833 281H215.833C222.333 281 233.527 272 225.733 258.5L182.143 183L176.333 172.938C174.349 169.5 174.833 164 180.833 164H259.833C264.333 164 271.333 160.1 271.333 152.5V86Z"
+                fill="#060F11"
+              />
+            </svg>
+            <span
+              style={{
+                fontSize: "48px",
+                background: "linear-gradient(to right, #00D992, #00F5A8)",
+                backgroundClip: "text",
+                color: "transparent",
+                fontWeight: "700",
+              }}
+            >
+              TrendSage
+            </span>
+          </div>
+
           <h1
             style={{
               fontSize: "64px",

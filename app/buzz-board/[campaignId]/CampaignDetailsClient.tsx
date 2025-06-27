@@ -205,7 +205,7 @@ export default function CampaignDetailsClient({
   const [visualizationData, setVisualizationData] =
     useState<MindshareResponse | null>(null);
   const [selectedTimePeriod, setSelectedTimePeriod] =
-    useState<TimePeriod>("1d");
+    useState<TimePeriod>("30d");
   const [activityData, setActivityData] = useState<
     UserProfileResponse["result"]["activity_data"] | null
   >(null);
