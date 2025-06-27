@@ -205,7 +205,7 @@ export default function CampaignDetailsClient({
   const [visualizationData, setVisualizationData] =
     useState<MindshareResponse | null>(null);
   const [selectedTimePeriod, setSelectedTimePeriod] =
-    useState<TimePeriod>("30d");
+    useState<TimePeriod>("1d");
   const [activityData, setActivityData] = useState<
     UserProfileResponse["result"]["activity_data"] | null
   >(null);
@@ -248,19 +248,21 @@ export default function CampaignDetailsClient({
         const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
         const offset = (currentPage - 1) * pageSize;
 
+        // Reset states before fetching new data
+        setMindshareData(null);
+        setVisualizationData(null);
+
         // Fetch paginated data for the leaderboard
         const paginatedResponse = await apiClient.get(
           `/mindshare?project_name=${handle}&limit=${pageSize}&offset=${offset}&period=${period}`
         );
         setMindshareData(paginatedResponse.data);
 
-        // Fetch complete data for visualization only when timeframe changes or on initial load
-        if (currentPage === 1) {
-          const visualizationResponse = await apiClient.get(
-            `/mindshare?project_name=${handle}&limit=100&period=${period}`
-          );
-          setVisualizationData(visualizationResponse.data);
-        }
+        // Always fetch visualization data when period changes
+        const visualizationResponse = await apiClient.get(
+          `/mindshare?project_name=${handle}&limit=100&period=${period}`
+        );
+        setVisualizationData(visualizationResponse.data);
       } catch (err) {
         console.error(`Error fetching mindshare for ${period}:`, err);
         setMindshareData(null);
@@ -273,7 +275,7 @@ export default function CampaignDetailsClient({
     if (campaign?.target_x_handle) {
       fetchMindshare(selectedTimePeriod);
     }
-  }, [campaign?.target_x_handle, selectedTimePeriod, currentPage]);
+  }, [campaign?.target_x_handle, selectedTimePeriod, currentPage, pageSize]);
 
   useEffect(() => {
     const fetchActivityData = async () => {
