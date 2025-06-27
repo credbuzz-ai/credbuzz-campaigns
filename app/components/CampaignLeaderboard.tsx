@@ -12,9 +12,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
+import apiClient from "@/lib/api";
 import {
   ChevronLeft,
   ChevronRight,
+  Loader2,
   Send,
   TrendingDown,
   TrendingUp,
@@ -44,13 +47,50 @@ export default function CampaignLeaderboard({
   const router = useRouter();
   const { toast } = useToast();
   const totalPages = Math.ceil(totalResults / pageSize);
+  const { ready, authenticated, user, isProcessing, login } =
+    usePrivyDatabaseSync();
 
-  const handleInvite = (authorHandle: string) => {
-    // TODO: Implement invite functionality
-    console.log(`Inviting ${authorHandle}`);
-    toast({
-      title: "Invite Feature Coming Soon",
-    });
+  const handleInvite = async (authorHandle: string) => {
+    try {
+      if (!ready) {
+        return;
+      }
+
+      if (!authenticated) {
+        login();
+        return;
+      }
+
+      // Check if user exists
+      const response = await apiClient.get(
+        `/user/user-exists?x_handle=${authorHandle}`
+      );
+
+      if (response.data.result === true) {
+        toast({
+          description: "This user is already a member of our platform!",
+          duration: 1000,
+        });
+        return;
+      }
+
+      // If user doesn't exist, proceed with invite
+      const referralCode = user?.referral_code || "";
+      const referralUrl = `https://trendsage.xyz/?referral_code=${referralCode}`;
+      const tweetText = `🚀 Hey @${authorHandle}! Join me on @0xtrendsage - the premier platform for Web3 content creators.\n\nUse my referral url to get 10 SAGE on signup!\n\n${referralUrl}\n\n#Web3 #ContentCreators`;
+      const tweetUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(
+        tweetText
+      )}`;
+      window.open(tweetUrl, "_blank");
+    } catch (error) {
+      console.error("Error checking user existence:", error);
+      toast({
+        title: "Error",
+        description:
+          "There was an error processing your invite. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -175,9 +215,19 @@ export default function CampaignLeaderboard({
                       variant="outline"
                       className="cursor-pointer border border-gray-600 bg-gray-800/50 text-gray-300 hover:bg-[#00D992]/10 hover:text-white hover:border-[#00D992] transition-all"
                       onClick={() => handleInvite(contributor.author_handle)}
+                      disabled={isProcessing}
                     >
-                      <Send className="w-3.5 h-3.5 mr-1" />
-                      Invite
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                          Connecting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-3.5 h-3.5 mr-1" />
+                          Invite
+                        </>
+                      )}
                     </Button>
                   </TableCell>
                 </TableRow>
