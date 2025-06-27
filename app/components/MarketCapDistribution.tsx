@@ -512,90 +512,17 @@ export default function MarketCapDistribution({
 
   // Loading state
   if (loading) {
-    return (
-      <div className="card-trendsage">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#00D992]" />
-            <h3 className="text-lg font-semibold text-gray-100">
-              Market Cap Distribution
-            </h3>
-          </div>
-        </div>
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992] mx-auto mb-3"></div>
-            <p className="text-gray-300 text-sm">Loading market cap data...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Error state
   if (error) {
-    return (
-      <div className="card-trendsage">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#00D992]" />
-            <h3 className="text-lg font-semibold text-gray-100">
-              Market Cap Distribution
-            </h3>
-          </div>
-
-          {/* Keep time period filter visible in error state */}
-          <div className="flex bg-gray-700 rounded-lg p-1">
-            {TIME_PERIODS.map((period) => (
-              <button
-                key={period.value}
-                onClick={() =>
-                  handleTimePeriodChange(
-                    period.value as TimePeriod
-                  )
-                }
-                className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
-                  timePeriod === period.value
-                    ? "bg-[#00D992] text-gray-900"
-                    : "text-gray-300 hover:text-[#00D992] hover:bg-gray-600"
-                }`}
-              >
-                {period.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="text-center py-12">
-          <p className="text-gray-400 text-sm mb-4">
-            {error === "No data found"
-              ? "No market cap data available for this time period"
-              : "Unable to load market cap data at this time"}
-          </p>
-          <button onClick={() => fetchData(timePeriod)} className="btn-primary">
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // No data state
   if (!marketCapData) {
-    return (
-      <div className="card-trendsage">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-[#00D992]" />
-            <h3 className="text-lg font-semibold text-gray-100">
-              Market Cap Distribution
-            </h3>
-          </div>
-        </div>
-        <div className="text-center py-12">
-          <p className="text-gray-400 text-sm">No market cap data available</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -614,11 +541,7 @@ export default function MarketCapDistribution({
           {TIME_PERIODS.map((period) => (
             <button
               key={period.value}
-              onClick={() =>
-                handleTimePeriodChange(
-                  period.value as TimePeriod
-                )
-              }
+              onClick={() => handleTimePeriodChange(period.value as TimePeriod)}
               className={`px-3 py-1 text-sm rounded-md font-medium transition-colors ${
                 timePeriod === period.value
                   ? "bg-[#00D992] text-gray-900"
