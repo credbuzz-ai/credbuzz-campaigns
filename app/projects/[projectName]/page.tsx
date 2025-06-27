@@ -2,7 +2,6 @@
 import FollowersOverview from "@/app/components/FollowersOverview";
 import InfluencerMatchMaking from "@/app/components/InfluencerMatchmaking";
 import MarketCapDistribution from "@/app/components/MarketCapDistribution";
-import MindshareTreemap from "@/app/components/MindshareTreemap";
 import { ActivityChart } from "@/app/components/ProfileCharts";
 import ProjectSearch from "@/app/components/ProjectSearch";
 import SmartFeed from "@/app/components/SmartFeed";
@@ -31,10 +30,7 @@ export default function ProjectPage({
   const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
     null
   );
-  const [treemapData, setTreemapData] = useState<MindshareResponse | null>(
-    null
-  );
-  const [timeframe, setTimeframe] = useState<"30d" | "7d" | "24h">("30d");
+  const [timeframe, setTimeframe] = useState<"30d" | "7d" | "24h">("24h");
   const [activityData, setActivityData] = useState<
     UserProfileResponse["result"]["activity_data"] | null
   >(null);
@@ -92,22 +88,16 @@ export default function ProjectPage({
       setLoading(true);
       const period = timeframe === "24h" ? "1d" : timeframe;
       const offset = (currentPage - 1) * pageSize;
+      const handle = projectName.toLowerCase();
 
       // Fetch paginated data for the table
       const paginatedResponse = await apiClient.get(
-        `/mindshare?project_name=${projectName}&limit=${pageSize}&offset=${offset}&period=${period}`
+        `/mindshare?project_name=${handle}&limit=${pageSize}&offset=${offset}&period=${period}`
       );
       setMindshareData(paginatedResponse.data);
-
-      // Fetch complete data for the treemap only when timeframe changes or on initial load
-      if (currentPage === 1) {
-        const treemapResponse = await apiClient.get(
-          `/mindshare?project_name=${projectName}&limit=100&period=${period}`
-        );
-        setTreemapData(treemapResponse.data);
-      }
     } catch (err) {
       console.error("Error fetching mindshare:", err);
+      setMindshareData(null);
     } finally {
       setLoading(false);
     }
@@ -185,7 +175,7 @@ export default function ProjectPage({
               </div>
             )}
 
-            {/* Mindshare Treemap */}
+            {/* Mindshare Visualization */}
             {mindshareData &&
               mindshareData.result.mindshare_data.length > 0 && (
                 <div className="mt-8">
@@ -199,7 +189,7 @@ export default function ProjectPage({
                           key={period}
                           onClick={() => {
                             setTimeframe(period as "30d" | "7d" | "24h");
-                            setCurrentPage(1); // Reset to first page when changing timeframe
+                            setCurrentPage(1);
                           }}
                           className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
                             timeframe === period
@@ -212,10 +202,6 @@ export default function ProjectPage({
                       ))}
                     </div>
                   </div>
-                  <MindshareTreemap
-                    data={treemapData?.result?.mindshare_data || []}
-                    projectName={params.projectName}
-                  />
                   {mindshareData.result.total_results > pageSize && (
                     <div className="flex items-center justify-between mt-4 px-2">
                       <div className="text-sm text-gray-400">

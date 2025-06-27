@@ -7,6 +7,53 @@ import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 import MindshareHistoryChart from "./MindshareHistoryChart";
 
+interface UserInfo {
+  name: string;
+  handle: string;
+  profile_image_url: string | null;
+  followers_count: number;
+  followings_count: number;
+  smart_followers_count: number;
+  engagement_score: number;
+}
+
+interface MindshareData {
+  author_handle: string;
+  author_buzz: number;
+  mindshare_percent: number;
+  user_info: UserInfo;
+  profile_image_url?: string;
+  y?: number;
+  twitter_name?: string;
+  followers_count?: number;
+  followings_count?: number;
+  smart_followers_count?: number;
+  engagement_score?: number;
+}
+
+interface Site {
+  x: number;
+  y: number;
+  data: MindshareData;
+  value: number;
+}
+
+type Period = "1d" | "7d" | "30d";
+type ViewType = "treemap" | "voronoi";
+type HistoryDataType = {
+  [key in Period]: any[];
+};
+
+interface MindshareVisualizationProps {
+  data: MindshareData[];
+  selectedTimePeriod?: string;
+  onTimePeriodChange?: (period: string) => void;
+  loading?: boolean;
+  setLoading?: (loading: boolean) => void;
+  projectName: string;
+  projectHandle: string;
+}
+
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
   loading: () => (
@@ -27,36 +74,6 @@ const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ),
 });
 
-interface MindshareData {
-  author_handle: string;
-  author_buzz: number;
-  mindshare_percent: number;
-  user_info: {
-    name: string;
-    handle: string;
-    profile_image_url: string | null;
-    followers_count: number;
-    followings_count: number;
-    smart_followers_count: number;
-    engagement_score: number;
-  };
-}
-
-interface MindshareVisualizationProps {
-  data: MindshareData[];
-  selectedTimePeriod?: string;
-  onTimePeriodChange?: (period: string) => void;
-  loading?: boolean;
-  projectName: string;
-  projectHandle: string;
-}
-
-type ViewType = "treemap" | "voronoi";
-type Period = "1d" | "7d" | "30d";
-type HistoryDataType = {
-  [key in Period]: any[];
-};
-
 export default function MindshareVisualization({
   data,
   selectedTimePeriod,
@@ -64,12 +81,13 @@ export default function MindshareVisualization({
   loading: externalLoading,
   projectName,
   projectHandle,
+  setLoading,
 }: MindshareVisualizationProps) {
   const router = useRouter();
   const svgRef = useRef<SVGSVGElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentView, setCurrentView] = useState<ViewType>("treemap");
   const [selectedAuthor, setSelectedAuthor] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<HistoryDataType>({
@@ -77,13 +95,15 @@ export default function MindshareVisualization({
     "7d": [],
     "30d": [],
   });
-  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
 
   // Validate and clean data
-  const validData = React.useMemo(() => {
+  const validData = React.useMemo<MindshareData[]>(() => {
     return data.filter(
-      (item) =>
-        item &&
+      (item: any): item is MindshareData =>
+        Boolean(item) &&
+        typeof item === "object" &&
+        "user_info" in item &&
         item.user_info &&
         item.user_info.name &&
         typeof item.mindshare_percent === "number" &&
@@ -92,30 +112,33 @@ export default function MindshareVisualization({
   }, [data]);
 
   // Use all data for voronoi view
-  const voronoiData = React.useMemo(() => {
+  const voronoiData = React.useMemo<MindshareData[]>(() => {
     return validData.sort((a, b) => b.mindshare_percent - a.mindshare_percent);
   }, [validData]);
 
   // Color scale for voronoi - matching treemap color scheme exactly
-  const getColorForMindshare = (mindshare: number) => {
-    if (mindshare >= 1.8) return "#dc2626"; // 1.8%+ Mindshare
-    if (mindshare >= 1.6) return "#ef4444"; // 1.6-1.8% Mindshare
-    if (mindshare >= 1.4) return "#f43f5e"; // 1.4-1.6% Mindshare
-    if (mindshare >= 1.2) return "#ec4899"; // 1.2-1.4% Mindshare
-    if (mindshare >= 1.0) return "#d946ef"; // 1.0-1.2% Mindshare
-    if (mindshare >= 0.8) return "#a855f7"; // 0.8-1.0% Mindshare
-    if (mindshare >= 0.6) return "#8b5cf6"; // 0.6-0.8% Mindshare
-    if (mindshare >= 0.4) return "#6366f1"; // 0.4-0.6% Mindshare
-    if (mindshare >= 0.2) return "#3b82f6"; // 0.2-0.4% Mindshare
-    return "#0ea5e9"; // 0-0.2% Mindshare
-  };
+  const getColorForMindshare = React.useCallback(
+    (mindshare: number): string => {
+      if (mindshare >= 1.8) return "#dc2626"; // 1.8%+ Mindshare
+      if (mindshare >= 1.6) return "#ef4444"; // 1.6-1.8% Mindshare
+      if (mindshare >= 1.4) return "#f43f5e"; // 1.4-1.6% Mindshare
+      if (mindshare >= 1.2) return "#ec4899"; // 1.2-1.4% Mindshare
+      if (mindshare >= 1.0) return "#d946ef"; // 1.0-1.2% Mindshare
+      if (mindshare >= 0.8) return "#a855f7"; // 0.8-1.0% Mindshare
+      if (mindshare >= 0.6) return "#8b5cf6"; // 0.6-0.8% Mindshare
+      if (mindshare >= 0.4) return "#6366f1"; // 0.4-0.6% Mindshare
+      if (mindshare >= 0.2) return "#3b82f6"; // 0.2-0.4% Mindshare
+      return "#0ea5e9"; // 0-0.2% Mindshare
+    },
+    []
+  );
 
   // Treemap data
   const chartData = React.useMemo(() => {
     return [
       {
         data: validData.map((item) => ({
-          x: item.user_info.name, // Simplified x value since we're not showing it
+          x: item.user_info.name,
           y: Number(item.mindshare_percent.toFixed(4)),
           author_handle: item.author_handle || "",
           twitter_name: item.user_info.name || "",
@@ -131,132 +154,204 @@ export default function MindshareVisualization({
   }, [validData]);
 
   // Treemap options
-  const chartOptions: ApexCharts.ApexOptions = {
+  const chartOptions = {
     chart: {
-      type: "treemap",
+      type: "treemap" as const,
       background: "transparent",
       toolbar: {
         show: false,
       },
       animations: {
-        enabled: true,
-        speed: 800,
-        animateGradually: {
-          enabled: true,
-          delay: 150,
-        },
-        dynamicAnimation: {
-          enabled: true,
-          speed: 350,
-        },
+        enabled: false,
       },
       events: {
         mounted: function (chart: any) {
           setIsLoading(false);
 
-          // Add profile images after chart is mounted
-          const series = chart.w.config.series[0].data;
-
-          setTimeout(() => {
-            // First make all cells semi-transparent and remove borders
+          const renderCells = () => {
             const allCells = chart.el.querySelectorAll(
               ".apexcharts-treemap-rect"
             );
-            allCells.forEach((cell: SVGElement) => {
-              cell.style.fillOpacity = "0.20";
-              cell.setAttribute("stroke", "none");
-              cell.setAttribute("stroke-width", "0");
-            });
+            const series = chart.el.querySelector(".apexcharts-treemap-series");
 
-            // Also remove any grid lines that might be present
-            const gridLines = chart.el.querySelectorAll(
-              ".apexcharts-grid line"
-            );
-            gridLines.forEach((line: SVGElement) => {
-              line.style.display = "none";
-            });
+            if (!series || allCells.length === 0) return;
 
-            series.forEach((dataPoint: any, index: number) => {
-              if (!dataPoint.profile_image_url) {
-                return;
+            // Clear existing labels
+            chart.el
+              .querySelectorAll(".custom-cell-content")
+              .forEach((el: Element) => el.remove());
+
+            allCells.forEach((cell: Element, index: number) => {
+              const dataPoint = chartData[0].data[index];
+              if (!dataPoint) return;
+
+              const rect = cell as SVGGraphicsElement;
+              const bbox = rect.getBBox();
+
+              // Check if cell is small
+              const isSmallCell = bbox.width < 65 || bbox.height < 65;
+
+              const group = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "g"
+              );
+              group.setAttribute("class", "custom-cell-content");
+              group.setAttribute("style", "pointer-events: none;");
+
+              // Create clip path for the image and overlay
+              const clipPathId = `clip-${index}`;
+              const clipPath = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "clipPath"
+              );
+              clipPath.setAttribute("id", clipPathId);
+              const clipRect = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "rect"
+              );
+              clipRect.setAttribute("x", String(bbox.x));
+              clipRect.setAttribute("y", String(bbox.y));
+              clipRect.setAttribute("width", String(bbox.width));
+              clipRect.setAttribute("height", String(bbox.height));
+              clipPath.appendChild(clipRect);
+              group.appendChild(clipPath);
+
+              // Add profile image
+              const image = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "image"
+              );
+              image.setAttribute("x", String(bbox.x));
+              image.setAttribute("y", String(bbox.y));
+              image.setAttribute("width", String(bbox.width));
+              image.setAttribute("height", String(bbox.height));
+              image.setAttribute("clip-path", `url(#${clipPathId})`);
+              image.setAttribute(
+                "href",
+                dataPoint.profile_image_url || "/placeholder-user.jpg"
+              );
+              image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+              image.setAttribute(
+                "style",
+                "pointer-events: none; cursor: pointer;"
+              );
+
+              // Add semi-transparent overlay
+              const overlay = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "rect"
+              );
+              overlay.setAttribute("x", String(bbox.x));
+              overlay.setAttribute("y", String(bbox.y));
+              overlay.setAttribute("width", String(bbox.width));
+              overlay.setAttribute("height", String(bbox.height));
+              overlay.setAttribute("clip-path", `url(#${clipPathId})`);
+              overlay.setAttribute("fill", "rgba(0, 0, 0, 0.3)");
+              overlay.setAttribute("style", "pointer-events: none;");
+
+              // Add text elements
+              const textGroup = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "g"
+              );
+              textGroup.setAttribute("style", "pointer-events: none;");
+
+              if (isSmallCell) {
+                // For small cells, only show percentage in top left
+                const mindshareText = document.createElementNS(
+                  "http://www.w3.org/2000/svg",
+                  "text"
+                );
+                mindshareText.setAttribute("x", String(bbox.x + 5));
+                mindshareText.setAttribute("y", String(bbox.y + 15));
+                mindshareText.setAttribute("text-anchor", "start");
+                mindshareText.setAttribute("fill", "#00D992");
+                mindshareText.setAttribute(
+                  "style",
+                  `font-size: ${Math.min(
+                    11,
+                    bbox.width / 6
+                  )}px; font-weight: bold; pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);`
+                );
+                mindshareText.textContent = `${dataPoint.y.toFixed(2)}%`;
+                textGroup.appendChild(mindshareText);
+              } else {
+                // Background for percentage in top left
+                const percentBg = document.createElementNS(
+                  "http://www.w3.org/2000/svg",
+                  "rect"
+                );
+                percentBg.setAttribute("x", String(bbox.x + 5));
+                percentBg.setAttribute("y", String(bbox.y + 5));
+                percentBg.setAttribute("width", "60");
+                percentBg.setAttribute("height", "22");
+                percentBg.setAttribute("rx", "4");
+                percentBg.setAttribute("fill", "rgba(0, 0, 0, 0.6)");
+
+                // Mindshare percentage text
+                const mindshareText = document.createElementNS(
+                  "http://www.w3.org/2000/svg",
+                  "text"
+                );
+                mindshareText.setAttribute("x", String(bbox.x + 8));
+                mindshareText.setAttribute("y", String(bbox.y + 21));
+                mindshareText.setAttribute("text-anchor", "start");
+                mindshareText.setAttribute("fill", "#00D992");
+                mindshareText.setAttribute(
+                  "style",
+                  "font-size: 15px; font-weight: bold; pointer-events: none;"
+                );
+                mindshareText.textContent = `${dataPoint.y.toFixed(2)}%`;
+
+                // Author handle text
+                const handleText = document.createElementNS(
+                  "http://www.w3.org/2000/svg",
+                  "text"
+                );
+                handleText.setAttribute("x", String(bbox.x + 8));
+                handleText.setAttribute("y", String(bbox.y + 42));
+                handleText.setAttribute("text-anchor", "start");
+                handleText.setAttribute("fill", "white");
+                handleText.setAttribute(
+                  "style",
+                  "font-size: 12px; pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);"
+                );
+                handleText.textContent = dataPoint.author_handle;
+
+                textGroup.appendChild(percentBg);
+                textGroup.appendChild(mindshareText);
+                textGroup.appendChild(handleText);
               }
 
-              const cell = allCells[index];
-              if (!cell) return;
+              // Append elements in the correct order
+              group.appendChild(image); // Image first
+              group.appendChild(overlay); // Overlay on top of image
+              group.appendChild(textGroup); // Text on top of overlay
+              series.appendChild(group);
 
-              const bbox = cell.getBBox();
-
-              const svgNS = "http://www.w3.org/2000/svg";
-
-              // Create a foreignObject that matches cell dimensions exactly
-              const foreignObject = document.createElementNS(
-                svgNS,
-                "foreignObject"
-              );
-              foreignObject.setAttribute("x", String(bbox.x));
-              foreignObject.setAttribute("y", String(bbox.y));
-              foreignObject.setAttribute("width", String(bbox.width));
-              foreignObject.setAttribute("height", String(bbox.height));
-
-              // Create an HTML div that fills the entire space
-              const div = document.createElement("div");
-              div.style.width = "100%";
-              div.style.height = "100%";
-              div.style.position = "relative"; // For absolute positioning of text overlay
-
-              const img = document.createElement("img");
-              img.src = dataPoint.profile_image_url;
-              img.style.width = "100%";
-              img.style.height = "100%";
-              img.style.objectFit = "cover";
-
-              // Create text overlay container
-              const textOverlay = document.createElement("div");
-              textOverlay.style.position = "absolute";
-              textOverlay.style.top = "0";
-              textOverlay.style.left = "0";
-              textOverlay.style.right = "0";
-              textOverlay.style.padding = "8px";
-              textOverlay.style.background =
-                "linear-gradient(rgba(0,0,0,0.7), transparent)";
-              textOverlay.style.color = "white";
-              textOverlay.style.fontSize = bbox.width < 100 ? "10px" : "12px";
-              textOverlay.style.fontWeight = "500";
-              textOverlay.style.lineHeight = "1.2";
-              textOverlay.style.textShadow = "0 1px 2px rgba(0,0,0,0.5)";
-
-              const handle = document.createElement("div");
-              handle.textContent = `@${dataPoint.author_handle}`;
-              handle.style.overflow = "hidden";
-              handle.style.textOverflow = "ellipsis";
-              handle.style.whiteSpace = "nowrap";
-
-              const mindshare = document.createElement("div");
-              mindshare.textContent = `${dataPoint.y.toFixed(1)}%`;
-              mindshare.style.opacity = "0.9";
-              mindshare.style.fontSize = bbox.width < 100 ? "9px" : "11px";
-
-              textOverlay.appendChild(handle);
-              textOverlay.appendChild(mindshare);
-
-              div.appendChild(img);
-              div.appendChild(textOverlay);
-              foreignObject.appendChild(div);
-
-              const series = chart.el.querySelector(
-                ".apexcharts-treemap-series"
-              );
-              if (series) {
-                // Insert the image before the first child to place it behind the cells
-                series.insertBefore(foreignObject, series.firstChild);
-              }
+              // Add click handler to the rect element
+              cell.addEventListener("click", async () => {
+                if (dataPoint?.author_handle) {
+                  try {
+                    setSelectedAuthor(dataPoint.author_handle);
+                    await fetchMindshareHistory(dataPoint.author_handle);
+                  } catch (error) {
+                    console.error("Error handling cell click:", error);
+                  }
+                }
+              });
             });
-          }, 500);
+          };
+
+          // Initial render
+          renderCells();
+
+          // Re-render on resize or updates
+          chart.addEventListener("updated", renderCells);
         },
         click: function (event: any, chartContext: any, config: any) {
-          if (config.dataPointIndex >= 0) {
-            const dataPoint =
-              chartContext.w.config.series[0].data[config.dataPointIndex];
+          if (config.dataPointIndex !== -1) {
+            const dataPoint = chartData[0].data[config.dataPointIndex];
             if (dataPoint?.author_handle) {
               setSelectedAuthor(dataPoint.author_handle);
               fetchMindshareHistory(dataPoint.author_handle);
@@ -266,157 +361,45 @@ export default function MindshareVisualization({
       },
     },
     theme: {
-      mode: "dark",
+      mode: "dark" as const,
       palette: "palette1",
-    },
-    title: {
-      text: undefined,
     },
     plotOptions: {
       treemap: {
-        enableShades: true,
-        shadeIntensity: 0.2,
+        enableShades: false,
         distributed: true,
-        colorScale: {
-          ranges: [
-            {
-              from: 0,
-              to: 0.2,
-              color: "#0ea5e9",
-              foreColor: "#f8fafc",
-              name: "0-0.2% Mindshare",
-            },
-            {
-              from: 0.2,
-              to: 0.4,
-              color: "#3b82f6",
-              foreColor: "#f8fafc",
-              name: "0.2-0.4% Mindshare",
-            },
-            {
-              from: 0.4,
-              to: 0.6,
-              color: "#6366f1",
-              foreColor: "#f8fafc",
-              name: "0.4-0.6% Mindshare",
-            },
-            {
-              from: 0.6,
-              to: 0.8,
-              color: "#8b5cf6",
-              foreColor: "#f8fafc",
-              name: "0.6-0.8% Mindshare",
-            },
-            {
-              from: 0.8,
-              to: 1.0,
-              color: "#a855f7",
-              foreColor: "#f8fafc",
-              name: "0.8-1.0% Mindshare",
-            },
-            {
-              from: 1.0,
-              to: 1.2,
-              color: "#d946ef",
-              foreColor: "#f8fafc",
-              name: "1.0-1.2% Mindshare",
-            },
-            {
-              from: 1.2,
-              to: 1.4,
-              color: "#ec4899",
-              foreColor: "#f8fafc",
-              name: "1.2-1.4% Mindshare",
-            },
-            {
-              from: 1.4,
-              to: 1.6,
-              color: "#f43f5e",
-              foreColor: "#f8fafc",
-              name: "1.4-1.6% Mindshare",
-            },
-            {
-              from: 1.6,
-              to: 1.8,
-              color: "#ef4444",
-              foreColor: "#f8fafc",
-              name: "1.6-1.8% Mindshare",
-            },
-            {
-              from: 1.8,
-              to: 10,
-              color: "#dc2626",
-              foreColor: "#f8fafc",
-              name: "1.8%+ Mindshare",
-            },
-          ],
+        enabled: true,
+      },
+    },
+    states: {
+      hover: {
+        filter: {
+          type: "lighten",
+          value: 0.1,
+        },
+      },
+      active: {
+        allowMultipleDataPointsSelection: false,
+        filter: {
+          type: "none",
         },
       },
     },
     dataLabels: {
       enabled: true,
       style: {
-        fontSize: "12px",
-        fontFamily: "Arial, Helvetica, sans-serif",
+        fontSize: "0px",
+        fontFamily: "inherit",
         fontWeight: "normal",
-      },
-      formatter: function (text: string, op: any) {
-        const data = op.w.config.series[0].data[op.dataPointIndex];
-        const profileImage = data.profile_image_url;
-
-        // Return empty string to not show any text
-        // We'll handle the image rendering in a custom way
-        return "";
+        colors: ["transparent"],
       },
     },
     tooltip: {
       theme: "dark",
-      custom: function ({ seriesIndex, dataPointIndex, w }: any) {
-        const data = w.config.series[seriesIndex].data[dataPointIndex];
+      custom: function () {
         return `
           <div class="p-4 bg-gray-900/95 border border-[#00D992]/20 rounded-lg shadow-lg backdrop-blur-sm">
-            <div class="flex items-center gap-3 mb-3">
-              ${
-                data.profile_image_url
-                  ? `<img src="${data.profile_image_url}" class="w-10 h-10 rounded-full bg-gray-800 object-cover" />`
-                  : '<div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-600">👤</div>'
-              }
-              <div>
-                <div class="font-semibold text-white">${data.twitter_name}</div>
-                <div class="text-sm text-gray-400">@${data.author_handle}</div>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-              <div class="p-2 bg-gray-800/50 rounded-lg">
-                <div class="text-sm text-gray-400">Buzz Score</div>
-                <div class="font-medium text-white">${data.author_buzz.toFixed(
-                  2
-                )}</div>
-              </div>
-              <div class="p-2 bg-gray-800/50 rounded-lg">
-                <div class="text-sm text-gray-400">Mindshare</div>
-                <div class="font-medium text-white">${data.y.toFixed(2)}%</div>
-              </div>
-              <div class="p-2 bg-gray-800/50 rounded-lg">
-                <div class="text-sm text-gray-400">Followers</div>
-                <div class="font-medium text-white">${data.followers_count.toLocaleString()}</div>
-              </div>
-              <div class="p-2 bg-gray-800/50 rounded-lg">
-                <div class="text-sm text-gray-400">Following</div>
-                <div class="font-medium text-white">${data.followings_count.toLocaleString()}</div>
-              </div>
-              <div class="p-2 bg-gray-800/50 rounded-lg">
-                <div class="text-sm text-gray-400">Smart Followers</div>
-                <div class="font-medium text-white">${data.smart_followers_count.toLocaleString()}</div>
-              </div>
-              <div class="p-2 bg-gray-800/50 rounded-lg">
-                <div class="text-sm text-gray-400">Engagement Score</div>
-                <div class="font-medium text-white">${data.engagement_score.toFixed(
-                  2
-                )}</div>
-              </div>
-            </div>
-            <div class="mt-2 text-xs text-center text-gray-400">Click to view detailed profile</div>
+            <div class="text-center text-sm text-gray-400">Click to see the mindshare history</div>
           </div>
         `;
       },
@@ -489,7 +472,7 @@ export default function MindshareVisualization({
     const maxMindshare = Math.max(
       ...voronoiData.map((d) => d.mindshare_percent)
     );
-    const sites = voronoiData.map((item, i) => {
+    const sites: Site[] = voronoiData.map((item: MindshareData, i: number) => {
       const normalizedValue = item.mindshare_percent / maxMindshare;
 
       // Use golden ratio distribution for pleasing visual spacing
@@ -510,8 +493,8 @@ export default function MindshareVisualization({
     // Create Voronoi diagram
     const voronoi = d3.Delaunay.from(
       sites,
-      (d) => d.x,
-      (d) => d.y
+      (d: Site) => d.x,
+      (d: Site) => d.y
     ).voronoi([0, 0, width, height]);
     const cellsGroup = svg.append("g").attr("class", "voronoi-cells");
 
@@ -688,54 +671,7 @@ export default function MindshareVisualization({
               .style("top", y + "px");
 
             tooltip.select(".tooltip-content").html(`
-              <div class="flex items-center gap-3 mb-3">
-                ${
-                  site.data.user_info.profile_image_url
-                    ? `<img src="${site.data.user_info.profile_image_url}" class="w-10 h-10 rounded-full bg-gray-800 object-cover" />`
-                    : '<div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-600">👤</div>'
-                }
-                <div>
-                  <div class="font-semibold text-white">${
-                    site.data.user_info.name
-                  }</div>
-                  <div class="text-sm text-gray-400">@${
-                    site.data.author_handle
-                  }</div>
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-3">
-                <div class="p-2 bg-gray-800/50 rounded-lg">
-                  <div class="text-sm text-gray-400">Buzz Score</div>
-                  <div class="font-medium text-white">${site.data.author_buzz.toFixed(
-                    2
-                  )}</div>
-                </div>
-                <div class="p-2 bg-gray-800/50 rounded-lg">
-                  <div class="text-sm text-gray-400">Mindshare</div>
-                  <div class="font-medium text-white">${site.data.mindshare_percent.toFixed(
-                    2
-                  )}%</div>
-                </div>
-                <div class="p-2 bg-gray-800/50 rounded-lg">
-                  <div class="text-sm text-gray-400">Followers</div>
-                  <div class="font-medium text-white">${site.data.user_info.followers_count.toLocaleString()}</div>
-                </div>
-                <div class="p-2 bg-gray-800/50 rounded-lg">
-                  <div class="text-sm text-gray-400">Following</div>
-                  <div class="font-medium text-white">${site.data.user_info.followings_count.toLocaleString()}</div>
-                </div>
-                <div class="p-2 bg-gray-800/50 rounded-lg">
-                  <div class="text-sm text-gray-400">Smart Followers</div>
-                  <div class="font-medium text-white">${site.data.user_info.smart_followers_count.toLocaleString()}</div>
-                </div>
-                <div class="p-2 bg-gray-800/50 rounded-lg">
-                  <div class="text-sm text-gray-400">Engagement Score</div>
-                  <div class="font-medium text-white">${site.data.user_info.engagement_score.toFixed(
-                    2
-                  )}</div>
-                </div>
-              </div>
-              <div class="mt-2 text-xs text-center text-gray-400">Click to view detailed profile</div>
+              <div class="text-center text-sm text-gray-400">Click to see the mindshare history</div>
             `);
           }
         })
@@ -794,28 +730,30 @@ export default function MindshareVisualization({
   // Handle loading states properly
   const hasData = validData.length > 0;
   const isExternalLoading = externalLoading === true;
-  // Only show loading overlay if externally loading OR if switching views and data exists
-  const showLoadingOverlay =
-    isExternalLoading || (isLoading && hasData && !isExternalLoading);
+  // Show loading overlay when either loading state is true
+  const showLoadingOverlay = isExternalLoading || isLoading;
   const showNoDataMessage = !isExternalLoading && !hasData;
 
   const fetchMindshareHistory = async (authorHandle: string) => {
     try {
-      console.log("projectHandle", projectHandle);
-      console.log("authorHandle", authorHandle);
       if (!projectHandle) {
         console.error("Project handle is undefined");
         return;
       }
       const handle = projectHandle.replace("@", "").toLowerCase();
 
+      // Set loading state at the start of the fetch
+      setIsLoading(true);
+      if (setLoading) {
+        setLoading(true);
+      }
+
       // Fetch data for all periods
       const periods: Period[] = ["1d"];
       const results = await Promise.all(
         periods.map(async (period) => {
-          const response = await fetch(
-            `/api/mindshare/history/${handle}/${authorHandle}?period=${period}`
-          );
+          const url = `/api/mindshare/history/${handle}/${authorHandle}?period=${period}`;
+          const response = await fetch(url);
           const data = await response.json();
           return { period, data: data.result.mindshare_history || [] };
         })
@@ -835,6 +773,13 @@ export default function MindshareVisualization({
     } catch (error) {
       console.error("Error fetching mindshare history:", error);
       setHistoryData({ "1d": [], "7d": [], "30d": [] });
+      throw error;
+    } finally {
+      // Reset loading states in finally block
+      setIsLoading(false);
+      if (setLoading) {
+        setLoading(false);
+      }
     }
   };
 
