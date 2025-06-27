@@ -67,10 +67,10 @@ export const SignupProvider: React.FC<{ children: ReactNode }> = ({
       return false;
     } catch (error) {
       if (axios.isAxiosError(error)) {
+        localStorage.removeItem("referral_code");
         toast({
           title: "Error Creating Account",
-          description:
-            error.response?.data.message || "Failed to create account",
+          description: "Please try again",
         });
       }
       return false;
