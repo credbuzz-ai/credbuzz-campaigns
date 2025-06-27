@@ -70,17 +70,30 @@ export const usePrivyDatabaseSync = () => {
           await refreshUser();
           syncSuccessRef.current = true; // Mark as successful
           return;
+        } else {
+          syncAttemptedRef.current = false;
+          lastUsernameRef.current = null;
+          syncSuccessRef.current = false;
+          toast({
+            description:
+              "Could not create account. Please try logging in again",
+          });
+          await handleLogout();
+          return;
         }
       }
     } catch (error) {
       console.error("Error syncing with database:", error);
-      // Reset the attempt flag on error so it can be retried
+      // Reset all sync flags on error
       syncAttemptedRef.current = false;
       lastUsernameRef.current = null;
+      syncSuccessRef.current = false;
       toast({
         title: "Failed to sync account",
-        description: "Please try again later",
+        description: "Please try logging in again",
       });
+      // Logout user on sync error to allow retry
+      await handleLogout();
     } finally {
       setIsProcessing(false);
     }
@@ -119,10 +132,6 @@ export const usePrivyDatabaseSync = () => {
       syncAttemptedRef.current = false;
       syncSuccessRef.current = false;
       lastUsernameRef.current = null;
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out",
-      });
       router.push("/");
     } catch (error) {
       console.error("Error during logout:", error);
