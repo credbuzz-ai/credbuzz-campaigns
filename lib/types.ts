@@ -55,6 +55,14 @@ export type UserType = {
   total_referrals?: number;
   x_follow_claimed?: boolean;
   total_points?: number;
+  // extra user info
+  name?: string;
+  profile_image_url?: string;
+  followers?: number;
+  followings?: number;
+  smart_followers?: number;
+  engagement_score?: number;
+  mindshare?: number;
 };
 
 export interface HeatmapData {

@@ -1,6 +1,8 @@
 "use client";
 
+import { ReferralCard } from "@/components/ReferralCard";
 import { SocialCard } from "@/components/SocialCard";
+import TooltipInfo from "@/components/TooltipInfo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,8 +31,9 @@ import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { usePrivy } from "@privy-io/react-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import html2canvas from "html2canvas";
 import { Award, Check, Copy, Share, Share2 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface Task {
   id: number;
@@ -83,8 +86,8 @@ const EarnPage = () => {
   const { toast } = useToast();
   const { login, ready } = usePrivy();
 
-  const referralCode = user?.referral_code || "0xtrendsage";
-  const referralUrl = `https://trendsage.xyz/?referral_code=${referralCode}`;
+  const referralCode = user?.referral_code || "0xSAGE";
+  const referralUrl = `https://trendsage.xyz?referral_code=${referralCode}`;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [completedTasks, setCompletedTasks] = useState(user ? 1 : 0);
   const [referralCount, setReferralCount] = useState(
@@ -100,6 +103,8 @@ const EarnPage = () => {
   const [totalLeaderboardItems, setTotalLeaderboardItems] = useState(0);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
+  const socialCardRef = useRef<HTMLDivElement>(null);
+  const [isSocialCardCopying, setIsSocialCardCopying] = useState(false);
 
   const fetchLeaderboard = async (page: number) => {
     setIsLeaderboardLoading(true);
@@ -255,8 +260,11 @@ const EarnPage = () => {
   };
 
   const shareOnX = () => {
-    const text = `Join me on @0xtrendsage, the social platform for credibility scoring! Use my referral link: ${referralUrl} #0xtrendsage #Referral`;
-    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    const shareUrl = `https://trendsage.xyz?referral_code=${referralCode}`;
+    const shareText = `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${shareUrl}`;
+    const url = `https://x.com/intent/tweet?text=${encodeURIComponent(
+      shareText
+    )}`;
     window.open(url, "_blank");
     toast({
       title: "X share opened!",
@@ -264,10 +272,11 @@ const EarnPage = () => {
   };
 
   const shareOnTelegram = () => {
-    const text = `Join me on 0xtrendsage, the social platform for credibility scoring! Use my referral link: ${referralUrl}`;
+    const shareUrl = `https://trendsage.xyz?referral_code=${referralCode}`;
+    const shareText = `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${shareUrl}`;
     const url = `https://t.me/share/url?url=${encodeURIComponent(
-      referralUrl
-    )}&text=${encodeURIComponent(text)}`;
+      shareUrl
+    )}&text=${encodeURIComponent(shareText)}`;
     window.open(url, "_blank");
     toast({
       title: "Telegram share opened!",
@@ -297,6 +306,64 @@ const EarnPage = () => {
 
   const totalPages = Math.ceil(totalLeaderboardItems / itemsPerPage);
   const showPagination = totalLeaderboardItems > itemsPerPage;
+
+  const copySocialCard = async () => {
+    if (!socialCardRef.current) return;
+
+    try {
+      setIsSocialCardCopying(true);
+      const canvas = await html2canvas(socialCardRef.current);
+
+      // Create the promotional text
+      const socialText = `🚀 Join me on @0xtrendsage, where Web3 influence meets rewards! \n\n📊 Check out my stats and achievements on TrendSage.\n\n🎁 Use my referral link to get 10 SAGE when you join and follow @0xtrendsage\n${referralUrl}\n\nLet's build our Web3 credibility together! 🌟`;
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+
+        try {
+          // Create a ClipboardItem with both text and image
+          const clipboardContent = [
+            new ClipboardItem({
+              "text/plain": new Blob([socialText], { type: "text/plain" }),
+              "image/png": blob,
+            }),
+          ];
+
+          await navigator.clipboard.write(clipboardContent);
+          toast({
+            title: "Social card copied!",
+            description:
+              "Image and text copied to clipboard. You can now paste them anywhere",
+          });
+        } catch (err) {
+          // Fallback: Try to copy text and image separately
+          try {
+            await navigator.clipboard.writeText(socialText);
+            const data = new ClipboardItem({
+              "image/png": blob,
+            });
+            await navigator.clipboard.write([data]);
+            toast({
+              title: "Social card copied!",
+              description:
+                "Image and text copied to clipboard. You can now paste them anywhere",
+            });
+          } catch (fallbackErr) {
+            throw fallbackErr;
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error copying social card:", error);
+      toast({
+        title: "Failed to copy social card",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSocialCardCopying(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900/30 py-8 px-4 sm:px-6 lg:px-8">
@@ -453,124 +520,39 @@ const EarnPage = () => {
               <CardTitle className="text-gray-100">
                 Share Your Referral Link
               </CardTitle>
-              <p className="text-sm text-gray-400">
-                You and your friends earn 10 points each when they join using
-                your referral link and follows @0xtrendsage on X
+              <p className="text-sm text-gray-400 flex items-center">
+                <TooltipInfo
+                  text="Your friends earn 10 SAGE each when they join using your referral link. You will also earn 10 SAGE when they follow @0xtrendsage on X."
+                  className="mr-2"
+                />
+                Refer and Earn 10 SAGE each time someone uses your referral
+                link.
               </p>
             </CardHeader>
-            {user ? (
-              <CardContent className="pt-6">
-                <div className="flex flex-col space-y-6">
-                  <div className="relative">
-                    <div className="p-4 bg-gray-700/30 rounded-xl border border-gray-600/30">
-                      <p className="text-xs uppercase tracking-wider text-[#00D992] font-medium mb-1">
-                        Your unique referral link
-                      </p>
-                      <div className="flex items-center">
-                        <div className="flex-1 overflow-hidden">
-                          <p className="text-xs font-medium tracking-wider text-gray-300 font-mono truncate">
-                            {referralUrl}
-                          </p>
-                        </div>
-                        <Button
-                          onClick={copyReferralCode}
-                          className="bg-gray-800/50 hover:bg-gray-700 text-gray-300 border border-gray-600/30"
-                          size="sm"
-                        >
-                          {isCopied ? (
-                            <>
-                              <Check className="h-4 w-4" /> Copied!
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="h-4 w-4 mr-1" /> Copy
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
+            <CardContent className="pt-6">
+              <ReferralCard
+                referralCode={referralCode}
+                referralUrl={referralUrl}
+              />
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <Button
+                  onClick={shareOnX}
+                  className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
+                  size="sm"
+                >
+                  <span>Share on X</span>
+                </Button>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <Button
-                      onClick={shareOnX}
-                      className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
-                      size="sm"
-                    >
-                      <span>Share on X</span>
-                    </Button>
-
-                    <Button
-                      onClick={shareOnTelegram}
-                      className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
-                      size="sm"
-                    >
-                      <Share2 className="h-4 w-4" />
-                      <span>Telegram</span>
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            ) : (
-              <div className="p-6">
-                <div className="flex flex-col items-center justify-center text-center space-y-3">
-                  <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-black/30">
-                    <svg
-                      width="32"
-                      height="32"
-                      viewBox="0 0 1200 1227"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <rect
-                        width="1200"
-                        height="1227"
-                        rx="300"
-                        fill="#18181B"
-                      />
-                      <path
-                        d="M860 320H1010L710 650L1050 1060H820L610 800L370 1060H220L540 710L210 320H450L640 560L860 320ZM820 980H890L470 400H400L820 980Z"
-                        fill="#fff"
-                      />
-                    </svg>
-                  </div>
-                  <div className="space-y-1.5">
-                    <h3 className="text-lg font-semibold text-gray-100">
-                      Join the Buzz—Connect X
-                    </h3>
-                    <p className="text-sm text-gray-400 max-w-[260px]">
-                      Link your X account to get your unique referral link and
-                      start earning points
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleConnectX}
-                    disabled={!ready}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 mt-1 bg-[#18181B] hover:bg-[#232329] text-white font-medium rounded-lg shadow-sm border border-[#333] transition-all focus:outline-none focus:ring-2 focus:ring-[#00D992] focus:ring-offset-2 disabled:opacity-60"
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 1200 1227"
-                      fill="none"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <rect
-                        width="1200"
-                        height="1227"
-                        rx="300"
-                        fill="#18181B"
-                      />
-                      <path
-                        d="M860 320H1010L710 650L1050 1060H820L610 800L370 1060H220L540 710L210 320H450L640 560L860 320ZM820 980H890L470 400H400L820 980Z"
-                        fill="#fff"
-                      />
-                    </svg>
-                    Connect X
-                  </button>
-                </div>
+                <Button
+                  onClick={shareOnTelegram}
+                  className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
+                  size="sm"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span>Telegram</span>
+                </Button>
               </div>
-            )}
+            </CardContent>
           </Card>
 
           {/* Social Card */}
@@ -586,8 +568,25 @@ const EarnPage = () => {
                 Share your achievements and stats with your network
               </p>
             </CardHeader>
-            <CardContent className="pt-6">
-              <SocialCard />
+            <CardContent className="pt-6 flex flex-col items-center gap-4">
+              <SocialCard ref={socialCardRef} />
+              <Button
+                onClick={copySocialCard}
+                disabled={isSocialCardCopying}
+                className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30"
+              >
+                {isSocialCardCopying ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    Copying...
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy your Social Card
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         </div>

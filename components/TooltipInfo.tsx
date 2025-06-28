@@ -1,11 +1,17 @@
+import { Info } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
 interface TooltipInfoProps {
   text: string;
   className?: string;
+  icon?: React.ReactNode;
 }
 
-const TooltipInfo: React.FC<TooltipInfoProps> = ({ text, className = "" }) => {
+const TooltipInfo: React.FC<TooltipInfoProps> = ({
+  text,
+  className = "",
+  icon,
+}) => {
   const [show, setShow] = useState(false);
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
   const iconRef = useRef<HTMLSpanElement>(null);
@@ -48,12 +54,12 @@ const TooltipInfo: React.FC<TooltipInfoProps> = ({ text, className = "" }) => {
       style={{ outline: "none" }}
       ref={iconRef}
     >
-      <span
+      {/* <span
         className="w-5 h-5 flex items-center justify-center rounded-full bg-gray-700 text-white text-xs font-bold cursor-pointer border border-gray-500 hover:bg-[#00D992] hover:text-gray-900 transition-colors select-none"
         aria-label="Show info"
-      >
-        ?
-      </span>
+      > */}
+      {icon ?? <Info className="h-4 w-4" />}
+      {/* </span> */}
       {show && (
         <span
           ref={tooltipRef}
