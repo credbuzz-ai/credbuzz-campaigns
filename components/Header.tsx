@@ -172,30 +172,17 @@ export default function Header() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-700/50">
             <div className="flex flex-col space-y-4">
-              <Link
-                href="/buzz-board"
-                className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
-                  pathname?.startsWith("/buzz-board") ? "!text-[#00D992]" : ""
-                }`}
-              >
-                Buzz Board
-              </Link>
-              <Link
-                href="/kols"
-                className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
-                  pathname?.startsWith("/kols") ? "!text-[#00D992]" : ""
-                }`}
-              >
-                KOLs
-              </Link>
-              <Link
-                href="/projects"
-                className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
-                  pathname?.startsWith("/projects") ? "!text-[#00D992]" : ""
-                }`}
-              >
-                Projects
-              </Link>
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium ${
+                    pathname?.startsWith(item.href) ? "!text-[#00D992]" : ""
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
               {ready && !authenticated && (
                 <button
                   className="btn-primary w-full"
