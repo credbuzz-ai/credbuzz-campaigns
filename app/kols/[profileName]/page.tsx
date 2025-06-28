@@ -134,9 +134,7 @@ async function getProfileData(authorHandle: string): Promise<{
     let authorDetailsData = null;
     try {
       authorDetailsData = await fetchAuthorDetails(authorHandle);
-      console.log("Author details data:", authorDetailsData);
     } catch (error) {
-      console.log("Author details fetch failed:", error);
       // Continue without author details
     }
 

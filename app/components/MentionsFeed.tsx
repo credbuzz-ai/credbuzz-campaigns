@@ -64,13 +64,6 @@ export default function MentionsFeed({
     setError(null);
 
     try {
-      console.log(
-        "fetching tweets",
-        authorHandle,
-        start,
-        pagination.limit,
-        sortBy
-      );
       const response = await fetch(
         `${CREDBUZZ_API_URL}/tweet/tweets-mentioning-author?author_handle=${authorHandle}&start=${start}&limit=${pagination.limit}&sort_by=${sortBy}`,
         {

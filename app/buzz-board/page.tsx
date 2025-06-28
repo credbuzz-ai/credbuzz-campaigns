@@ -31,7 +31,6 @@ export default function BuzzBoard() {
       campaign_type: "Public",
       is_visible: true,
     });
-    console.log(campaigns.data.result);
     setCampaigns(campaigns.data.result);
     setLoading(false);
   };

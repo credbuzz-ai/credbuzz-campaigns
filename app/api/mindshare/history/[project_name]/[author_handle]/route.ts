@@ -13,12 +13,6 @@ export async function GET(
     const { project_name, author_handle } = params;
     const period = request.nextUrl.searchParams.get("period") || "1d";
 
-    console.log("Fetching mindshare history for:", {
-      project_name,
-      author_handle,
-      period,
-    });
-
     // Fetch mindshare history from the backend API
     const response = await fetch(
       `${API_BASE_URL}/mindshare/history/${project_name}/${author_handle}?period=${period}`,
@@ -36,7 +30,6 @@ export async function GET(
     }
 
     const data = await response.json();
-    console.log("Backend API response:", data);
 
     // Return the data with proper headers
     return Response.json(data, {
