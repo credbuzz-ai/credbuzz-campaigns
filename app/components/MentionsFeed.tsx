@@ -180,7 +180,8 @@ export default function MentionsFeed({
 
   const formatDate = (dateString: string): string => {
     try {
-      const date = new Date(dateString);
+      // Create a date object from UTC string
+      const date = new Date(dateString + "Z"); // Append 'Z' to ensure UTC parsing
       if (isNaN(date.getTime())) {
         return "now";
       }
@@ -199,6 +200,7 @@ export default function MentionsFeed({
       return date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Use system timezone
       });
     } catch (error) {
       return "now";
