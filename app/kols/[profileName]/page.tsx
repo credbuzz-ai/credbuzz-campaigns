@@ -111,47 +111,73 @@ async function getProfileData(authorHandle: string): Promise<{
   activityData: UserProfileResponse["result"]["activity_data"];
 } | null> {
   try {
-    // Make parallel API calls
-    const [userProfileData, authorDetailsData] = await Promise.all([
-      fetchUserProfile(authorHandle),
-      fetchAuthorDetails(authorHandle),
-    ]);
+    // Make parallel API calls but handle them separately
+    const userProfileData = await fetchUserProfile(authorHandle);
 
-    if (userProfileData?.result) {
-      const chartData = userProfileData.result.chart_data.map(
-        ([date, label, followers, smartFollowers, mindshare]) => ({
-          date,
-          label,
-          followers_count: followers,
-          smart_followers_count: smartFollowers,
-          mindshare,
-        })
-      );
-
-      // Merge data from both APIs
-      const profile: ProfileData = {
-        name: authorDetailsData?.result?.name || authorHandle,
-        author_handle: authorHandle,
-        bio: authorDetailsData?.result?.bio || "",
-        profile_image_url: userProfileData.result.activity_data.profile_image,
-        followers_count: chartData[chartData.length - 1].followers_count,
-        smart_followers_count:
-          chartData[chartData.length - 1].smart_followers_count,
-        mindshare: chartData[chartData.length - 1].mindshare,
-        account_created_at: authorDetailsData?.result?.account_created_at,
-      };
-
-      return {
-        profile,
-        chartData,
-        activityData: userProfileData.result.activity_data,
-      };
+    // If user profile data is not available, we can't show anything meaningful
+    if (!userProfileData?.result) {
+      return null;
     }
+
+    // Process chart data which we know exists since userProfileData.result exists
+    const chartData = userProfileData.result.chart_data.map(
+      ([date, label, followers, smartFollowers, mindshare]) => ({
+        date,
+        label,
+        followers_count: followers,
+        smart_followers_count: smartFollowers,
+        mindshare,
+      })
+    );
+
+    // Try to get author details but don't fail if unavailable
+    let authorDetailsData = null;
+    try {
+      authorDetailsData = await fetchAuthorDetails(authorHandle);
+    } catch (error) {
+      // Continue without author details
+    }
+
+    // Get the latest metrics from chart data or use defaults
+    const latestMetrics =
+      chartData.length > 0
+        ? chartData[chartData.length - 1]
+        : {
+            followers_count: 0,
+            smart_followers_count: 0,
+            mindshare: 0,
+          };
+
+    // Create profile with fallbacks for author details
+    const profile: ProfileData = {
+      name:
+        authorDetailsData && authorDetailsData.result
+          ? authorDetailsData.result.name
+          : authorHandle,
+      author_handle: authorHandle,
+      bio:
+        authorDetailsData && authorDetailsData.result
+          ? authorDetailsData.result.bio
+          : "",
+      profile_image_url: userProfileData.result.activity_data.profile_image,
+      followers_count: latestMetrics.followers_count,
+      smart_followers_count: latestMetrics.smart_followers_count,
+      mindshare: latestMetrics.mindshare,
+      account_created_at:
+        authorDetailsData && authorDetailsData.result
+          ? authorDetailsData.result.account_created_at
+          : undefined,
+    };
+
+    return {
+      profile,
+      chartData,
+      activityData: userProfileData.result.activity_data,
+    };
   } catch (error) {
     console.log("API fetch failed for profile:", authorHandle, error);
+    return null;
   }
-
-  return null;
 }
 
 function formatAccountCreatedDate(dateString?: string): string {

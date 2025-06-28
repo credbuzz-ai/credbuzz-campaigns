@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { useUser } from "@/contexts/UserContext";
 import { forwardRef } from "react";
 
@@ -74,10 +73,8 @@ export const SocialCard = forwardRef<HTMLDivElement>((props, ref) => {
           {/* Third Row */}
           <div className="flex items-center justify-between">
             <p className="text-lg text-gray-400">Use my referral URL now!</p>
-            <div className="flex gap-2">
-              <Button className="bg-green-500 text-black text-sm px-4 py-2 font-semibold">
-                Earn 10 SAGE Now →
-              </Button>
+            <div className="bg-[#00F5A8] text-black text-sm px-4 py-2 font-semibold whitespace-nowrap rounded-md">
+              Earn 10 SAGE Now →
             </div>
           </div>
         </div>

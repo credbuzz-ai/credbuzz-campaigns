@@ -109,10 +109,6 @@ export default function ProjectPage({
     fetchActivityData();
   }, [projectName, timeframe, currentPage]);
 
-  useEffect(() => {
-    console.log("Current mindshare data:", mindshareData);
-  }, [mindshareData]);
-
   if (!authorData || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">

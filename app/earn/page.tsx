@@ -32,7 +32,7 @@ import { useUser } from "@/contexts/UserContext";
 import { usePrivy } from "@privy-io/react-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import html2canvas from "html2canvas";
-import { Award, Check, Copy, Share, Share2 } from "lucide-react";
+import { Award, Check, Copy, Download, Share, Share2 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 
 interface Task {
@@ -105,6 +105,7 @@ const EarnPage = () => {
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
   const socialCardRef = useRef<HTMLDivElement>(null);
   const [isSocialCardCopying, setIsSocialCardCopying] = useState(false);
+  const [isSocialCardDownloading, setIsSocialCardDownloading] = useState(false);
 
   const fetchLeaderboard = async (page: number) => {
     setIsLeaderboardLoading(true);
@@ -365,6 +366,46 @@ const EarnPage = () => {
     }
   };
 
+  const downloadSocialCard = async () => {
+    if (!socialCardRef.current) return;
+
+    try {
+      setIsSocialCardDownloading(true);
+      const canvas = await html2canvas(socialCardRef.current);
+
+      // Convert canvas to blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) resolve(blob);
+        }, "image/png");
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `trendsage-social-card-${user?.x_handle || "user"}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Social card downloaded!",
+        description: "Check your downloads folder",
+      });
+    } catch (error) {
+      console.error("Error downloading social card:", error);
+      toast({
+        title: "Failed to download social card",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSocialCardDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900/30 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -570,23 +611,42 @@ const EarnPage = () => {
             </CardHeader>
             <CardContent className="pt-6 flex flex-col items-center gap-4">
               <SocialCard ref={socialCardRef} />
-              <Button
-                onClick={copySocialCard}
-                disabled={isSocialCardCopying}
-                className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30"
-              >
-                {isSocialCardCopying ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                    Copying...
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy your Social Card
-                  </>
-                )}
-              </Button>
+              <div className="w-full grid grid-cols-2 gap-4">
+                <Button
+                  onClick={copySocialCard}
+                  disabled={isSocialCardCopying}
+                  className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30"
+                >
+                  {isSocialCardCopying ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Copying...
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Card
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={downloadSocialCard}
+                  disabled={isSocialCardDownloading}
+                  className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30"
+                >
+                  {isSocialCardDownloading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Download Card
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -695,14 +755,6 @@ const EarnPage = () => {
             {showPagination && (
               <div className="mt-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-400">
-                    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                    {Math.min(
-                      currentPage * itemsPerPage,
-                      totalLeaderboardItems
-                    )}{" "}
-                    of {totalLeaderboardItems} entries
-                  </p>
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
@@ -722,12 +774,12 @@ const EarnPage = () => {
                             text-gray-300 bg-gray-700/30 border-gray-600/30
                           `}
                         >
-                          Previous
+                          Prev
                         </Button>
                       </PaginationItem>
 
                       {Array.from(
-                        { length: Math.min(5, totalPages) },
+                        { length: Math.min(3, totalPages) },
                         (_, i) => {
                           let pageNum;
                           if (totalPages <= 5) {

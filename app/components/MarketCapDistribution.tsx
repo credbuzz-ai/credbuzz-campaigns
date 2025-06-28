@@ -188,7 +188,6 @@ export default function MarketCapDistribution({
 
   useEffect(() => {
     if (authorHandle) {
-      console.log("calling fetch data", timePeriod, authorHandle);
       fetchData(timePeriod);
     }
   }, [authorHandle, timePeriod]);

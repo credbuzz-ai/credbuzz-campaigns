@@ -44,10 +44,28 @@ export interface UserProfileResponse {
 
 export interface AuthorDetailsResponse {
   result: {
-    name: string;
-    account_created_at: string;
-    bio: string;
     author_handle: string;
+    name: string;
+    bio: string;
+    url_in_bio: string;
+    profile_image_url: string;
+    profile_banner_url: string;
+    followers_count: number;
+    followings_count: number;
+    account_created_at: string;
+    crypto_tweets_all: number | null;
+    crypto_tweets_views_all: number | null;
+    engagement_score: number | null;
+    followers_impact: number | null;
+    total_symbols_mentioned: number | null;
+    symbols_mentioned_in_last_24hr: number | null;
+    new_symbols_mentioned_in_last_24hr: number | null;
+    unique_author_handle_count: number | null;
+    total_mention_count: number | null;
+    tags: string[];
+    mentions_24hr: number | null;
+    mindshare: number | null;
+    smart_followers_count: number | null;
   };
   message: string;
 }
