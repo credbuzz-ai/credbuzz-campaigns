@@ -4,7 +4,7 @@ import CampaignCard from "@/components/CampaignCard";
 import CollaborateDialog from "@/components/CollaborateDialog";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
-import { Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const statusOptions = ["All", "Published", "Fulfilled", "Discarded"];
@@ -13,7 +13,7 @@ export default function BuzzBoard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-
+  const [loading, setLoading] = useState(true);
   const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
     const matchesSearch =
       campaign.campaign_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -26,12 +26,14 @@ export default function BuzzBoard() {
   });
 
   const fetchCampaigns = async () => {
+    setLoading(true);
     const campaigns = await apiClient.post("/campaign/get-campaigns", {
       campaign_type: "Public",
       is_visible: true,
     });
     console.log(campaigns.data.result);
     setCampaigns(campaigns.data.result);
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -131,16 +133,28 @@ export default function BuzzBoard() {
           </div>
         </div>
         {/* Campaign Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCampaigns.map(
-            (campaign) =>
-              campaign.is_visible && (
-                <CampaignCard key={campaign.campaign_id} campaign={campaign} />
-              )
-          )}
-        </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 text-lg mb-2 flex items-center justify-center gap-2">
+              <Loader2 className="animate-spin" />
+              Loading campaigns...
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCampaigns.map(
+              (campaign) =>
+                campaign.is_visible && (
+                  <CampaignCard
+                    key={campaign.campaign_id}
+                    campaign={campaign}
+                  />
+                )
+            )}
+          </div>
+        )}
 
-        {filteredCampaigns.length === 0 && (
+        {filteredCampaigns && filteredCampaigns.length === 0 && !loading && (
           <div className="text-center py-12">
             <div className="text-gray-400 text-lg mb-2 flex items-center justify-center gap-2">
               <svg

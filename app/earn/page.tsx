@@ -1,5 +1,6 @@
 "use client";
 
+import { SocialCard } from "@/components/SocialCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -308,10 +309,12 @@ const EarnPage = () => {
           </p>
         </div>
 
-        <div className="mb-10">
+        {/* First Row: Stats and Tasks */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Your Stats Card */}
           <Card className="overflow-hidden border border-gray-700/30 shadow-xl bg-gray-800/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-2xl font-bold flex items-center gap-2 text-gray-100">
+              <CardTitle className="text-xl font-bold flex items-center gap-2 text-gray-100">
                 <Award className="h-6 w-6 text-[#00D992]" />
                 Your Stats
               </CardTitle>
@@ -320,31 +323,30 @@ const EarnPage = () => {
               </p>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600/30">
-                  <p className="text-sm text-gray-400 mb-1">Total Points</p>
-                  <p className="text-3xl font-bold text-gray-100">
+                  <p className="text-xs text-gray-400 mb-1">Total Points</p>
+                  <p className="text-xl font-bold text-gray-100">
                     {formatNumber(user?.total_points || 0, 2)}
                   </p>
                 </div>
                 <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600/30">
-                  <p className="text-sm text-gray-400 mb-1">Tasks Completed</p>
-                  <p className="text-3xl font-bold text-gray-100">
+                  <p className="text-xs text-gray-400 mb-1">Tasks Completed</p>
+                  <p className="text-xl font-bold text-gray-100">
                     {completedTasks}/{tasks.length}
                   </p>
                 </div>
                 <div className="bg-gray-700/30 p-4 rounded-xl border border-gray-600/30">
-                  <p className="text-sm text-gray-400 mb-1">Referrals</p>
-                  <p className="text-3xl font-bold text-gray-100">
+                  <p className="text-xs text-gray-400 mb-1">Referrals</p>
+                  <p className="text-xl font-bold text-gray-100">
                     {formatNumber(user?.total_referrals || 0)}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Tasks Card */}
           <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30">
             <CardHeader className="pb-2 border-b border-gray-700/30">
               <Badge className="w-fit mb-2 bg-[#00D992]/90 hover:bg-[#00F5A8]/90 text-gray-900 border-none">
@@ -438,7 +440,11 @@ const EarnPage = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
 
+        {/* Second Row: Referral and Social Card */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Referral Card */}
           <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30">
             <CardHeader className="pb-2 border-b border-gray-700/30">
               <Badge className="w-fit mb-2 bg-[#00D992]/90 hover:bg-[#00F5A8]/90 text-gray-900 border-none">
@@ -452,7 +458,6 @@ const EarnPage = () => {
                 your referral link and follows @0xtrendsage on X
               </p>
             </CardHeader>
-
             {user ? (
               <CardContent className="pt-6">
                 <div className="flex flex-col space-y-6">
@@ -567,8 +572,27 @@ const EarnPage = () => {
               </div>
             )}
           </Card>
+
+          {/* Social Card */}
+          <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30">
+            <CardHeader className="pb-2 border-b border-gray-700/30">
+              <Badge className="w-fit mb-2 bg-[#00D992]/90 hover:bg-[#00F5A8]/90 text-gray-900 border-none">
+                Social Card
+              </Badge>
+              <CardTitle className="text-gray-100">
+                Share Your Social Card
+              </CardTitle>
+              <p className="text-sm text-gray-400">
+                Share your achievements and stats with your network
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <SocialCard />
+            </CardContent>
+          </Card>
         </div>
 
+        {/* Leaderboard */}
         <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30 mb-8">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl text-gray-100">
