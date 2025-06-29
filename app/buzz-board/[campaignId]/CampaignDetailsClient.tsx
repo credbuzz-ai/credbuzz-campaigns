@@ -375,9 +375,9 @@ export default function CampaignDetailsClient({
                       <StatusBadge status="active" />
                     </div>
                     <div className="flex items-center gap-2">
-                      {campaign.project_twitter && (
+                      {(campaign.project_handle || campaign.target_x_handle || campaign.owner_x_handle) && (
                         <SocialLink
-                          href={campaign.project_twitter}
+                          href={`https://x.com/${(campaign.project_handle || campaign.target_x_handle || campaign.owner_x_handle)?.replace('@', '')}`}
                           icon={<XLogo className="w-5 h-5" />}
                           label="Twitter"
                         />
