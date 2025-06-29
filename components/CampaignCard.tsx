@@ -3,10 +3,15 @@ import Link from "next/link";
 import ExpandableDescription from "./ExpandableDescription";
 
 function formatAmount(amount: number): string {
-  if (amount >= 1000000000) return (amount / 1000000000).toFixed(4) + "B";
-  if (amount >= 1000000) return (amount / 1000000).toFixed(4) + "M";
-  if (amount >= 1000) return (amount / 1000).toFixed(4) + "K";
-  return amount.toFixed(4);
+  const formatDecimal = (value: number) => {
+    const fixed = value.toFixed(4);
+    return fixed.replace(/\.?0+$/, ""); // Remove trailing zeros and decimal point if no decimals
+  };
+
+  if (amount >= 1000000000) return formatDecimal(amount / 1000000000) + "B";
+  if (amount >= 1000000) return formatDecimal(amount / 1000000) + "M";
+  if (amount >= 1000) return formatDecimal(amount / 1000) + "K";
+  return formatDecimal(amount);
 }
 
 function getStatusColor(status: string) {
@@ -72,7 +77,7 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
         <ExpandableDescription description={campaign.description} />
         <div className="space-y-3">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-400">Budget</span>
+            <span className="text-gray-400">Rewards</span>
             <span className="text-gray-200 font-medium">
               {formatAmount(campaign.amount)} {campaign.payment_token}
             </span>
@@ -84,12 +89,6 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-400">Chain</span>
             <span className="text-gray-200">{campaign.chain}</span>
-          </div>
-          <div className="flex justify-between items-center text-sm mt-2">
-            <span className="text-gray-400">Status</span>
-            <span className="text-gray-200">
-              {getStatusDisplayName(campaign.status)}
-            </span>
           </div>
           <div className="flex justify-between items-center text-xs text-gray-500 mt-2">
             <span>Ends: {formatDate(campaign.offer_end_date)}</span>

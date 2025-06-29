@@ -47,6 +47,15 @@ const ExpandableDescription = ({ description }: { description: string }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const maxLength = 150; // Maximum characters to show initially
 
+  // If description is shorter than maxLength, show it fully without "..."
+  if (description.length <= maxLength) {
+    return (
+      <div className="text-sm text-gray-300 leading-relaxed">
+        <div style={{ whiteSpace: "pre-line" }}>{linkifyText(description)}</div>
+      </div>
+    );
+  }
+
   const visibleText = isExpanded
     ? description
     : `${description.slice(0, maxLength)}...`;
@@ -54,14 +63,12 @@ const ExpandableDescription = ({ description }: { description: string }) => {
   return (
     <div className="text-sm text-gray-300 leading-relaxed">
       <div style={{ whiteSpace: "pre-line" }}>{linkifyText(visibleText)}</div>
-      {description.length > maxLength && (
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="mt-1 text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors"
-        >
-          {isExpanded ? "Show less" : "Show more"}
-        </button>
-      )}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="mt-1 text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors"
+      >
+        {isExpanded ? "Show less" : "Show more"}
+      </button>
     </div>
   );
 };

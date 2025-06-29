@@ -113,9 +113,9 @@ export default function BuzzBoard() {
           </div>
         </div>
         {/* Campaign Card Guide */}
-        <div className="mb-6 p-3 bg-gray-800/30 rounded-xl border border-gray-700/30 text-xs text-gray-400 grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="mb-6 p-3 bg-gray-800/30 rounded-xl border border-gray-700/30 text-xs text-gray-400 grid grid-cols-1 md:grid-cols-3 gap-2">
           <div>
-            <span className="font-semibold text-gray-300">Budget:</span> Total
+            <span className="font-semibold text-gray-300">Rewards:</span> Total
             rewards for influencers
           </div>
           <div>
@@ -125,10 +125,6 @@ export default function BuzzBoard() {
           <div>
             <span className="font-semibold text-gray-300">Chain:</span>{" "}
             Blockchain for distribution
-          </div>
-          <div>
-            <span className="font-semibold text-gray-300">Status:</span>{" "}
-            Campaign's current state
           </div>
         </div>
         {/* Campaign Grid */}
