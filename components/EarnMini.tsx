@@ -6,9 +6,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Task } from "@/lib/types";
 import { Check, ExternalLink, Gem, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { SocialCard } from "./SocialCard";
-import TooltipInfo from "./TooltipInfo";
 import { ReferralCard } from "./ReferralCard";
+import TooltipInfo from "./TooltipInfo";
 
 export default function EarnMini() {
   const { user, refreshUser } = useUser();
@@ -151,21 +150,15 @@ export default function EarnMini() {
 
   return (
     <div className="space-y-8">
-      {/* Core Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Tasks */}
         <Card className="bg-transparent border-none col-span-7">
-          {/* Stats Row */}
-          <div className="">
-            {/* Total SAGE earned */}
-            <div className="rounded-lg p-4 bg-gradient-to-br from-[#0F3F2E] to-[#044d39]/60 border border-[#155748]/40 shadow-inner">
-              <p className="text-sm text-[#66E2C1] mb-1 font-medium tracking-wide">
-                Total SAGE earned
-              </p>
-              <p className="text-2xl font-semibold text-[#DFFCF6]">
-                {formatNumber(user?.total_points ?? 0)}
-              </p>
-            </div>
+          <div className="rounded-lg p-4 bg-gradient-to-br from-[#0F3F2E] to-[#044d39]/60 border border-[#155748]/40 shadow-inner">
+            <p className="text-sm text-[#66E2C1] mb-1 font-medium tracking-wide">
+              Total SAGE earned
+            </p>
+            <p className="text-2xl font-semibold text-[#DFFCF6]">
+              {formatNumber(user?.total_points ?? 0)}
+            </p>
           </div>
           <CardHeader className="p-4">
             <CardTitle className="text-[#DFFCF6] text-base font-medium">
@@ -241,34 +234,6 @@ export default function EarnMini() {
           </CardContent>
         </Card>
 
-        {/* Referral & Social card */}
-        {/* <div className="space-y-6 col-span-5">
-          <Card className="bg-transparent border-none">
-            <CardHeader className="p-4 pb-0">
-              <CardTitle className="text-[#DFFCF6] text-base font-medium">
-                Social card
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 space-y-4">
-              <SocialCard />
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={copyReferral}
-                  className="bg-[#2D3B39] border-[#2B3C39]"
-                >
-                  Copy to clipboard
-                </Button>
-                <Button
-                  className="bg-[#00D992] text-[#060F11]"
-                  onClick={shareOnX}
-                >
-                  Share on X
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div> */}
         <Card className=" shadow-xl border-none bg-transparent col-span-5">
           <CardHeader className="pb-2">
             <CardTitle className="text-gray-100">
@@ -283,10 +248,7 @@ export default function EarnMini() {
             </p>
           </CardHeader>
           <CardContent className="pt-6">
-            <ReferralCard
-              referralCode={user?.referral_code || ""}
-              referralUrl={referralUrl}
-            />
+            <ReferralCard referralCode={user?.referral_code || ""} />
             <div className="grid grid-cols-2 gap-4 mt-6">
               <Button
                 onClick={shareOnX}

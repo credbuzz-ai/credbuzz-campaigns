@@ -1,9 +1,6 @@
 "use client";
 
-import { ReferralCard } from "@/components/ReferralCard";
 import EarnMini from "@/components/EarnMini";
-import { SocialCard } from "@/components/SocialCard";
-import TooltipInfo from "@/components/TooltipInfo";
 import {
   Accordion,
   AccordionContent,
@@ -14,12 +11,10 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
@@ -29,8 +24,9 @@ import {
   Calendar,
   CheckCircle,
   Clock,
+  Copy,
   DollarSign,
-  Share2,
+  Download,
   Loader2,
   Pause,
   TrendingUp,
@@ -38,109 +34,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-// Add UpdateWalletDialog component
-const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
-  const { user, refreshUser } = useUser();
-  const { toast } = useToast();
-  const [evmWallet, setEvmWallet] = useState(user?.evm_wallet || "");
-  const [solanaWallet, setSolanaWallet] = useState(user?.solana_wallet || "");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const response = await apiClient.put("/user/update-user", {
-        evm_wallet: evmWallet,
-        solana_wallet: solanaWallet,
-      });
-
-      if (response.status === 200) {
-        toast({
-          title: "Success",
-          description: "Wallet addresses updated successfully",
-        });
-        await refreshUser();
-        onClose();
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update wallet addresses",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <DialogContent className="bg-gray-900 border-gray-800">
-      <DialogHeader>
-        <DialogTitle className="text-gray-100">
-          Update Wallet Addresses
-        </DialogTitle>
-        <DialogDescription className="text-gray-400">
-          Enter your EVM and Solana wallet addresses below.
-        </DialogDescription>
-      </DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="evmWallet"
-            className="text-sm text-gray-300 block mb-2"
-          >
-            EVM Wallet Address
-          </label>
-          <Input
-            id="evmWallet"
-            value={evmWallet}
-            onChange={(e) => setEvmWallet(e.target.value)}
-            placeholder="0x..."
-            className="bg-gray-800 border-gray-700 text-gray-100"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="solanaWallet"
-            className="text-sm text-gray-300 block mb-2"
-          >
-            Solana Wallet Address
-          </label>
-          <Input
-            id="solanaWallet"
-            value={solanaWallet}
-            onChange={(e) => setSolanaWallet(e.target.value)}
-            placeholder="Solana address..."
-            className="bg-gray-800 border-gray-700 text-gray-100"
-          />
-        </div>
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="bg-[#00D992] text-gray-900 hover:bg-[#00D992]/90"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : null}
-            Save Changes
-          </Button>
-        </div>
-      </form>
-    </DialogContent>
-  );
-};
+import UpdateWalletDialog from "../components/UpdateWalletDialog";
 
 export default function MyCampaigns() {
   const router = useRouter();
@@ -157,33 +51,16 @@ export default function MyCampaigns() {
   const { user } = useUser();
   const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false);
 
-  // Utility to format large numbers (e.g., 1.2K, 3.4M)
-  const formatNumber = (num: number) => {
-    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-    if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-    return num.toString();
-  };
-
-  const referralUrl = user?.referral_code
-    ? `https://trendsage.xyz?referral_code=${user.referral_code}`
-    : "";
-
-  const copyReferralCode = () => {
-    const shareUrl = `https://trendsage.xyz?referral_code=${user?.referral_code}`;
-    const shareText = `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${shareUrl}`;
-    navigator.clipboard.writeText(shareText);
-  };
-
   // Separate state for open and closed campaigns
   const [openCampaigns, setOpenCampaigns] = useState<Campaign[]>([]);
   const [closedCampaigns, setClosedCampaigns] = useState<Campaign[]>([]);
   const [receivedCampaigns, setReceivedCampaigns] = useState<Campaign[]>([]);
-
+  const [isSocialCardCopying, setIsSocialCardCopying] =
+    useState<boolean>(false);
+  const [isSocialCardDownloading, setIsSocialCardDownloading] =
+    useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Add real-time countdown updates
-  const [currentTime, setCurrentTime] = useState(Date.now());
 
   // Token list state
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -279,14 +156,6 @@ export default function MyCampaigns() {
       fetchAllCampaigns();
     }
   }, [ready, authenticated, user]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 60000); // Update every minute
-
-    return () => clearInterval(interval);
-  }, []);
 
   if (!ready || !authenticated) {
     return (
@@ -451,6 +320,124 @@ export default function MyCampaigns() {
     router.push(`/my-campaigns/${campaignId}`);
   };
 
+  const copySocialCard = async () => {
+    if (!user) return;
+
+    try {
+      setIsSocialCardCopying(true);
+
+      // Generate social card using server-side API
+      const params = new URLSearchParams({
+        name: user.name || "TrendSage",
+        handle: user.x_handle || "0xtrendsage",
+        followers: (user.followers || 0).toString(),
+        rewards: (user.total_points || 0).toString(),
+        profileImage: user.profile_image_url || "",
+      });
+
+      const response = await fetch(`/api/social-card?${params}`);
+      if (!response.ok) throw new Error("Failed to generate social card");
+
+      const blob = await response.blob();
+
+      const referralUrl = `https://trendsage.xyz?referral_code=${user?.referral_code}`;
+
+      // Create the promotional text
+      const socialText = `🚀 Join me on @0xtrendsage, where Web3 influence meets rewards! \n\n📊 Check out my stats and achievements on TrendSage.\n\n🎁 Use my referral link to get 10 SAGE when you join and follow @0xtrendsage\n${referralUrl}\n\nLet's build our Web3 credibility together! 🌟`;
+
+      try {
+        // Create a ClipboardItem with both text and image
+        const clipboardContent = [
+          new ClipboardItem({
+            "text/plain": new Blob([socialText], { type: "text/plain" }),
+            "image/png": blob,
+          }),
+        ];
+
+        await navigator.clipboard.write(clipboardContent);
+        toast({
+          title: "Social card copied!",
+          description:
+            "Image and text copied to clipboard. You can now paste them anywhere",
+          duration: 2000,
+        });
+      } catch (err) {
+        // Fallback: Try to copy text and image separately
+        try {
+          await navigator.clipboard.writeText(socialText);
+          const data = new ClipboardItem({
+            "image/png": blob,
+          });
+          await navigator.clipboard.write([data]);
+          toast({
+            title: "Social card copied!",
+            description:
+              "Image and text copied to clipboard. You can now paste them anywhere",
+            duration: 2000,
+          });
+        } catch (fallbackErr) {
+          throw fallbackErr;
+        }
+      }
+    } catch (error) {
+      console.error("Error copying social card:", error);
+      toast({
+        title: "Failed to copy social card",
+        description: "Please try again",
+        duration: 2000,
+      });
+    } finally {
+      setIsSocialCardCopying(false);
+    }
+  };
+
+  const downloadSocialCard = async () => {
+    if (!user) return;
+
+    try {
+      setIsSocialCardDownloading(true);
+
+      // Generate social card using server-side API
+      const params = new URLSearchParams({
+        name: user.name || "TrendSage",
+        handle: user.x_handle || "0xtrendsage",
+        followers: (user.followers || 0).toString(),
+        rewards: (user.total_points || 0).toString(),
+        profileImage: user.profile_image_url || "",
+      });
+
+      const response = await fetch(`/api/social-card?${params}`);
+      if (!response.ok) throw new Error("Failed to generate social card");
+
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `trendsage-social-card-${user?.x_handle || "user"}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Social card downloaded!",
+        description: "Check your downloads folder",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Error downloading social card:", error);
+      toast({
+        title: "Failed to download social card",
+        description: "Please try again",
+        duration: 2000,
+      });
+    } finally {
+      setIsSocialCardDownloading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#080B0A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -509,7 +496,7 @@ export default function MyCampaigns() {
                 <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg">
                   <DialogHeader className="text-center">
                     <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
-                      About SAGE
+                      How to earn SAGE
                     </DialogTitle>
                   </DialogHeader>
 
@@ -545,12 +532,7 @@ export default function MyCampaigns() {
                           </li>
                           <li>Create original, educational content.</li>
                           <li>
-                            Share content that SNAPS (pun intended) and drives
-                            real engagement.
-                          </li>
-                          <li>
-                            Hit 10+ SNAPS to unlock invites for your cabal and
-                            earn 10% of the SNAPS they generate.
+                            Invite your friends and earn SAGE for each invite.
                           </li>
                         </ul>
                       </AccordionContent>
@@ -610,7 +592,7 @@ export default function MyCampaigns() {
 
                   {/* Social preview card */}
                   {/* <SocialCard /> */}
-                  <div className="w-full max-w-md">
+                  <div className="w-full">
                     <img
                       src={
                         user
@@ -632,25 +614,38 @@ export default function MyCampaigns() {
                   <div className="flex gap-2 justify-end mt-2">
                     <Button
                       variant="outline"
-                      onClick={copyReferralCode}
+                      onClick={copySocialCard}
+                      disabled={isSocialCardCopying}
                       className="bg-transparent border-[#2B3C39]"
                     >
-                      Copy to clipboard
+                      {isSocialCardCopying ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Copying...
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Card
+                        </>
+                      )}
                     </Button>
                     <Button
                       className="bg-[#00D992] text-[#060F11] hover:bg-[#00D992]/90"
-                      onClick={() => {
-                        if (!referralUrl) return;
-                        const text = encodeURIComponent(
-                          `Join me on @0xtrendsage and earn 10 SAGE with my referral link! ${referralUrl}`
-                        );
-                        window.open(
-                          `https://twitter.com/intent/tweet?text=${text}`,
-                          "_blank"
-                        );
-                      }}
+                      onClick={downloadSocialCard}
+                      disabled={isSocialCardDownloading}
                     >
-                      Share on X
+                      {isSocialCardDownloading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </>
+                      )}
                     </Button>
                   </div>
                 </DialogContent>
