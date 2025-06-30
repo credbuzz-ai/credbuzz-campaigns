@@ -38,7 +38,6 @@ interface CampaignLeaderboardProps {
 export default function CampaignLeaderboard({
   data,
   totalResults,
-  campaignId,
   selectedTimePeriod = "30d",
   onPageChange,
   currentPage = 1,
@@ -118,15 +117,15 @@ export default function CampaignLeaderboard({
           <Table>
             <TableHeader>
               <TableRow className="border-gray-700">
-                <TableHead className="text-gray-300">Name</TableHead>
-                <TableHead className="text-gray-300 text-right">
+                <TableHead className="text-gray-300 w-[40%]">Name</TableHead>
+                <TableHead className="text-gray-300 text-center">
+                  Invite to Earn
+                </TableHead>
+                <TableHead className="text-gray-300">
                   {selectedTimePeriod} Mindshare
                 </TableHead>
-                <TableHead className="text-gray-300 text-right">
+                <TableHead className="text-gray-300 text-center">
                   Smart Followers
-                </TableHead>
-                <TableHead className="text-gray-300 text-right">
-                  Action
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -136,7 +135,7 @@ export default function CampaignLeaderboard({
                   key={contributor.author_handle}
                   className="border-gray-700 hover:bg-gray-700/30 transition-colors"
                 >
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium w-[40%]">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2">
                         <div className="flex flex-col items-center">
@@ -192,7 +191,26 @@ export default function CampaignLeaderboard({
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-center">
+                    {isProcessing ? (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-700 text-gray-300">
+                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                        Connecting...
+                      </span>
+                    ) : contributor.user_info.user_joined ? (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#00D992]/10 text-[#00D992]">
+                        Joined
+                      </span>
+                    ) : (
+                      <span
+                        onClick={() => handleInvite(contributor.author_handle)}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#00D992]/10 text-[#00D992] cursor-pointer hover:bg-[#00D992]/20 transition-colors"
+                      >
+                        Invite for 10 SAGE <Send className="w-3.5 h-3.5 ml-1" />
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
                     <div className="font-medium text-[#00D992]">
                       {new Intl.NumberFormat("en-US", {
                         minimumFractionDigits: 2,
@@ -201,34 +219,13 @@ export default function CampaignLeaderboard({
                       %
                     </div>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-center">
                     <div className="font-medium text-gray-100">
                       {new Intl.NumberFormat("en-US", {
                         notation: "compact",
                         maximumFractionDigits: 1,
                       }).format(contributor.user_info.smart_followers_count)}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="cursor-pointer border border-gray-600 bg-gray-800/50 text-gray-300 hover:bg-[#00D992]/10 hover:text-white hover:border-[#00D992] transition-all"
-                      onClick={() => handleInvite(contributor.author_handle)}
-                      disabled={isProcessing}
-                    >
-                      {isProcessing ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                          Connecting...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="w-3.5 h-3.5 mr-1" />
-                          Invite
-                        </>
-                      )}
-                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
