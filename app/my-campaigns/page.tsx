@@ -29,6 +29,7 @@ import {
   Check,
   CheckCircle,
   Clock,
+  Copy,
   DollarSign,
   ExternalLink,
   Gem,
@@ -452,11 +453,6 @@ export default function MyCampaigns() {
     }, 2000);
   };
 
-  const viewSocialCard = () => {
-    if (!user?.x_handle) return;
-    window.open(`/api/og/kol/${user.x_handle}`, "_blank");
-  };
-
   // Separate state for open and closed campaigns
   const [openCampaigns, setOpenCampaigns] = useState<Campaign[]>([]);
   const [closedCampaigns, setClosedCampaigns] = useState<Campaign[]>([]);
@@ -819,17 +815,21 @@ export default function MyCampaigns() {
                         How to earn SAGE?
                       </AccordionTrigger>
                       <AccordionContent className="text-[#CFCFCF] text-sm">
-                        <p>
-                          Earn SAGE by completing tasks such as following
-                          TrendSage on X, referring friends, and producing
-                          high-quality content that resonates with your
-                          audience.
-                        </p>
-                        <p>
-                          The more value your content provides—and the more it
-                          "sticks" (likes, reposts, saves, and discussion)—the
-                          more SAGE you'll accumulate.
-                        </p>
+                        <ul className="list-disc list-inside space-y-2">
+                          <li>
+                            Post high-quality content that aligns with projects'
+                            narratives.
+                          </li>
+                          <li>Create original, educational content.</li>
+                          <li>
+                            Share content that SNAPS (pun intended) and drives
+                            real engagement.
+                          </li>
+                          <li>
+                            Hit 10+ SNAPS to unlock invites for your cabal and
+                            earn 10% of the SNAPS they generate.
+                          </li>
+                        </ul>
                       </AccordionContent>
                     </AccordionItem>
 
@@ -840,14 +840,9 @@ export default function MyCampaigns() {
                       </AccordionTrigger>
                       <AccordionContent className="text-[#CFCFCF] text-sm">
                         <p>
-                          SAGE is calculated automatically based on on-chain and
-                          social metrics. Each completed task has a base reward,
-                          while engagement metrics such as impressions and
-                          unique reach multiply your points.
-                        </p>
-                        <p>
-                          Payouts are reflected in real-time on your dashboard,
-                          and you can track your progress on the leaderboards.
+                          Projects with active campaigns set custom narrative
+                          guidelines and rules to determine how SAGE are
+                          rewarded in their leaderboards.
                         </p>
                       </AccordionContent>
                     </AccordionItem>
@@ -870,12 +865,56 @@ export default function MyCampaigns() {
                   onClose={() => setIsWalletDialogOpen(false)}
                 />
               </Dialog>
-              <Button
-                className="bg-[#00D992] text-[#060F11] hover:bg-[#00D992]/90 font-semibold"
-                onClick={viewSocialCard}
-              >
-                View social card
-              </Button>
+
+              {/* View social card popup */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="bg-[#00D992] text-[#060F11] hover:bg-[#00D992]/90 font-semibold">
+                    View social card
+                  </Button>
+                </DialogTrigger>
+
+                <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-xl">
+                  {/* Header */}
+                  <div className="text-left space-y-1">
+                    <h2 className="text-2xl font-semibold text-gray-100">
+                      Earn 200 SAGE
+                    </h2>
+                    <p className="text-gray-400 text-sm">
+                      For every person who joins using your invite
+                    </p>
+                  </div>
+
+                  {/* Social preview card */}
+                  <SocialCard />
+
+                  {/* Action buttons */}
+                  <div className="flex gap-2 justify-end mt-2">
+                    <Button
+                      variant="outline"
+                      onClick={copyReferralCode}
+                      className="bg-transparent border-[#2B3C39]"
+                    >
+                      Copy to clipboard
+                    </Button>
+                    <Button
+                      className="bg-[#00D992] text-[#060F11] hover:bg-[#00D992]/90"
+                      onClick={() => {
+                        if (!referralUrl) return;
+                        const text = encodeURIComponent(
+                          `Join me on @0xtrendsage and earn 10 SAGE with my referral link! ${referralUrl}`
+                        );
+                        window.open(
+                          `https://twitter.com/intent/tweet?text=${text}`,
+                          "_blank"
+                        );
+                      }}
+                    >
+                      Share on X
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         )}
