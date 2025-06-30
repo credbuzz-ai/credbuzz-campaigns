@@ -1,7 +1,6 @@
 "use client";
 
 import { ReferralCard } from "@/components/ReferralCard";
-import { SocialCard } from "@/components/SocialCard";
 import TooltipInfo from "@/components/TooltipInfo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,9 +30,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useUser } from "@/contexts/UserContext";
 import { usePrivy } from "@privy-io/react-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
-import html2canvas from "html2canvas";
 import { Award, Check, Copy, Download, Share, Share2 } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 interface Task {
   id: number;
@@ -103,7 +101,6 @@ const EarnPage = () => {
   const [totalLeaderboardItems, setTotalLeaderboardItems] = useState(0);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
   const [leaderboardError, setLeaderboardError] = useState<string | null>(null);
-  const socialCardRef = useRef<HTMLDivElement>(null);
   const [isSocialCardCopying, setIsSocialCardCopying] = useState(false);
   const [isSocialCardDownloading, setIsSocialCardDownloading] = useState(false);
 
@@ -309,57 +306,60 @@ const EarnPage = () => {
   const showPagination = totalLeaderboardItems > itemsPerPage;
 
   const copySocialCard = async () => {
-    if (!socialCardRef.current) return;
+    if (!user) return;
 
     try {
       setIsSocialCardCopying(true);
-      const canvas = await html2canvas(socialCardRef.current, {
-        allowTaint: true,
-        useCORS: true,
-        logging: false,
-        backgroundColor: null,
-        scale: 2, // For better quality
+      
+      // Generate social card using server-side API
+      const params = new URLSearchParams({
+        name: user.name || "TrendSage",
+        handle: user.x_handle || "0xtrendsage", 
+        followers: (user.followers || 0).toString(),
+        rewards: (user.total_points || 0).toString(),
+        profileImage: user.profile_image_url || "",
       });
+      
+      const response = await fetch(`/api/social-card?${params}`);
+      if (!response.ok) throw new Error("Failed to generate social card");
+      
+      const blob = await response.blob();
 
       // Create the promotional text
       const socialText = `🚀 Join me on @0xtrendsage, where Web3 influence meets rewards! \n\n📊 Check out my stats and achievements on TrendSage.\n\n🎁 Use my referral link to get 10 SAGE when you join and follow @0xtrendsage\n${referralUrl}\n\nLet's build our Web3 credibility together! 🌟`;
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) return;
+      try {
+        // Create a ClipboardItem with both text and image
+        const clipboardContent = [
+          new ClipboardItem({
+            "text/plain": new Blob([socialText], { type: "text/plain" }),
+            "image/png": blob,
+          }),
+        ];
 
+        await navigator.clipboard.write(clipboardContent);
+        toast({
+          title: "Social card copied!",
+          description:
+            "Image and text copied to clipboard. You can now paste them anywhere",
+        });
+      } catch (err) {
+        // Fallback: Try to copy text and image separately
         try {
-          // Create a ClipboardItem with both text and image
-          const clipboardContent = [
-            new ClipboardItem({
-              "text/plain": new Blob([socialText], { type: "text/plain" }),
-              "image/png": blob,
-            }),
-          ];
-
-          await navigator.clipboard.write(clipboardContent);
+          await navigator.clipboard.writeText(socialText);
+          const data = new ClipboardItem({
+            "image/png": blob,
+          });
+          await navigator.clipboard.write([data]);
           toast({
             title: "Social card copied!",
             description:
               "Image and text copied to clipboard. You can now paste them anywhere",
           });
-        } catch (err) {
-          // Fallback: Try to copy text and image separately
-          try {
-            await navigator.clipboard.writeText(socialText);
-            const data = new ClipboardItem({
-              "image/png": blob,
-            });
-            await navigator.clipboard.write([data]);
-            toast({
-              title: "Social card copied!",
-              description:
-                "Image and text copied to clipboard. You can now paste them anywhere",
-            });
-          } catch (fallbackErr) {
-            throw fallbackErr;
-          }
+        } catch (fallbackErr) {
+          throw fallbackErr;
         }
-      });
+      }
     } catch (error) {
       console.error("Error copying social card:", error);
       toast({
@@ -373,24 +373,24 @@ const EarnPage = () => {
   };
 
   const downloadSocialCard = async () => {
-    if (!socialCardRef.current) return;
+    if (!user) return;
 
     try {
       setIsSocialCardDownloading(true);
-      const canvas = await html2canvas(socialCardRef.current, {
-        allowTaint: true,
-        useCORS: true,
-        logging: false,
-        backgroundColor: null,
-        scale: 2, // For better quality
+      
+      // Generate social card using server-side API
+      const params = new URLSearchParams({
+        name: user.name || "TrendSage",
+        handle: user.x_handle || "0xtrendsage",
+        followers: (user.followers || 0).toString(),
+        rewards: (user.total_points || 0).toString(),
+        profileImage: user.profile_image_url || "",
       });
-
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-        }, "image/png");
-      });
+      
+      const response = await fetch(`/api/social-card?${params}`);
+      if (!response.ok) throw new Error("Failed to generate social card");
+      
+      const blob = await response.blob();
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -620,11 +620,26 @@ const EarnPage = () => {
                 Share Your Social Card
               </CardTitle>
               <p className="text-sm text-gray-400">
-                Share your achievements and stats with your network
+                Generate and share your achievements and stats with your network
               </p>
             </CardHeader>
             <CardContent className="pt-6 flex flex-col items-center gap-4">
-              <SocialCard ref={socialCardRef} />
+              {/* Social Card Preview */}
+              <div className="w-full max-w-md">
+                <img
+                  src={user ? `/api/social-card?${new URLSearchParams({
+                    name: user.name || "TrendSage",
+                    handle: user.x_handle || "0xtrendsage",
+                    followers: (user.followers || 0).toString(),
+                    rewards: (user.total_points || 0).toString(),
+                    profileImage: user.profile_image_url || "",
+                  })}` : "/api/social-card"}
+                  alt="Social Card Preview"
+                  className="w-full h-auto rounded-lg border border-gray-600/30 shadow-lg"
+                  style={{ aspectRatio: "1200/628" }}
+                />
+              </div>
+              
               <div className="w-full grid grid-cols-2 gap-4">
                 <Button
                   onClick={copySocialCard}

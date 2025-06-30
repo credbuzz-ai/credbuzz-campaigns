@@ -73,7 +73,7 @@ export default async function RootLayout({
         <link rel="icon" href="/logo-green.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/logo-green.svg" />
       </head>
-      <body className={`${inter.className} bg-gray-900 text-white`}>
+      <body className={`${inter.className} bg-gray-900 text-white`} suppressHydrationWarning>
         <PrivyProvider>
           <UserProvider>
             <SignupProvider>
