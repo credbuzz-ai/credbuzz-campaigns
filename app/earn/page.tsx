@@ -419,26 +419,28 @@ const EarnPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900/30 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-900/30 py-4 sm:py-8 px-2 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-100 mb-4">Earn SAGE</h1>
-          <p className="text-xl text-gray-300">
+        <div className="mb-6 sm:mb-8 px-2 sm:px-0">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-100 mb-2 sm:mb-4">
+            Earn SAGE
+          </h1>
+          <p className="text-lg sm:text-xl text-gray-300">
             Complete tasks and earn rewards for your engagement
           </p>
         </div>
 
         {/* First Row: Stats and Tasks */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-8">
           {/* Your Stats Card */}
           <Card className="overflow-hidden border border-gray-700/30 shadow-xl bg-gray-800/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-xl font-bold flex items-center gap-2 text-gray-100">
-                <Award className="h-6 w-6 text-[#00D992]" />
+              <CardTitle className="text-lg sm:text-xl font-bold flex items-center gap-2 text-gray-100">
+                <Award className="h-5 sm:h-6 w-5 sm:w-6 text-[#00D992]" />
                 Your Stats
               </CardTitle>
-              <p className="text-gray-300">
+              <p className="text-sm sm:text-base text-gray-300">
                 Complete tasks and refer friends to earn more SAGE
               </p>
             </CardHeader>
@@ -472,34 +474,34 @@ const EarnPage = () => {
               <Badge className="w-fit mb-2 bg-[#00D992]/90 hover:bg-[#00F5A8]/90 text-gray-900 border-none">
                 Tasks
               </Badge>
-              <CardTitle className="text-gray-100">
+              <CardTitle className="text-lg sm:text-xl text-gray-100">
                 Complete Tasks to Earn
               </CardTitle>
-              <p className="text-sm text-gray-400">
+              <p className="text-xs sm:text-sm text-gray-400">
                 Finish all tasks to maximize your SAGE
               </p>
             </CardHeader>
-            <CardContent className="pt-6">
-              <div className="space-y-4">
+            <CardContent className="pt-4 sm:pt-6">
+              <div className="space-y-3 sm:space-y-4">
                 {tasks.map((task) => (
                   <div
                     key={task.id}
-                    className="flex items-center justify-between p-3 bg-gray-700/30 rounded-xl border border-gray-600/30 hover:border-[#00D992]/30 transition-all"
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-gray-700/30 rounded-xl border border-gray-600/30 hover:border-[#00D992]/30 transition-all gap-4 sm:gap-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-gray-800/50 flex items-center justify-center">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <div className="h-10 w-10 shrink-0 rounded-full bg-gray-800/50 flex items-center justify-center">
                         {task.icon}
                       </div>
-                      <div>
+                      <div className="min-w-0 flex-1 sm:flex-none">
                         <h3 className="font-medium text-gray-100">
                           {task.title}
                         </h3>
-                        <p className="text-xs text-gray-400 max-w-[200px]">
+                        <p className="text-xs text-gray-400 max-w-[300px] sm:max-w-[200px]">
                           {task.description}
                         </p>
 
                         {task.id === 3 && (
-                          <div className="mt-2 w-full max-w-[200px]">
+                          <div className="mt-2 w-full sm:max-w-[200px]">
                             <div className="flex justify-between text-xs text-gray-400 mb-1">
                               <span>
                                 {user?.total_referrals || 0 < 5
@@ -517,7 +519,7 @@ const EarnPage = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                       <Badge
                         variant="outline"
                         className="bg-gray-800/50 border-gray-600/30 text-gray-300"
@@ -563,7 +565,7 @@ const EarnPage = () => {
         </div>
 
         {/* Second Row: Referral and Social Card */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-8">
           {/* Referral Card */}
           <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30">
             <CardHeader className="pb-2 border-b border-gray-700/30">
@@ -664,17 +666,17 @@ const EarnPage = () => {
         </div>
 
         {/* Leaderboard */}
-        <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30 mb-8">
+        <Card className="border border-gray-700/30 shadow-xl bg-gray-800/30 mb-4 sm:mb-8">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl text-gray-100">
+            <CardTitle className="text-lg sm:text-xl text-gray-100">
               Buzz Leaderboard
             </CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardDescription className="text-sm text-gray-400">
               Top users ranked by Buzz points
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow className="border-gray-700/30">
@@ -765,10 +767,10 @@ const EarnPage = () => {
             </div>
 
             {showPagination && (
-              <div className="mt-4">
-                <div className="flex items-center justify-between">
+              <div className="mt-4 overflow-x-auto -mx-4 sm:mx-0">
+                <div className="flex items-center justify-between px-4 sm:px-0">
                   <Pagination>
-                    <PaginationContent>
+                    <PaginationContent className="flex-wrap gap-2">
                       <PaginationItem>
                         <Button
                           variant="outline"
