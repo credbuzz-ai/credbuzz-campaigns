@@ -313,7 +313,13 @@ const EarnPage = () => {
 
     try {
       setIsSocialCardCopying(true);
-      const canvas = await html2canvas(socialCardRef.current);
+      const canvas = await html2canvas(socialCardRef.current, {
+        allowTaint: true,
+        useCORS: true,
+        logging: false,
+        backgroundColor: null,
+        scale: 2, // For better quality
+      });
 
       // Create the promotional text
       const socialText = `🚀 Join me on @0xtrendsage, where Web3 influence meets rewards! \n\n📊 Check out my stats and achievements on TrendSage.\n\n🎁 Use my referral link to get 10 SAGE when you join and follow @0xtrendsage\n${referralUrl}\n\nLet's build our Web3 credibility together! 🌟`;
@@ -371,7 +377,13 @@ const EarnPage = () => {
 
     try {
       setIsSocialCardDownloading(true);
-      const canvas = await html2canvas(socialCardRef.current);
+      const canvas = await html2canvas(socialCardRef.current, {
+        allowTaint: true,
+        useCORS: true,
+        logging: false,
+        backgroundColor: null,
+        scale: 2, // For better quality
+      });
 
       // Convert canvas to blob
       const blob = await new Promise<Blob>((resolve) => {
