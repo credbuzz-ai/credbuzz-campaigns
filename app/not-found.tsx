@@ -1,5 +1,5 @@
-import Link from "next/link"
-import { ArrowLeft, Users } from "lucide-react"
+import { ArrowLeft, Users } from "lucide-react";
+import Link from "next/link";
 
 export default function NotFound() {
   return (
@@ -10,15 +10,18 @@ export default function NotFound() {
             <Users className="w-8 h-8 text-gray-300" />
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-100 mb-4">Profile Not Found</h1>
-          <p className="text-gray-400 mb-8">The profile you're looking for doesn't exist or may have been removed.</p>
+          <h1 className="text-2xl font-bold text-gray-100 mb-4">
+            Page Not Found
+          </h1>
+          <p className="text-gray-400 mb-8">
+            The Page you're looking for doesn't exist or may have been removed.
+          </p>
 
           <div className="space-y-4">
-            <Link href="/kols/eliz883" className="btn-primary w-full inline-flex items-center justify-center">
-              View Sample Profile
-            </Link>
-
-            <Link href="/buzz-board" className="btn-secondary w-full inline-flex items-center justify-center">
+            <Link
+              href="/buzz-board"
+              className="btn-secondary w-full inline-flex items-center justify-center bg-[#00D992] text-gray-900 hover:bg-[#00D992]/90"
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Browse Campaigns
             </Link>
@@ -26,5 +29,5 @@ export default function NotFound() {
         </div>
       </div>
     </div>
-  )
+  );
 }
