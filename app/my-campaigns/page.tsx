@@ -1,6 +1,8 @@
 "use client";
 
+import { ReferralCard } from "@/components/ReferralCard";
 import { SocialCard } from "@/components/SocialCard";
+import TooltipInfo from "@/components/TooltipInfo";
 import {
   Accordion,
   AccordionContent,
@@ -32,6 +34,7 @@ import {
   DollarSign,
   ExternalLink,
   Gem,
+  Share2,
   Loader2,
   Pause,
   TrendingUp,
@@ -277,6 +280,18 @@ function EarnMini() {
     window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
   };
 
+  const shareOnTelegram = () => {
+    const shareUrl = `https://trendsage.xyz?referral_code=${user?.referral_code}`;
+    const shareText = `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${shareUrl}`;
+    const url = `https://t.me/share/url?url=${encodeURIComponent(
+      shareUrl
+    )}&text=${encodeURIComponent(shareText)}`;
+    window.open(url, "_blank");
+    toast({
+      title: "Telegram share opened!",
+    });
+  };
+
   return (
     <div className="space-y-8">
       {/* Core Layout */}
@@ -370,7 +385,7 @@ function EarnMini() {
         </Card>
 
         {/* Referral & Social card */}
-        <div className="space-y-6 col-span-5">
+        {/* <div className="space-y-6 col-span-5">
           <Card className="bg-transparent border-none">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-[#DFFCF6] text-base font-medium">
@@ -396,7 +411,45 @@ function EarnMini() {
               </div>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
+        <Card className=" shadow-xl border-none bg-transparent col-span-5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-gray-100">
+              Share Your Referral Link
+            </CardTitle>
+            <p className="text-sm text-gray-400 flex items-center">
+              <TooltipInfo
+                text="Your friends earn 10 SAGE each when they join using your referral link. You will also earn 10 SAGE when they follow @0xtrendsage on X."
+                className="mr-2"
+              />
+              Refer and Earn 10 SAGE each time someone uses your referral link.
+            </p>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <ReferralCard
+              referralCode={user?.referral_code || ""}
+              referralUrl={referralUrl}
+            />
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <Button
+                onClick={shareOnX}
+                className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
+                size="sm"
+              >
+                <span>Share on X</span>
+              </Button>
+
+              <Button
+                onClick={shareOnTelegram}
+                className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
+                size="sm"
+              >
+                <Share2 className="h-4 w-4" />
+                <span>Telegram</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -866,8 +919,25 @@ export default function MyCampaigns() {
                   </div>
 
                   {/* Social preview card */}
-                  <SocialCard />
-
+                  {/* <SocialCard /> */}
+                  <div className="w-full max-w-md">
+                    <img
+                      src={
+                        user
+                          ? `/api/social-card?${new URLSearchParams({
+                              name: user.name || "TrendSage",
+                              handle: user.x_handle || "0xtrendsage",
+                              followers: (user.followers || 0).toString(),
+                              rewards: (user.total_points || 0).toString(),
+                              profileImage: user.profile_image_url || "",
+                            })}`
+                          : "/api/social-card"
+                      }
+                      alt="Social Card Preview"
+                      className="w-full h-auto rounded-lg border border-gray-600/30 shadow-lg"
+                      style={{ aspectRatio: "1200/628" }}
+                    />
+                  </div>
                   {/* Action buttons */}
                   <div className="flex gap-2 justify-end mt-2">
                     <Button

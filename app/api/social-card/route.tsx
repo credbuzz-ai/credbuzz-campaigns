@@ -12,6 +12,11 @@ export async function GET(request: NextRequest) {
     const rewards = searchParams.get("rewards") || "0";
     const profileImage = searchParams.get("profileImage") || "";
 
+    // Build absolute URLs for public assets so they can be fetched in the Edge runtime
+    const baseUrl = new URL(request.url).origin;
+    const blurImageUrl = `${baseUrl}/blur.png`;
+    const earnImageUrl = `${baseUrl}/earn.png`;
+
     return new ImageResponse(
       (
         <div
@@ -25,16 +30,16 @@ export async function GET(request: NextRequest) {
             overflow: "hidden",
           }}
         >
-          {/* Background Image */}
-          <div
+          {/* Background Image with Blur */}
+          <img
+            src={blurImageUrl}
+            alt="Background"
             style={{
               position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundImage: "url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwMCIgaGVpZ2h0PSI2MjgiIHZpZXdCb3g9IjAgMCAxMjAwIDYyOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGRlZnM+CjxsaW5lYXJHcmFkaWVudCBpZD0iYmx1ckdyYWRpZW50IiB4MT0iMCUiIHkxPSIwJSIgeDI9IjEwMCUiIHkyPSIxMDAlIj4KPHN0b3Agb2Zmc2V0PSIwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwMDAwMDtzdG9wLW9wYWNpdHk6MSIgLz4KPHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMTExODI3O3N0b3Atb3BhY2l0eToxIiAvPgo8L2xpbmVhckdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHdpZHRoPSIxMjAwIiBoZWlnaHQ9IjYyOCIgZmlsbD0idXJsKCNibHVyR3JhZGllbnQpIi8+Cjwvc3ZnPgo=)",
-              backgroundSize: "cover",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
             }}
           />
 
@@ -72,22 +77,25 @@ export async function GET(request: NextRequest) {
                     style={{
                       width: "96px",
                       height: "96px",
-                      borderRadius: "48px",
+                      borderRadius: "12px",
                       objectFit: "cover",
                     }}
                     alt="Profile"
+                    crossOrigin={
+                      profileImage.startsWith("http") ? "anonymous" : undefined
+                    }
                   />
                 ) : (
                   <div
                     style={{
                       width: "96px",
                       height: "96px",
-                      borderRadius: "48px",
+                      borderRadius: "12px",
                       background: "#00D992",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      fontSize: "40px",
+                      fontSize: "60px",
                       fontWeight: "bold",
                       color: "#000",
                     }}
@@ -98,8 +106,8 @@ export async function GET(request: NextRequest) {
                 <div style={{ display: "flex", flexDirection: "column" }}>
                   <h2
                     style={{
-                      fontSize: "40px",
-                      color: "white",
+                      fontSize: "56px",
+                      color: "#DFFCF6",
                       margin: 0,
                       fontWeight: "400",
                     }}
@@ -108,8 +116,8 @@ export async function GET(request: NextRequest) {
                   </h2>
                   <p
                     style={{
-                      fontSize: "28px",
-                      color: "#9CA3AF",
+                      fontSize: "30px",
+                      color: "#A9F0DF",
                       margin: 0,
                       marginTop: "8px",
                     }}
@@ -135,7 +143,7 @@ export async function GET(request: NextRequest) {
                 >
                   <h3
                     style={{
-                      fontSize: "24px",
+                      fontSize: "36px",
                       color: "#9CA3AF",
                       margin: 0,
                       marginBottom: "8px",
@@ -145,7 +153,7 @@ export async function GET(request: NextRequest) {
                   </h3>
                   <p
                     style={{
-                      fontSize: "40px",
+                      fontSize: "42px",
                       color: "white",
                       margin: 0,
                       fontWeight: "400",
@@ -163,7 +171,7 @@ export async function GET(request: NextRequest) {
                 >
                   <h3
                     style={{
-                      fontSize: "24px",
+                      fontSize: "36px",
                       color: "#9CA3AF",
                       margin: 0,
                       marginBottom: "8px",
@@ -173,7 +181,7 @@ export async function GET(request: NextRequest) {
                   </h3>
                   <p
                     style={{
-                      fontSize: "40px",
+                      fontSize: "42px",
                       color: "white",
                       margin: 0,
                       fontWeight: "400",
@@ -190,8 +198,8 @@ export async function GET(request: NextRequest) {
               style={{
                 display: "flex",
                 flexDirection: "column",
-                alignItems: "center",
-                gap: "24px",
+                alignItems: "flex-start",
+                gap: "16px",
                 padding: "32px 0",
                 borderTop: "2px dashed #374151",
                 borderBottom: "2px dashed #374151",
@@ -203,6 +211,7 @@ export async function GET(request: NextRequest) {
                   color: "white",
                   margin: 0,
                   fontWeight: "400",
+                  textAlign: "left",
                 }}
               >
                 Turn your Popularity on X into
@@ -212,6 +221,7 @@ export async function GET(request: NextRequest) {
                   display: "flex",
                   alignItems: "center",
                   gap: "16px",
+                  textAlign: "left",
                 }}
               >
                 <span
@@ -220,6 +230,7 @@ export async function GET(request: NextRequest) {
                     color: "white",
                     margin: 0,
                     fontWeight: "400",
+                    textAlign: "left",
                   }}
                 >
                   Exciting Rewards with
@@ -262,19 +273,19 @@ export async function GET(request: NextRequest) {
               <p
                 style={{
                   fontSize: "36px",
-                  color: "#9CA3AF",
+                  color: "#6A7B78",
                   margin: 0,
                 }}
               >
-                Use my referral URL now!
+                Here's a reward to start with
               </p>
               <div
                 style={{
                   background: "#00D992",
                   color: "#000",
-                  padding: "16px 32px",
+                  padding: "12px 24px",
                   borderRadius: "12px",
-                  fontSize: "32px",
+                  fontSize: "36px",
                   fontWeight: "bold",
                 }}
               >
@@ -293,4 +304,4 @@ export async function GET(request: NextRequest) {
     console.error("Error generating social card:", error);
     return new Response("Failed to generate social card", { status: 500 });
   }
-} 
+}
