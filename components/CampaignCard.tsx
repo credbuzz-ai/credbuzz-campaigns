@@ -1,6 +1,5 @@
 import { Campaign } from "@/lib/types";
 import Link from "next/link";
-import ExpandableDescription from "./ExpandableDescription";
 
 function formatAmount(amount: number): string {
   if (amount >= 1000000000) return (amount / 1000000000).toFixed(4) + "B";
@@ -69,7 +68,17 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
             {getStatusDisplayName(campaign.status)}
           </span>
         </div>
-        <ExpandableDescription description={campaign.description} />
+        <div className="flex justify-between items-center text-sm">
+          <div className="text-gray-300 text-sm mb-4">
+            {campaign.description.slice(0, 100)}...
+            <Link
+              href={`/buzz-board/${campaign.campaign_id}`}
+              className="ml-1 text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors"
+            >
+              Read more
+            </Link>
+          </div>
+        </div>
         <div className="space-y-3">
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-400">Budget</span>
