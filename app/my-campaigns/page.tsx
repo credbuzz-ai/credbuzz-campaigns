@@ -29,7 +29,6 @@ import {
   Check,
   CheckCircle,
   Clock,
-  Copy,
   DollarSign,
   ExternalLink,
   Gem,
@@ -160,12 +159,8 @@ function EarnMini() {
   const { user, refreshUser } = useUser();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [completedTasks, setCompletedTasks] = useState(user ? 1 : 0);
   const [referralCount, setReferralCount] = useState(
     user?.total_referrals || 0
-  );
-  const [referralProgress, setReferralProgress] = useState(
-    (referralCount / 5) * 100
   );
 
   const claimXFollow = async () => {
@@ -186,8 +181,6 @@ function EarnMini() {
         throw new Error(errorData.error || "Failed to claim X follow");
       }
 
-      const data = await response.json();
-
       // Update tasks to mark X follow as completed
       const updatedTasks = tasks.map((task) => {
         if (task.id === 1) {
@@ -196,7 +189,6 @@ function EarnMini() {
         return task;
       });
       setTasks(updatedTasks);
-      setCompletedTasks((prev) => prev + 1);
       await refreshUser();
 
       toast({
@@ -236,19 +228,14 @@ function EarnMini() {
 
     setTasks(initialTasks);
     setReferralCount(user?.total_referrals || 0);
-    setCompletedTasks(
-      initialTasks.filter((task) => task.completed >= task.total).length
-    );
   }, [user]);
 
   useEffect(() => {
     const progress = (referralCount / 5) * 100;
-    setReferralProgress(progress);
 
     if (referralCount >= 5) {
       const updatedTasks = tasks.map((task) => {
         if (task.id === 2 && task.completed < task.total) {
-          setCompletedTasks((prev) => prev + 1);
           return { ...task, completed: task.total };
         }
         return task;
@@ -429,9 +416,6 @@ export default function MyCampaigns() {
   const { user } = useUser();
   const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false);
 
-  // Referral copy helper state
-  const [isReferralCopied, setIsReferralCopied] = useState(false);
-
   // Utility to format large numbers (e.g., 1.2K, 3.4M)
   const formatNumber = (num: number) => {
     if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
@@ -447,10 +431,6 @@ export default function MyCampaigns() {
     const shareUrl = `https://trendsage.xyz?referral_code=${user?.referral_code}`;
     const shareText = `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${shareUrl}`;
     navigator.clipboard.writeText(shareText);
-    setIsReferralCopied(true);
-    setTimeout(() => {
-      setIsReferralCopied(false);
-    }, 2000);
   };
 
   // Separate state for open and closed campaigns
@@ -878,7 +858,7 @@ export default function MyCampaigns() {
                   {/* Header */}
                   <div className="text-left space-y-1">
                     <h2 className="text-2xl font-semibold text-gray-100">
-                      Earn 200 SAGE
+                      Earn 10 SAGE
                     </h2>
                     <p className="text-gray-400 text-sm">
                       For every person who joins using your invite
