@@ -132,3 +132,14 @@ export const allowedSolanaTokens: Token[] = [
     decimals: 9,
   },
 ];
+
+export interface Task {
+  id: number;
+  title: string;
+  description: string;
+  total: number;
+  completed: number;
+  points: number;
+  action?: () => Promise<void>;
+  link?: string;
+}
