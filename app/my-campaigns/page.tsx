@@ -23,11 +23,24 @@ import {
   Loader2,
   Pause,
   TrendingUp,
-  Wallet,
   XCircle,
+  Copy,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ReferralCard } from "@/components/ReferralCard";
+import { SocialCard } from "@/components/SocialCard";
+import html2canvas from "html2canvas";
+import { Award, Check, ExternalLink, Share2, Gem } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 // Add UpdateWalletDialog component
 const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
@@ -132,16 +145,299 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
+interface Task {
+  id: number;
+  title: string;
+  description: string;
+  total: number;
+  completed: number;
+  points: number;
+  imageUrl: string;
+}
+
+// Mini Earn section (simplified earn UI)
+function EarnMini() {
+  const { user } = useUser();
+  const { toast } = useToast();
+
+  const tasks: Task[] = [
+    {
+      id: 1,
+      title: "Follow on X",
+      description: "Follow @0xtrendsage on X",
+      total: 5,
+      completed: user?.x_follow_claimed ? 1 : 0,
+      points: 10,
+      imageUrl: user?.profile_image_url || "/placeholder-user.jpg",
+    },
+    {
+      id: 2,
+      title: "Invite 5 friends",
+      description: "Get 5 friends to sign up using your invite",
+      total: 5,
+      completed: Math.min(user?.total_referrals ?? 0, 5),
+      points: 10,
+      imageUrl: user?.profile_image_url || "/placeholder-user.jpg",
+    },
+  ];
+
+  const completedTasks = tasks.filter((t) => t.completed >= t.total).length;
+
+  const formatNumber = (n: number) => {
+    if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+    return n.toString();
+  };
+
+  const referralUrl = user?.referral_code
+    ? `https://trendsage.xyz?referral_code=${user.referral_code}`
+    : "";
+
+  const copyReferral = () => {
+    if (!referralUrl) return;
+    navigator.clipboard.writeText(referralUrl);
+    toast({ title: "Referral link copied!" });
+  };
+
+  const shareOnX = () => {
+    if (!referralUrl) return;
+    const text = encodeURIComponent(
+      `Join me on @0xtrendsage and earn 10 SAGE with my referral link! ${referralUrl}`
+    );
+    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-32">
+        {/* Total SAGE earned */}
+        <div className="rounded-lg p-4 bg-gradient-to-br from-[#0F3F2E] to-[#044d39]/60 border border-[#155748]/40 shadow-inner">
+          <p className="text-sm text-[#66E2C1] mb-1 font-medium tracking-wide">
+            Total SAGE earned
+          </p>
+          <p className="text-2xl font-semibold text-[#DFFCF6]">
+            {formatNumber(user?.total_points ?? 0)}
+          </p>
+        </div>
+
+        {/* Tasks completed */}
+        <div className="flex flex-col justify-center">
+          <p className="text-sm text-[#DFFCF6BF] mb-1 font-medium tracking-wide">
+            Tasks completed
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-semibold text-[#DFFCF6]">
+              {completedTasks}
+            </span>
+            <span className="text-2xl text-[#4D5B59]">/ {tasks.length}</span>
+            <span className="text-sm text-[#A9F0DF] ml-2">+0 SAGE</span>
+          </div>
+        </div>
+
+        {/* Successful invites */}
+        <div className="flex flex-col justify-center">
+          <p className="text-sm text-[#DFFCF6BF] mb-1 font-medium tracking-wide">
+            Successful invites
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-semibold text-[#DFFCF6]">
+              {formatNumber(user?.total_referrals ?? 0)}
+            </span>
+            <span className="text-sm text-[#A9F0DF] ml-2">+1000 SAGE</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Core Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Tasks */}
+        <Card className="bg-transparent border-none col-span-7">
+          <CardHeader className="p-4">
+            <CardTitle className="text-[#DFFCF6] text-base font-medium">
+              Tasks for SAGE
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 space-y-5">
+            {tasks.map((task) => {
+              const progressPercent = (task.completed / task.total) * 100;
+              return (
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between py-3 px-0 rounded-lg"
+                >
+                  {/* Left cluster */}
+                  <div className="flex items-center gap-4 min-w-0">
+                    {/* number badge */}
+                    <span className="h-6 w-6 flex items-center justify-center rounded-[4px] bg-[#1E2A28] text-[10px] font-semibold text-[#DFFCF6]">
+                      {task.id}
+                    </span>
+                    {/* avatar */}
+                    <img
+                      src={task.imageUrl}
+                      alt="avatar"
+                      className="w-7 h-7 rounded-[8px] object-cover"
+                    />
+                    <div className="w-48">
+                      <p className="text-sm font-medium text-gray-100 leading-4">
+                        {task.title}
+                      </p>
+                      <p className="text-xs text-gray-400 leading-4 mt-1">
+                        {task.description}
+                      </p>
+                    </div>
+                    {task.total > 1 && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[10px] text-gray-400">
+                          {task.completed}/{task.total}
+                        </span>
+                        <div className="w-24">
+                          <Progress
+                            value={progressPercent}
+                            className="h-1 bg-gray-700"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right cluster */}
+                  <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-1 text-gray-100 text-sm font-medium">
+                      +{task.points}
+                      <Gem className="w-3 h-3 text-gray-400" />
+                    </div>
+                    {progressPercent >= 100 ? (
+                      <Button
+                        size="sm"
+                        disabled
+                        variant="secondary"
+                        className="bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
+                      >
+                        Done <Check className="w-4 h-4 ml-1" />
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-transparent border-gray-700 text-gray-300 hover:bg-[#00D992] hover:text-[#060F11]"
+                      >
+                        Finish task <ExternalLink className="w-3 h-3 ml-1" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        {/* Referral & Social card */}
+        <div className="space-y-6 col-span-5">
+          <Card className="bg-transparent border-none">
+            <CardHeader className="p-4 pb-0">
+              <CardTitle className="text-[#DFFCF6] text-base font-medium">
+                Copy invite code
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 flex items-center gap-2">
+              <input
+                readOnly
+                value={user?.referral_code || ""}
+                className="flex-1 bg-[#151B1A] border border-[#1E2A28] rounded-lg px-3 py-2 text-[#A9F0DF] text-sm"
+              />
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={copyReferral}
+                className="bg-[#151B1A]"
+              >
+                <Copy className="w-4 h-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={shareOnX}
+                className="bg-[#151B1A]"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-transparent border-none">
+            <CardHeader className="p-4 pb-0">
+              <CardTitle className="text-[#DFFCF6] text-base font-medium">
+                Social card
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4 space-y-4">
+              <SocialCard />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={copyReferral}
+                  className="bg-[#2D3B39] border-[#2B3C39]"
+                >
+                  Copy to clipboard
+                </Button>
+                <Button
+                  className="bg-[#00D992] text-[#060F11]"
+                  onClick={shareOnX}
+                >
+                  Share on X
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MyCampaigns() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"created" | "received">("created");
+  // Top-level tabs: earn rewards vs manage campaigns
+  const [activeTab, setActiveTab] = useState<
+    "earn" | "campaigns" | "created" | "received"
+  >("earn");
   const [campaignType, setCampaignType] = useState<"Targeted" | "Public">(
     "Targeted"
   );
   const { user } = useUser();
   const [isWalletDialogOpen, setIsWalletDialogOpen] = useState(false);
+
+  // Referral copy helper state
+  const [isReferralCopied, setIsReferralCopied] = useState(false);
+
+  // Utility to format large numbers (e.g., 1.2K, 3.4M)
+  const formatNumber = (num: number) => {
+    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+    if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
+    return num.toString();
+  };
+
+  const referralUrl = user?.referral_code
+    ? `https://trendsage.xyz?referral_code=${user.referral_code}`
+    : "";
+
+  const copyReferralCode = () => {
+    const shareUrl = `https://trendsage.xyz?referral_code=${user?.referral_code}`;
+    const shareText = `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${shareUrl}`;
+    navigator.clipboard.writeText(shareText);
+    setIsReferralCopied(true);
+    setTimeout(() => {
+      setIsReferralCopied(false);
+    }, 2000);
+  };
+
+  const viewSocialCard = () => {
+    if (!user?.x_handle) return;
+    window.open(`/api/og/kol/${user.x_handle}`, "_blank");
+  };
 
   // Separate state for open and closed campaigns
   const [openCampaigns, setOpenCampaigns] = useState<Campaign[]>([]);
@@ -421,94 +717,180 @@ export default function MyCampaigns() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-[#080B0A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-100 mb-2">
-              My Campaigns
-            </h1>
-            <p className="text-gray-400">
-              Manage your created and received campaigns
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {(user?.evm_wallet || user?.solana_wallet) && (
-              <div className="text-sm">
-                {user?.evm_wallet && (
-                  <div className="flex items-center gap-2 text-gray-400 mb-1">
-                    <span>EVM:</span>
-                    <code className="bg-gray-800 px-2 py-0.5 rounded text-[#00D992]">
-                      {user.evm_wallet.slice(0, 6)}...
-                      {user.evm_wallet.slice(-4)}
-                    </code>
-                  </div>
-                )}
-                {user?.solana_wallet && (
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <span>SOL:</span>
-                    <code className="bg-gray-800 px-2 py-0.5 rounded text-[#00D992]">
-                      {user.solana_wallet.slice(0, 6)}...
-                      {user.solana_wallet.slice(-4)}
-                    </code>
-                  </div>
-                )}
+        {/* Profile Header */}
+        {user && (
+          <div className="mb-12">
+            <div className="flex flex-col lg:flex-row justify-between gap-6 items-center mb-6">
+              {/* Avatar & basic info */}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <img
+                    src={user.profile_image_url || "/placeholder-user.jpg"}
+                    alt={user.name || user.x_handle}
+                    className="w-20 h-20 rounded-[8px] object-cover border-2 border-[#00D992]/30"
+                  />
+                  <span className="absolute -top-2 -right-2 w-4 h-4 bg-[#00D992] border-2 border-gray-900 rounded-full" />
+                </div>
+                <div className="flex flex-col gap-2 items-start">
+                  <h2 className="text-2xl font-bold text-gray-100 mb-1">
+                    {user.name || user.x_handle}
+                  </h2>
+                  <p className="text-[#9CA7A4] mb-1">@{user.x_handle}</p>
+                </div>
+                <div className="flex flex-row gap-4 items-center">
+                  {/* <span>{user.}</span> */}
+                </div>
               </div>
-            )}
 
-            <Dialog
-              open={isWalletDialogOpen}
-              onOpenChange={setIsWalletDialogOpen}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-gray-100"
-                >
-                  <Wallet className="w-4 h-4 mr-2" />
-                  {user?.evm_wallet || user?.solana_wallet
-                    ? "Update"
-                    : "Add"}{" "}
-                  Wallets
-                </Button>
-              </DialogTrigger>
-              <UpdateWalletDialog
-                onClose={() => setIsWalletDialogOpen(false)}
-              />
-            </Dialog>
+              {/* Metrics */}
+              {/* <div className="flex items-center gap-16">
+                <div className="text-left gap-2 flex flex-col min-w-24">
+                  <div className="text-sm text-[#9CA7A4]">Followers</div>
+                  <div className="text-xl font-semibold text-gray-100 text-left">
+                    {formatNumber(user.followers ?? 0)}
+                  </div>
+                </div>
+                <div className="text-left gap-2 flex flex-col min-w-24">
+                  <div className="text-sm text-[#9CA7A4]">Smart followers</div>
+                  <div className="text-xl font-semibold text-gray-100 text-left">
+                    {formatNumber(user.smart_followers ?? 0)}
+                  </div>
+                </div>
+                <div className="text-left gap-2 flex flex-col min-w-24">
+                  <div className="text-sm text-[#9CA7A4]">Avg. Views</div>
+                  <div className="text-xl font-semibold text-gray-100 text-left">
+                    {(user.engagement_score ?? 0).toFixed(1)}
+                  </div>
+                </div>
+              </div> */}
+            </div>
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-3">
+              {/* About SAGE dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="bg-transparent border-[#2D3B39] text-[#9CA7A4] hover:bg-gray-700 hover:text-gray-100"
+                  >
+                    How to earn<span className="text-[#A9F0DF]"> $SAGE</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg">
+                  <DialogHeader className="text-center">
+                    <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
+                      About SAGE
+                    </DialogTitle>
+                  </DialogHeader>
+
+                  {/* Accordion */}
+                  <Accordion
+                    type="single"
+                    collapsible
+                    defaultValue="item-1"
+                    className="mt-4"
+                  >
+                    {/* What is SAGE */}
+                    <AccordionItem value="item-1" className="border-none">
+                      <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                        What's SAGE?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-[#CFCFCF] text-sm">
+                        SAGE are points you earn for posting quality content
+                        that sticks on crypto Twitter (CT) about projects that
+                        have active Snaps campaigns.
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* How to earn SAGE */}
+                    <AccordionItem value="item-2" className="border-none">
+                      <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                        How to earn SAGE?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-[#CFCFCF] text-sm">
+                        <p>
+                          Earn SAGE by completing tasks such as following
+                          TrendSage on X, referring friends, and producing
+                          high-quality content that resonates with your
+                          audience.
+                        </p>
+                        <p>
+                          The more value your content provides—and the more it
+                          "sticks" (likes, reposts, saves, and discussion)—the
+                          more SAGE you'll accumulate.
+                        </p>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* How SAGE is awarded */}
+                    <AccordionItem value="item-3" className="border-none">
+                      <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                        How is SAGE awarded?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-[#CFCFCF] text-sm">
+                        <p>
+                          SAGE is calculated automatically based on on-chain and
+                          social metrics. Each completed task has a base reward,
+                          while engagement metrics such as impressions and
+                          unique reach multiply your points.
+                        </p>
+                        <p>
+                          Payouts are reflected in real-time on your dashboard,
+                          and you can track your progress on the leaderboards.
+                        </p>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </DialogContent>
+              </Dialog>
+              <Button
+                variant="outline"
+                className="bg-transparent border-[#2D3B39] text-[#9CA7A4] hover:bg-gray-700 hover:text-gray-100"
+                onClick={copyReferralCode}
+              >
+                <Copy className="w-4 h-4 mr-1" />
+                {isReferralCopied ? "Copied!" : "Copy referral link"}
+              </Button>
+              <Button
+                className="bg-[#00D992] text-[#060F11] hover:bg-[#00D992]/90 font-semibold"
+                onClick={viewSocialCard}
+              >
+                View social card
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Tab Navigation with Campaign Type Toggle */}
+        {/* Tab Navigation */}
         <div className="border-b border-gray-700 mb-8">
           <div className="flex justify-between items-center">
             <nav className="-mb-px flex space-x-8">
               <button
-                onClick={() => setActiveTab("created")}
+                onClick={() => setActiveTab("earn")}
                 className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === "created"
+                  activeTab === "earn"
                     ? "border-[#00D992] text-[#00D992]"
                     : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
                 }`}
               >
-                Created Campaigns ({filteredCreatedCampaigns.length})
+                Earn SAGE
               </button>
               <button
-                onClick={() => setActiveTab("received")}
+                onClick={() => setActiveTab("campaigns")}
                 className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === "received"
+                  activeTab === "campaigns"
                     ? "border-[#00D992] text-[#00D992]"
                     : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
                 }`}
               >
-                Received Campaigns ({filteredReceivedCampaigns.length})
+                Campaigns
               </button>
             </nav>
 
             {/* Campaign Type Toggle */}
-            <div className="flex items-center bg-gray-800 p-1 rounded-lg">
+            {/* <div className="flex items-center bg-gray-800 p-1 rounded-lg">
               <button
                 onClick={() => setCampaignType("Targeted")}
                 className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
@@ -547,12 +929,19 @@ export default function MyCampaigns() {
                   )}
                 </div>
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
 
-        {/* Created Campaigns Tab */}
-        {activeTab === "created" && (
+        {/* Earn Tab Content */}
+        {activeTab === "earn" && (
+          <div className="">
+            <EarnMini />
+          </div>
+        )}
+
+        {/* Campaigns Management (created/received) */}
+        {activeTab === "campaigns" && (
           <div className="space-y-6">
             {filteredCreatedCampaigns.length === 0 ? (
               <div className="text-center py-12">
