@@ -1,6 +1,14 @@
 "use client";
 
+import { SocialCard } from "@/components/SocialCard";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
@@ -17,30 +26,19 @@ import { Campaign, Token } from "@/lib/types";
 import { usePrivy } from "@privy-io/react-auth";
 import {
   Calendar,
+  Check,
   CheckCircle,
   Clock,
   DollarSign,
+  ExternalLink,
+  Gem,
   Loader2,
   Pause,
   TrendingUp,
   XCircle,
-  Copy,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ReferralCard } from "@/components/ReferralCard";
-import { SocialCard } from "@/components/SocialCard";
-import html2canvas from "html2canvas";
-import { Award, Check, ExternalLink, Share2, Gem } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import {
-  Accordion,
-  AccordionItem,
-  AccordionTrigger,
-  AccordionContent,
-} from "@/components/ui/accordion";
 
 // Add UpdateWalletDialog component
 const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
@@ -152,36 +150,120 @@ interface Task {
   total: number;
   completed: number;
   points: number;
-  imageUrl: string;
+  action?: () => Promise<void>;
+  link?: string;
 }
 
 // Mini Earn section (simplified earn UI)
 function EarnMini() {
-  const { user } = useUser();
+  const { user, refreshUser } = useUser();
   const { toast } = useToast();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [completedTasks, setCompletedTasks] = useState(user ? 1 : 0);
+  const [referralCount, setReferralCount] = useState(
+    user?.total_referrals || 0
+  );
+  const [referralProgress, setReferralProgress] = useState(
+    (referralCount / 5) * 100
+  );
 
-  const tasks: Task[] = [
-    {
-      id: 1,
-      title: "Follow on X",
-      description: "Follow @0xtrendsage on X",
-      total: 5,
-      completed: user?.x_follow_claimed ? 1 : 0,
-      points: 10,
-      imageUrl: user?.profile_image_url || "/placeholder-user.jpg",
-    },
-    {
-      id: 2,
-      title: "Invite 5 friends",
-      description: "Get 5 friends to sign up using your invite",
-      total: 5,
-      completed: Math.min(user?.total_referrals ?? 0, 5),
-      points: 10,
-      imageUrl: user?.profile_image_url || "/placeholder-user.jpg",
-    },
-  ];
+  const claimXFollow = async () => {
+    try {
+      // Get token from localStorage
+      const token = localStorage.getItem("token");
 
-  const completedTasks = tasks.filter((t) => t.completed >= t.total).length;
+      // Make the request with authorization header
+      const response = await fetch("/api/user/claim-x-follow", {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to claim X follow");
+      }
+
+      const data = await response.json();
+
+      // Update tasks to mark X follow as completed
+      const updatedTasks = tasks.map((task) => {
+        if (task.id === 1) {
+          return { ...task, completed: task.total };
+        }
+        return task;
+      });
+      setTasks(updatedTasks);
+      setCompletedTasks((prev) => prev + 1);
+      await refreshUser();
+
+      toast({
+        title: "X follow claimed successfully",
+        description: "100 Buzz Points have been added to your account",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to claim X follow",
+        description: error.message || "Please try again later",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    const initialTasks = [
+      {
+        id: 1,
+        title: "Follow on X",
+        description: "Follow @0xtrendsage on X",
+        total: 1,
+        completed: user?.x_follow_claimed ? 1 : 0,
+        points: 10,
+        action: claimXFollow,
+        link: "https://x.com/0xtrendsage",
+      },
+      {
+        id: 2,
+        title: "Invite 5 friends",
+        description: "And earn added 100 SAGE.",
+        total: 5,
+        completed: Math.min(user?.total_referrals ?? 0, 5),
+        points: 100,
+      },
+    ];
+
+    setTasks(initialTasks);
+    setReferralCount(user?.total_referrals || 0);
+    setCompletedTasks(
+      initialTasks.filter((task) => task.completed >= task.total).length
+    );
+  }, [user]);
+
+  useEffect(() => {
+    const progress = (referralCount / 5) * 100;
+    setReferralProgress(progress);
+
+    if (referralCount >= 5) {
+      const updatedTasks = tasks.map((task) => {
+        if (task.id === 2 && task.completed < task.total) {
+          setCompletedTasks((prev) => prev + 1);
+          return { ...task, completed: task.total };
+        }
+        return task;
+      });
+      setTasks(updatedTasks);
+    }
+  }, [referralCount, tasks]);
+
+  const handleTaskAction = async (task: Task) => {
+    if (task.link) {
+      window.open(task.link, "_blank");
+    }
+    if (task.action) {
+      await task.action();
+    }
+  };
 
   const formatNumber = (n: number) => {
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -209,50 +291,22 @@ function EarnMini() {
 
   return (
     <div className="space-y-8">
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-32">
-        {/* Total SAGE earned */}
-        <div className="rounded-lg p-4 bg-gradient-to-br from-[#0F3F2E] to-[#044d39]/60 border border-[#155748]/40 shadow-inner">
-          <p className="text-sm text-[#66E2C1] mb-1 font-medium tracking-wide">
-            Total SAGE earned
-          </p>
-          <p className="text-2xl font-semibold text-[#DFFCF6]">
-            {formatNumber(user?.total_points ?? 0)}
-          </p>
-        </div>
-
-        {/* Tasks completed */}
-        <div className="flex flex-col justify-center">
-          <p className="text-sm text-[#DFFCF6BF] mb-1 font-medium tracking-wide">
-            Tasks completed
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-semibold text-[#DFFCF6]">
-              {completedTasks}
-            </span>
-            <span className="text-2xl text-[#4D5B59]">/ {tasks.length}</span>
-            <span className="text-sm text-[#A9F0DF] ml-2">+0 SAGE</span>
-          </div>
-        </div>
-
-        {/* Successful invites */}
-        <div className="flex flex-col justify-center">
-          <p className="text-sm text-[#DFFCF6BF] mb-1 font-medium tracking-wide">
-            Successful invites
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-semibold text-[#DFFCF6]">
-              {formatNumber(user?.total_referrals ?? 0)}
-            </span>
-            <span className="text-sm text-[#A9F0DF] ml-2">+1000 SAGE</span>
-          </div>
-        </div>
-      </div>
-
       {/* Core Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Tasks */}
         <Card className="bg-transparent border-none col-span-7">
+          {/* Stats Row */}
+          <div className="">
+            {/* Total SAGE earned */}
+            <div className="rounded-lg p-4 bg-gradient-to-br from-[#0F3F2E] to-[#044d39]/60 border border-[#155748]/40 shadow-inner">
+              <p className="text-sm text-[#66E2C1] mb-1 font-medium tracking-wide">
+                Total SAGE earned
+              </p>
+              <p className="text-2xl font-semibold text-[#DFFCF6]">
+                {formatNumber(user?.total_points ?? 0)}
+              </p>
+            </div>
+          </div>
           <CardHeader className="p-4">
             <CardTitle className="text-[#DFFCF6] text-base font-medium">
               Tasks for SAGE
@@ -272,12 +326,6 @@ function EarnMini() {
                     <span className="h-6 w-6 flex items-center justify-center rounded-[4px] bg-[#1E2A28] text-[10px] font-semibold text-[#DFFCF6]">
                       {task.id}
                     </span>
-                    {/* avatar */}
-                    <img
-                      src={task.imageUrl}
-                      alt="avatar"
-                      className="w-7 h-7 rounded-[8px] object-cover"
-                    />
                     <div className="w-48">
                       <p className="text-sm font-medium text-gray-100 leading-4">
                         {task.title}
@@ -307,7 +355,7 @@ function EarnMini() {
                       +{task.points}
                       <Gem className="w-3 h-3 text-gray-400" />
                     </div>
-                    {progressPercent >= 100 ? (
+                    {task.completed >= task.total ? (
                       <Button
                         size="sm"
                         disabled
@@ -321,6 +369,7 @@ function EarnMini() {
                         size="sm"
                         variant="outline"
                         className="bg-transparent border-gray-700 text-gray-300 hover:bg-[#00D992] hover:text-[#060F11]"
+                        onClick={() => handleTaskAction(task)}
                       >
                         Finish task <ExternalLink className="w-3 h-3 ml-1" />
                       </Button>
@@ -334,37 +383,6 @@ function EarnMini() {
 
         {/* Referral & Social card */}
         <div className="space-y-6 col-span-5">
-          <Card className="bg-transparent border-none">
-            <CardHeader className="p-4 pb-0">
-              <CardTitle className="text-[#DFFCF6] text-base font-medium">
-                Copy invite code
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 flex items-center gap-2">
-              <input
-                readOnly
-                value={user?.referral_code || ""}
-                className="flex-1 bg-[#151B1A] border border-[#1E2A28] rounded-lg px-3 py-2 text-[#A9F0DF] text-sm"
-              />
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={copyReferral}
-                className="bg-[#151B1A]"
-              >
-                <Copy className="w-4 h-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={shareOnX}
-                className="bg-[#151B1A]"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </Button>
-            </CardContent>
-          </Card>
-
           <Card className="bg-transparent border-none">
             <CardHeader className="p-4 pb-0">
               <CardTitle className="text-[#DFFCF6] text-base font-medium">
@@ -734,37 +752,28 @@ export default function MyCampaigns() {
                   <span className="absolute -top-2 -right-2 w-4 h-4 bg-[#00D992] border-2 border-gray-900 rounded-full" />
                 </div>
                 <div className="flex flex-col gap-2 items-start">
-                  <h2 className="text-2xl font-bold text-gray-100 mb-1">
+                  <h2 className="text-2xl font-bold text-gray-100">
                     {user.name || user.x_handle}
                   </h2>
-                  <p className="text-[#9CA7A4] mb-1">@{user.x_handle}</p>
-                </div>
-                <div className="flex flex-row gap-4 items-center">
-                  {/* <span>{user.}</span> */}
+                  <p className="text-[#9CA7A4]">@{user.x_handle}</p>
+                  <p className="text-[#9CA7A4]">
+                    {user.evm_wallet &&
+                      "EVM Wallet: " +
+                        user.evm_wallet.substring(0, 6) +
+                        "..." +
+                        user.evm_wallet.substring(user.evm_wallet.length - 4)}
+                  </p>
+                  <p className="text-[#9CA7A4] mb-1">
+                    {user.solana_wallet &&
+                      "SOL Wallet: " +
+                        user.solana_wallet.substring(0, 6) +
+                        "..." +
+                        user.solana_wallet.substring(
+                          user.solana_wallet.length - 4
+                        )}
+                  </p>
                 </div>
               </div>
-
-              {/* Metrics */}
-              {/* <div className="flex items-center gap-16">
-                <div className="text-left gap-2 flex flex-col min-w-24">
-                  <div className="text-sm text-[#9CA7A4]">Followers</div>
-                  <div className="text-xl font-semibold text-gray-100 text-left">
-                    {formatNumber(user.followers ?? 0)}
-                  </div>
-                </div>
-                <div className="text-left gap-2 flex flex-col min-w-24">
-                  <div className="text-sm text-[#9CA7A4]">Smart followers</div>
-                  <div className="text-xl font-semibold text-gray-100 text-left">
-                    {formatNumber(user.smart_followers ?? 0)}
-                  </div>
-                </div>
-                <div className="text-left gap-2 flex flex-col min-w-24">
-                  <div className="text-sm text-[#9CA7A4]">Avg. Views</div>
-                  <div className="text-xl font-semibold text-gray-100 text-left">
-                    {(user.engagement_score ?? 0).toFixed(1)}
-                  </div>
-                </div>
-              </div> */}
             </div>
             {/* Action buttons */}
             <div className="flex flex-wrap gap-3">
@@ -845,14 +854,22 @@ export default function MyCampaigns() {
                   </Accordion>
                 </DialogContent>
               </Dialog>
-              <Button
-                variant="outline"
-                className="bg-transparent border-[#2D3B39] text-[#9CA7A4] hover:bg-gray-700 hover:text-gray-100"
-                onClick={copyReferralCode}
+              <Dialog
+                open={isWalletDialogOpen}
+                onOpenChange={setIsWalletDialogOpen}
               >
-                <Copy className="w-4 h-4 mr-1" />
-                {isReferralCopied ? "Copied!" : "Copy referral link"}
-              </Button>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="bg-transparent border-[#2D3B39] text-[#9CA7A4] hover:bg-gray-700 hover:text-gray-100"
+                  >
+                    Update Wallets
+                  </Button>
+                </DialogTrigger>
+                <UpdateWalletDialog
+                  onClose={() => setIsWalletDialogOpen(false)}
+                />
+              </Dialog>
               <Button
                 className="bg-[#00D992] text-[#060F11] hover:bg-[#00D992]/90 font-semibold"
                 onClick={viewSocialCard}
