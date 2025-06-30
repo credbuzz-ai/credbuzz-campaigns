@@ -1,15 +1,20 @@
 "use client";
 
+import EarnMini from "@/components/EarnMini";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
@@ -19,124 +24,27 @@ import {
   Calendar,
   CheckCircle,
   Clock,
+  Copy,
   DollarSign,
+  Download,
   Loader2,
   Pause,
   TrendingUp,
-  Wallet,
   XCircle,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
-// Add UpdateWalletDialog component
-const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
-  const { user, refreshUser } = useUser();
-  const { toast } = useToast();
-  const [evmWallet, setEvmWallet] = useState(user?.evm_wallet || "");
-  const [solanaWallet, setSolanaWallet] = useState(user?.solana_wallet || "");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const response = await apiClient.put("/user/update-user", {
-        evm_wallet: evmWallet,
-        solana_wallet: solanaWallet,
-      });
-
-      if (response.status === 200) {
-        toast({
-          title: "Success",
-          description: "Wallet addresses updated successfully",
-        });
-        await refreshUser();
-        onClose();
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update wallet addresses",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <DialogContent className="bg-gray-900 border-gray-800">
-      <DialogHeader>
-        <DialogTitle className="text-gray-100">
-          Update Wallet Addresses
-        </DialogTitle>
-        <DialogDescription className="text-gray-400">
-          Enter your EVM and Solana wallet addresses below.
-        </DialogDescription>
-      </DialogHeader>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label
-            htmlFor="evmWallet"
-            className="text-sm text-gray-300 block mb-2"
-          >
-            EVM Wallet Address
-          </label>
-          <Input
-            id="evmWallet"
-            value={evmWallet}
-            onChange={(e) => setEvmWallet(e.target.value)}
-            placeholder="0x..."
-            className="bg-gray-800 border-gray-700 text-gray-100"
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="solanaWallet"
-            className="text-sm text-gray-300 block mb-2"
-          >
-            Solana Wallet Address
-          </label>
-          <Input
-            id="solanaWallet"
-            value={solanaWallet}
-            onChange={(e) => setSolanaWallet(e.target.value)}
-            placeholder="Solana address..."
-            className="bg-gray-800 border-gray-700 text-gray-100"
-          />
-        </div>
-        <div className="flex justify-end gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="bg-[#00D992] text-gray-900 hover:bg-[#00D992]/90"
-          >
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : null}
-            Save Changes
-          </Button>
-        </div>
-      </form>
-    </DialogContent>
-  );
-};
+import UpdateWalletDialog from "../components/UpdateWalletDialog";
 
 export default function MyCampaigns() {
   const router = useRouter();
   const { ready, authenticated } = usePrivy();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"created" | "received">("created");
+  // Top-level tabs: earn rewards vs manage campaigns
+  const [activeTab, setActiveTab] = useState<"earn" | "campaigns">("earn");
+  const [campaignSubTab, setCampaignSubTab] = useState<"created" | "received">(
+    "created"
+  );
   const [campaignType, setCampaignType] = useState<"Targeted" | "Public">(
     "Targeted"
   );
@@ -147,12 +55,12 @@ export default function MyCampaigns() {
   const [openCampaigns, setOpenCampaigns] = useState<Campaign[]>([]);
   const [closedCampaigns, setClosedCampaigns] = useState<Campaign[]>([]);
   const [receivedCampaigns, setReceivedCampaigns] = useState<Campaign[]>([]);
-
+  const [isSocialCardCopying, setIsSocialCardCopying] =
+    useState<boolean>(false);
+  const [isSocialCardDownloading, setIsSocialCardDownloading] =
+    useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Add real-time countdown updates
-  const [currentTime, setCurrentTime] = useState(Date.now());
 
   // Token list state
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -248,14 +156,6 @@ export default function MyCampaigns() {
       fetchAllCampaigns();
     }
   }, [ready, authenticated, user]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(Date.now());
-    }, 60000); // Update every minute
-
-    return () => clearInterval(interval);
-  }, []);
 
   if (!ready || !authenticated) {
     return (
@@ -420,403 +320,700 @@ export default function MyCampaigns() {
     router.push(`/my-campaigns/${campaignId}`);
   };
 
+  const copySocialCard = async () => {
+    if (!user) return;
+
+    try {
+      setIsSocialCardCopying(true);
+
+      // Generate social card using server-side API
+      const params = new URLSearchParams({
+        name: user.name || "TrendSage",
+        handle: user.x_handle || "0xtrendsage",
+        followers: (user.followers || 0).toString(),
+        rewards: (user.total_points || 0).toString(),
+        profileImage: user.profile_image_url || "",
+      });
+
+      const response = await fetch(`/api/social-card?${params}`);
+      if (!response.ok) throw new Error("Failed to generate social card");
+
+      const blob = await response.blob();
+
+      const referralUrl = `https://trendsage.xyz?referral_code=${user?.referral_code}`;
+
+      // Create the promotional text
+      const socialText = `🚀 Join me on @0xtrendsage, where Web3 influence meets rewards! \n\n📊 Check out my stats and achievements on TrendSage.\n\n🎁 Use my referral link to get 10 SAGE when you join and follow @0xtrendsage\n${referralUrl}\n\nLet's build our Web3 credibility together! 🌟`;
+
+      try {
+        // Create a ClipboardItem with both text and image
+        const clipboardContent = [
+          new ClipboardItem({
+            "text/plain": new Blob([socialText], { type: "text/plain" }),
+            "image/png": blob,
+          }),
+        ];
+
+        await navigator.clipboard.write(clipboardContent);
+        toast({
+          title: "Social card copied!",
+          description:
+            "Image and text copied to clipboard. You can now paste them anywhere",
+          duration: 2000,
+        });
+      } catch (err) {
+        // Fallback: Try to copy text and image separately
+        try {
+          await navigator.clipboard.writeText(socialText);
+          const data = new ClipboardItem({
+            "image/png": blob,
+          });
+          await navigator.clipboard.write([data]);
+          toast({
+            title: "Social card copied!",
+            description:
+              "Image and text copied to clipboard. You can now paste them anywhere",
+            duration: 2000,
+          });
+        } catch (fallbackErr) {
+          throw fallbackErr;
+        }
+      }
+    } catch (error) {
+      console.error("Error copying social card:", error);
+      toast({
+        title: "Failed to copy social card",
+        description: "Please try again",
+        duration: 2000,
+      });
+    } finally {
+      setIsSocialCardCopying(false);
+    }
+  };
+
+  const downloadSocialCard = async () => {
+    if (!user) return;
+
+    try {
+      setIsSocialCardDownloading(true);
+
+      // Generate social card using server-side API
+      const params = new URLSearchParams({
+        name: user.name || "TrendSage",
+        handle: user.x_handle || "0xtrendsage",
+        followers: (user.followers || 0).toString(),
+        rewards: (user.total_points || 0).toString(),
+        profileImage: user.profile_image_url || "",
+      });
+
+      const response = await fetch(`/api/social-card?${params}`);
+      if (!response.ok) throw new Error("Failed to generate social card");
+
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `trendsage-social-card-${user?.x_handle || "user"}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Social card downloaded!",
+        description: "Check your downloads folder",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Error downloading social card:", error);
+      toast({
+        title: "Failed to download social card",
+        description: "Please try again",
+        duration: 2000,
+      });
+    } finally {
+      setIsSocialCardDownloading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-[#080B0A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-100 mb-2">
-              My Campaigns
-            </h1>
-            <p className="text-gray-400">
-              Manage your created and received campaigns
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {(user?.evm_wallet || user?.solana_wallet) && (
-              <div className="text-sm">
-                {user?.evm_wallet && (
-                  <div className="flex items-center gap-2 text-gray-400 mb-1">
-                    <span>EVM:</span>
-                    <code className="bg-gray-800 px-2 py-0.5 rounded text-[#00D992]">
-                      {user.evm_wallet.slice(0, 6)}...
-                      {user.evm_wallet.slice(-4)}
-                    </code>
-                  </div>
-                )}
-                {user?.solana_wallet && (
-                  <div className="flex items-center gap-2 text-gray-400">
-                    <span>SOL:</span>
-                    <code className="bg-gray-800 px-2 py-0.5 rounded text-[#00D992]">
-                      {user.solana_wallet.slice(0, 6)}...
-                      {user.solana_wallet.slice(-4)}
-                    </code>
-                  </div>
-                )}
+        {/* Profile Header */}
+        {user && (
+          <div className="mb-12">
+            <div className="flex flex-col lg:flex-row justify-between gap-6 items-center mb-6">
+              {/* Avatar & basic info */}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <img
+                    src={user.profile_image_url || "/placeholder-user.jpg"}
+                    alt={user.name || user.x_handle}
+                    className="w-20 h-20 rounded-[8px] object-cover border-2 border-[#00D992]/30"
+                  />
+                  <span className="absolute -top-2 -right-2 w-4 h-4 bg-[#00D992] border-2 border-gray-900 rounded-full" />
+                </div>
+                <div className="flex flex-col gap-2 items-start">
+                  <h2 className="text-2xl font-bold text-gray-100">
+                    {user.name || user.x_handle}
+                  </h2>
+                  <p className="text-[#9CA7A4]">@{user.x_handle}</p>
+                </div>
               </div>
-            )}
+              <div className="flex flex-col gap-2 items-start">
+                <p className="text-[#9CA7A4]">
+                  {user.evm_wallet &&
+                    "EVM Wallet: " +
+                      user.evm_wallet.substring(0, 6) +
+                      "..." +
+                      user.evm_wallet.substring(user.evm_wallet.length - 4)}
+                </p>
+                <p className="text-[#9CA7A4]">
+                  {user.solana_wallet &&
+                    "SOL Wallet: " +
+                      user.solana_wallet.substring(0, 6) +
+                      "..." +
+                      user.solana_wallet.substring(
+                        user.solana_wallet.length - 4
+                      )}
+                </p>
+              </div>
+            </div>
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-3">
+              {/* About SAGE dialog */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="bg-transparent border-[#2D3B39] text-[#9CA7A4] hover:bg-gray-700 hover:text-gray-100"
+                  >
+                    How to earn<span className="text-[#A9F0DF]"> $SAGE</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg">
+                  <DialogHeader className="text-center">
+                    <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
+                      How to earn SAGE
+                    </DialogTitle>
+                  </DialogHeader>
 
-            <Dialog
-              open={isWalletDialogOpen}
-              onOpenChange={setIsWalletDialogOpen}
-            >
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-gray-100"
-                >
-                  <Wallet className="w-4 h-4 mr-2" />
-                  {user?.evm_wallet || user?.solana_wallet
-                    ? "Update"
-                    : "Add"}{" "}
-                  Wallets
-                </Button>
-              </DialogTrigger>
-              <UpdateWalletDialog
-                onClose={() => setIsWalletDialogOpen(false)}
-              />
-            </Dialog>
+                  {/* Accordion */}
+                  <Accordion
+                    type="single"
+                    collapsible
+                    defaultValue="item-1"
+                    className="mt-4"
+                  >
+                    {/* What is SAGE */}
+                    <AccordionItem value="item-1" className="border-none">
+                      <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                        What's SAGE?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-[#CFCFCF] text-sm">
+                        SAGE are points you earn for posting quality content
+                        that sticks on crypto Twitter (CT) about projects that
+                        have active Snaps campaigns.
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* How to earn SAGE */}
+                    <AccordionItem value="item-2" className="border-none">
+                      <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                        How to earn SAGE?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-[#CFCFCF] text-sm">
+                        <ul className="list-disc list-inside space-y-2">
+                          <li>
+                            Post high-quality content that aligns with projects'
+                            narratives.
+                          </li>
+                          <li>Create original, educational content.</li>
+                          <li>
+                            Invite your friends and earn SAGE for each invite.
+                          </li>
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+
+                    {/* How SAGE is awarded */}
+                    <AccordionItem value="item-3" className="border-none">
+                      <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                        How is SAGE awarded?
+                      </AccordionTrigger>
+                      <AccordionContent className="text-[#CFCFCF] text-sm">
+                        <p>
+                          Projects with active campaigns set custom narrative
+                          guidelines and rules to determine how SAGE are
+                          rewarded in their leaderboards.
+                        </p>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </DialogContent>
+              </Dialog>
+              <Dialog
+                open={isWalletDialogOpen}
+                onOpenChange={setIsWalletDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="bg-transparent border-[#2D3B39] text-[#9CA7A4] hover:bg-gray-700 hover:text-gray-100"
+                  >
+                    Update Wallets
+                  </Button>
+                </DialogTrigger>
+                <UpdateWalletDialog
+                  onClose={() => setIsWalletDialogOpen(false)}
+                />
+              </Dialog>
+
+              {/* View social card popup */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button className="bg-[#00D992] text-[#060F11] hover:bg-[#00D992]/90 font-semibold">
+                    View social card
+                  </Button>
+                </DialogTrigger>
+
+                <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-xl">
+                  {/* Header */}
+                  <div className="text-left space-y-1">
+                    <h2 className="text-2xl font-semibold text-gray-100">
+                      Earn 10 SAGE
+                    </h2>
+                    <p className="text-gray-400 text-sm">
+                      For every person who joins using your invite
+                    </p>
+                  </div>
+
+                  {/* Social preview card */}
+                  {/* <SocialCard /> */}
+                  <div className="w-full">
+                    <img
+                      src={
+                        user
+                          ? `/api/social-card?${new URLSearchParams({
+                              name: user.name || "TrendSage",
+                              handle: user.x_handle || "0xtrendsage",
+                              followers: (user.followers || 0).toString(),
+                              rewards: (user.total_points || 0).toString(),
+                              profileImage: user.profile_image_url || "",
+                            })}`
+                          : "/api/social-card"
+                      }
+                      alt="Social Card Preview"
+                      className="w-full h-auto rounded-lg border border-gray-600/30 shadow-lg"
+                      style={{ aspectRatio: "1200/628" }}
+                    />
+                  </div>
+                  {/* Action buttons */}
+                  <div className="flex gap-2 justify-end mt-2">
+                    <Button
+                      variant="outline"
+                      onClick={copySocialCard}
+                      disabled={isSocialCardCopying}
+                      className="bg-transparent border-[#2B3C39]"
+                    >
+                      {isSocialCardCopying ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Copying...
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Card
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      className="bg-[#00D992] text-[#060F11] hover:bg-[#00D992]/90"
+                      onClick={downloadSocialCard}
+                      disabled={isSocialCardDownloading}
+                    >
+                      {isSocialCardDownloading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Downloading...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Download
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Tab Navigation with Campaign Type Toggle */}
+        {/* Tab Navigation */}
         <div className="border-b border-gray-700 mb-8">
           <div className="flex justify-between items-center">
             <nav className="-mb-px flex space-x-8">
               <button
-                onClick={() => setActiveTab("created")}
+                onClick={() => setActiveTab("earn")}
                 className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === "created"
+                  activeTab === "earn"
                     ? "border-[#00D992] text-[#00D992]"
                     : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
                 }`}
               >
-                Created Campaigns ({filteredCreatedCampaigns.length})
+                Earn SAGE
               </button>
               <button
-                onClick={() => setActiveTab("received")}
+                onClick={() => setActiveTab("campaigns")}
                 className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === "received"
+                  activeTab === "campaigns"
                     ? "border-[#00D992] text-[#00D992]"
                     : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
                 }`}
               >
-                Received Campaigns ({filteredReceivedCampaigns.length})
+                Campaigns
               </button>
             </nav>
-
-            {/* Campaign Type Toggle */}
-            <div className="flex items-center bg-gray-800 p-1 rounded-lg">
-              <button
-                onClick={() => setCampaignType("Targeted")}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                  campaignType === "Targeted"
-                    ? "bg-[#00D992] text-gray-900 shadow-sm"
-                    : "text-gray-400 hover:text-gray-200"
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <span>Targeted</span>
-                  {campaignType === "Targeted" && (
-                    <span className="text-xs bg-gray-900/20 px-2 py-0.5 rounded-full">
-                      {activeTab === "created"
-                        ? filteredCreatedCampaigns.length
-                        : filteredReceivedCampaigns.length}
-                    </span>
-                  )}
-                </div>
-              </button>
-              <button
-                onClick={() => setCampaignType("Public")}
-                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                  campaignType === "Public"
-                    ? "bg-[#00D992] text-gray-900 shadow-sm"
-                    : "text-gray-400 hover:text-gray-200"
-                }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <span>Public</span>
-                  {campaignType === "Public" && (
-                    <span className="text-xs bg-gray-900/20 px-2 py-0.5 rounded-full">
-                      {activeTab === "created"
-                        ? filteredCreatedCampaigns.length
-                        : filteredReceivedCampaigns.length}
-                    </span>
-                  )}
-                </div>
-              </button>
-            </div>
           </div>
         </div>
 
-        {/* Created Campaigns Tab */}
-        {activeTab === "created" && (
-          <div className="space-y-6">
-            {filteredCreatedCampaigns.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg mb-2">No created campaigns found</p>
-                  <p className="text-sm">
-                    Create your first campaign to get started
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredCreatedCampaigns.map((campaign) => (
-                  <div
-                    key={campaign.campaign_id}
-                    onClick={() => handleCampaignClick(campaign.campaign_id)}
-                    className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10 cursor-pointer"
-                  >
-                    {/* Header */}
-                    <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-gray-100 mb-2">
-                        {campaign.campaign_name || "Untitled Campaign"}
-                      </h3>
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                          campaign.status
-                        )}`}
-                      >
-                        {getStatusIcon(campaign.status)}
-                        {campaign.status.charAt(0).toUpperCase() +
-                          campaign.status.slice(1)}
-                      </span>
-                    </div>
-
-                    {/* Chain */}
-                    <div className="mb-4">
-                      <span className="text-xs text-gray-300 bg-gray-700 px-2 py-1 rounded-md">
-                        {campaign.chain}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-gray-400 text-sm mb-4 line-clamp-2">
-                      {campaign.description || "No description available"}
-                    </p>
-
-                    {/* Amount */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400 text-sm flex items-center gap-2">
-                          <DollarSign className="w-4 h-4" />
-                          Amount
-                        </span>
-                        <span className="text-gray-100 font-semibold">
-                          {campaign.amount}{" "}
-                          {getTokenSymbol(
-                            campaign.payment_token_address,
-                            campaign.chain
-                          )}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="pt-4 border-t border-gray-700">
-                      <div className="text-xs text-gray-400 mb-2">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>
-                            Ends: {formatDate(campaign.offer_end_date)}
-                          </span>
-                        </div>
-                        {(() => {
-                          const countdown = getCountdown(
-                            campaign.offer_end_date
-                          );
-                          if (countdown) {
-                            return (
-                              <div
-                                className={`text-xs font-medium ${
-                                  countdown.expired
-                                    ? "text-red-400"
-                                    : "text-[#00D992]"
-                                }`}
-                              >
-                                {countdown.text}
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-
-                      {campaign.owner_x_handle && (
-                        <div className="text-xs mb-2">
-                          <span className="text-gray-400">X Handle: </span>
-                          <span className="text-[#00D992]">
-                            @{campaign.owner_x_handle}
-                          </span>
-                        </div>
-                      )}
-
-                      {campaign.influencer_wallet && (
-                        <div className="text-xs">
-                          <span className="text-gray-400">Assigned: </span>
-                          <span className="text-[#00D992] font-mono">
-                            {campaign.influencer_wallet.substring(0, 6)}...
-                            {campaign.influencer_wallet.substring(
-                              campaign.influencer_wallet.length - 4
-                            )}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+        {/* Earn Tab Content */}
+        {activeTab === "earn" && (
+          <div className="">
+            <EarnMini />
           </div>
         )}
 
-        {/* Received Campaigns Tab */}
-        {activeTab === "received" && (
+        {/* Campaigns Management */}
+        {activeTab === "campaigns" && (
           <div className="space-y-6">
-            {filteredReceivedCampaigns.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4">
-                  <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg mb-2">No received campaigns found</p>
-                  <p className="text-sm">
-                    Campaign invitations will appear here
-                  </p>
-                </div>
+            {/* Campaign Sub-navigation */}
+            <div className="flex justify-between items-center">
+              <div className="flex items-center bg-gray-800 p-1 rounded-lg">
+                <button
+                  onClick={() => setCampaignSubTab("created")}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    campaignSubTab === "created"
+                      ? "bg-[#00D992] text-gray-900 shadow-sm"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Created</span>
+                    <span className="text-xs bg-gray-900/20 px-2 py-0.5 rounded-full">
+                      {filteredCreatedCampaigns.length}
+                    </span>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setCampaignSubTab("received")}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    campaignSubTab === "received"
+                      ? "bg-[#00D992] text-gray-900 shadow-sm"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Received</span>
+                    <span className="text-xs bg-gray-900/20 px-2 py-0.5 rounded-full">
+                      {filteredReceivedCampaigns.length}
+                    </span>
+                  </div>
+                </button>
               </div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {filteredReceivedCampaigns.map((campaign) => (
-                  <div
-                    key={campaign.campaign_id}
-                    onClick={() => handleCampaignClick(campaign.campaign_id)}
-                    className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10 cursor-pointer"
-                  >
-                    {/* Header */}
-                    <div className="mb-4">
-                      <h3 className="text-lg font-semibold text-gray-100 mb-2">
-                        {campaign.campaign_name || "Untitled Campaign"}
-                      </h3>
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                          campaign.status
-                        )}`}
-                      >
-                        {getStatusIcon(campaign.status)}
-                        {campaign.status.charAt(0).toUpperCase() +
-                          campaign.status.slice(1)}
-                      </span>
-                    </div>
 
-                    {/* Brand Info & Chain */}
-                    <div className="mb-4">
-                      <p className="text-sm text-[#00D992] font-medium mb-2">
-                        From:{" "}
-                        {campaign.owner_x_handle ||
-                          `Brand ${campaign.owner_x_handle}`}
+              {/* Campaign Type Toggle */}
+              <div className="flex items-center bg-gray-800 p-1 rounded-lg">
+                <button
+                  onClick={() => setCampaignType("Targeted")}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    campaignType === "Targeted"
+                      ? "bg-[#00D992] text-gray-900 shadow-sm"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Targeted</span>
+                    {campaignType === "Targeted" && (
+                      <span className="text-xs bg-gray-900/20 px-2 py-0.5 rounded-full">
+                        {campaignSubTab === "created"
+                          ? filteredCreatedCampaigns.length
+                          : filteredReceivedCampaigns.length}
+                      </span>
+                    )}
+                  </div>
+                </button>
+                <button
+                  onClick={() => setCampaignType("Public")}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    campaignType === "Public"
+                      ? "bg-[#00D992] text-gray-900 shadow-sm"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span>Public</span>
+                    {campaignType === "Public" && (
+                      <span className="text-xs bg-gray-900/20 px-2 py-0.5 rounded-full">
+                        {campaignSubTab === "created"
+                          ? filteredCreatedCampaigns.length
+                          : filteredReceivedCampaigns.length}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Created Campaigns Content */}
+            {campaignSubTab === "created" && (
+              <div className="space-y-6">
+                {filteredCreatedCampaigns.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">
+                      <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg mb-2">No created campaigns found</p>
+                      <p className="text-sm">
+                        Create your first campaign to get started
                       </p>
-                      <span className="text-xs text-gray-300 bg-gray-700 px-2 py-1 rounded-md">
-                        {campaign.chain}
-                      </span>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-gray-400 text-sm mb-4 line-clamp-2">
-                      {campaign.description || "No description available"}
-                    </p>
-
-                    {/* Offer Amount */}
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-400 text-sm flex items-center gap-2">
-                          <DollarSign className="w-4 h-4" />
-                          Offer Amount
-                        </span>
-                        <span className="text-gray-100 font-semibold text-lg">
-                          {campaign.amount}{" "}
-                          {getTokenSymbol(
-                            campaign.payment_token_address,
-                            campaign.chain
-                          )}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="pt-4 border-t border-gray-700">
-                      <div className="text-xs text-gray-400 mb-2">
-                        <div className="flex items-center gap-1 mb-1">
-                          <Calendar className="w-3 h-3" />
-                          <span>
-                            Ends: {formatDate(campaign.offer_end_date)}
-                          </span>
-                        </div>
-                        {(() => {
-                          const countdown = getCountdown(
-                            campaign.offer_end_date
-                          );
-                          if (countdown) {
-                            return (
-                              <div
-                                className={`text-xs font-medium ${
-                                  countdown.expired
-                                    ? "text-red-400"
-                                    : "text-[#00D992]"
-                                }`}
-                              >
-                                {countdown.text}
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-
-                      {campaign.owner_x_handle && (
-                        <div className="text-xs mb-3">
-                          <span className="text-gray-400">X Handle: </span>
-                          <span className="text-[#00D992]">
-                            @{campaign.owner_x_handle}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Action Buttons */}
-                      {/* {campaign.status.toLowerCase() === "open" && (
-                        <div className="flex gap-2">
-                          <button
-                            className="flex-1 bg-[#00D992] text-gray-900 py-2 px-3 rounded-lg text-sm font-medium hover:bg-[#00D992]/90 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toast({
-                                title: "Campaign Accepted",
-                                description: "You have accepted this campaign",
-                              });
-                            }}
-                          >
-                            Accept
-                          </button>
-                          <button
-                            className="flex-1 bg-gray-700 text-gray-300 py-2 px-3 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toast({
-                                title: "Campaign Declined",
-                                description: "You have declined this campaign",
-                              });
-                            }}
-                          >
-                            Decline
-                          </button>
-                        </div>
-                      )} */}
                     </div>
                   </div>
-                ))}
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredCreatedCampaigns.map((campaign) => (
+                      <div
+                        key={campaign.campaign_id}
+                        onClick={() =>
+                          handleCampaignClick(campaign.campaign_id)
+                        }
+                        className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10 cursor-pointer"
+                      >
+                        {/* Header */}
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-gray-100 mb-2">
+                            {campaign.campaign_name || "Untitled Campaign"}
+                          </h3>
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                              campaign.status
+                            )}`}
+                          >
+                            {getStatusIcon(campaign.status)}
+                            {campaign.status.charAt(0).toUpperCase() +
+                              campaign.status.slice(1)}
+                          </span>
+                        </div>
+
+                        {/* Chain */}
+                        <div className="mb-4">
+                          <span className="text-xs text-gray-300 bg-gray-700 px-2 py-1 rounded-md">
+                            {campaign.chain}
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+                          {campaign.description || "No description available"}
+                        </p>
+
+                        {/* Amount */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-400 text-sm flex items-center gap-2">
+                              <DollarSign className="w-4 h-4" />
+                              Amount
+                            </span>
+                            <span className="text-gray-100 font-semibold">
+                              {campaign.amount}{" "}
+                              {getTokenSymbol(
+                                campaign.payment_token_address,
+                                campaign.chain
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="pt-4 border-t border-gray-700">
+                          <div className="text-xs text-gray-400 mb-2">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>
+                                Ends: {formatDate(campaign.offer_end_date)}
+                              </span>
+                            </div>
+                            {(() => {
+                              const countdown = getCountdown(
+                                campaign.offer_end_date
+                              );
+                              if (countdown) {
+                                return (
+                                  <div
+                                    className={`text-xs font-medium ${
+                                      countdown.expired
+                                        ? "text-red-400"
+                                        : "text-[#00D992]"
+                                    }`}
+                                  >
+                                    {countdown.text}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+
+                          {campaign.owner_x_handle && (
+                            <div className="text-xs mb-2">
+                              <span className="text-gray-400">X Handle: </span>
+                              <span className="text-[#00D992]">
+                                @{campaign.owner_x_handle}
+                              </span>
+                            </div>
+                          )}
+
+                          {campaign.influencer_wallet && (
+                            <div className="text-xs">
+                              <span className="text-gray-400">Assigned: </span>
+                              <span className="text-[#00D992] font-mono">
+                                {campaign.influencer_wallet.substring(0, 6)}...
+                                {campaign.influencer_wallet.substring(
+                                  campaign.influencer_wallet.length - 4
+                                )}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Received Campaigns Content */}
+            {campaignSubTab === "received" && (
+              <div className="space-y-6">
+                {filteredReceivedCampaigns.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 mb-4">
+                      <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg mb-2">
+                        No received campaigns found
+                      </p>
+                      <p className="text-sm">
+                        Campaign invitations will appear here
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {filteredReceivedCampaigns.map((campaign) => (
+                      <div
+                        key={campaign.campaign_id}
+                        onClick={() =>
+                          handleCampaignClick(campaign.campaign_id)
+                        }
+                        className="bg-gray-800 border border-gray-700 rounded-xl p-6 hover:border-[#00D992]/50 transition-all duration-200 hover:shadow-lg hover:shadow-[#00D992]/10 cursor-pointer"
+                      >
+                        {/* Header */}
+                        <div className="mb-4">
+                          <h3 className="text-lg font-semibold text-gray-100 mb-2">
+                            {campaign.campaign_name || "Untitled Campaign"}
+                          </h3>
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                              campaign.status
+                            )}`}
+                          >
+                            {getStatusIcon(campaign.status)}
+                            {campaign.status.charAt(0).toUpperCase() +
+                              campaign.status.slice(1)}
+                          </span>
+                        </div>
+
+                        {/* Brand Info & Chain */}
+                        <div className="mb-4">
+                          <p className="text-sm text-[#00D992] font-medium mb-2">
+                            From:{" "}
+                            {campaign.owner_x_handle ||
+                              `Brand ${campaign.owner_x_handle}`}
+                          </p>
+                          <span className="text-xs text-gray-300 bg-gray-700 px-2 py-1 rounded-md">
+                            {campaign.chain}
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-gray-400 text-sm mb-4 line-clamp-2">
+                          {campaign.description || "No description available"}
+                        </p>
+
+                        {/* Offer Amount */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between">
+                            <span className="text-gray-400 text-sm flex items-center gap-2">
+                              <DollarSign className="w-4 h-4" />
+                              Offer Amount
+                            </span>
+                            <span className="text-gray-100 font-semibold text-lg">
+                              {campaign.amount}{" "}
+                              {getTokenSymbol(
+                                campaign.payment_token_address,
+                                campaign.chain
+                              )}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="pt-4 border-t border-gray-700">
+                          <div className="text-xs text-gray-400 mb-2">
+                            <div className="flex items-center gap-1 mb-1">
+                              <Calendar className="w-3 h-3" />
+                              <span>
+                                Ends: {formatDate(campaign.offer_end_date)}
+                              </span>
+                            </div>
+                            {(() => {
+                              const countdown = getCountdown(
+                                campaign.offer_end_date
+                              );
+                              if (countdown) {
+                                return (
+                                  <div
+                                    className={`text-xs font-medium ${
+                                      countdown.expired
+                                        ? "text-red-400"
+                                        : "text-[#00D992]"
+                                    }`}
+                                  >
+                                    {countdown.text}
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
+                          </div>
+
+                          {campaign.owner_x_handle && (
+                            <div className="text-xs mb-3">
+                              <span className="text-gray-400">X Handle: </span>
+                              <span className="text-[#00D992]">
+                                @{campaign.owner_x_handle}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

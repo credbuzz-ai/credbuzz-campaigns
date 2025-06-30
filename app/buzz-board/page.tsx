@@ -4,25 +4,26 @@ import CampaignCard from "@/components/CampaignCard";
 import CollaborateDialog from "@/components/CollaborateDialog";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
-import { Loader2, Search } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const statusOptions = ["All", "Published", "Fulfilled", "Discarded"];
 
 export default function BuzzBoard() {
-  const [searchTerm, setSearchTerm] = useState("");
+  // const [searchTerm, setSearchTerm] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
-    const matchesSearch =
-      campaign.campaign_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      campaign.owner_x_handle.toLowerCase().includes(searchTerm.toLowerCase());
+    // const matchesSearch =
+    //   campaign.campaign_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    //   campaign.owner_x_handle.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus =
       selectedStatus === "All" ||
       campaign.status === selectedStatus.toUpperCase();
 
-    return matchesSearch && matchesStatus;
+    // return matchesSearch && matchesStatus;
+    return matchesStatus;
   });
 
   const fetchCampaigns = async () => {
@@ -79,9 +80,8 @@ export default function BuzzBoard() {
           </div>
         </div>
         {/* Filters */}
-        <div className="mb-8">
+        {/* <div className="mb-8">
           <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            {/* Search */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -94,7 +94,6 @@ export default function BuzzBoard() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            {/* Status Filter */}
             <div className="flex items-center gap-2 min-w-[180px]">
               <select
                 className="px-4 py-3 border border-gray-600/30 rounded-xl 
@@ -111,7 +110,7 @@ export default function BuzzBoard() {
               </select>
             </div>
           </div>
-        </div>
+        </div> */}
         {/* Campaign Card Guide */}
         <div className="mb-6 p-3 bg-gray-800/30 rounded-xl border border-gray-700/30 text-xs text-gray-400 grid grid-cols-1 md:grid-cols-3 gap-2">
           <div>

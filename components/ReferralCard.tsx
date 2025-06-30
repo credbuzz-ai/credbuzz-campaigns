@@ -5,13 +5,9 @@ import { useState } from "react";
 
 interface ReferralCardProps {
   referralCode: string;
-  referralUrl: string;
 }
 
-export const ReferralCard = ({
-  referralCode,
-  referralUrl,
-}: ReferralCardProps) => {
+export const ReferralCard = ({ referralCode }: ReferralCardProps) => {
   const [isCopied, setIsCopied] = useState(false);
 
   const copyReferralCode = () => {
