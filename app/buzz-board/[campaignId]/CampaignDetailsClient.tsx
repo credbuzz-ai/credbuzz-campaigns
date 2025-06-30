@@ -369,9 +369,16 @@ export default function CampaignDetailsClient({
                   {/* Title and Status Row */}
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <h1 className="text-2xl font-bold text-gray-100">
-                        {campaign.campaign_name}
-                      </h1>
+                      <div className="flex flex-col gap-1">
+                        <h1 className="text-2xl font-bold text-gray-100">
+                          {campaign.campaign_name}
+                        </h1>
+                        {campaign.target_x_handle && (
+                          <div className="text-gray-400">
+                            @{campaign.target_x_handle}
+                          </div>
+                        )}
+                      </div>
                       <StatusBadge status="active" />
                     </div>
                     <div className="flex items-center gap-2">

@@ -187,6 +187,7 @@ export interface MindshareResponse {
         followings_count: number;
         smart_followers_count: number;
         engagement_score: number;
+        user_joined: boolean;
       };
     }>;
   };
