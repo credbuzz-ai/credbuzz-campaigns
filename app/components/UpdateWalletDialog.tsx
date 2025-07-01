@@ -44,6 +44,9 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
         onClose();
       }
     } catch (error: any) {
+      // Reset input fields on error
+      setEvmWallet(user?.evm_wallet || "");
+      setSolanaWallet(user?.solana_wallet || "");
       toast({
         title: "Failed to update wallet addresses",
         description: error.response.data.detail,
