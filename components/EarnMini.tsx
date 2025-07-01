@@ -88,7 +88,7 @@ export default function EarnMini() {
         description: "Follow @0xtrendsage on X",
         total: 1,
         completed: user?.x_follow_claimed ? 1 : 0,
-        points: 10,
+        points: 50,
         action: claimXFollow,
         link: "https://x.com/0xtrendsage",
       },
