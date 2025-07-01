@@ -277,7 +277,7 @@ export default function MentionsFeed({
   };
 
   return (
-    <div className="card-trendsage sticky top-8 h-full">
+    <div className="card-trendsage sticky top-8 h-full bg-[#080B0A] flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <AtSign className="w-5 h-5 text-[#00D992]" />
@@ -363,7 +363,7 @@ export default function MentionsFeed({
       )}
 
       {/* Tweet list */}
-      <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar relative">
+      <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar relative">
         {tweets.map((tweet, index) => {
           const isExpanded = expandedTweets.has(tweet.tweet_id);
           const shouldTruncate = tweet.body.length > 200;
