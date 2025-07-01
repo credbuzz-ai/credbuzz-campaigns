@@ -92,7 +92,7 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
             </span>
           </div>
           <div className="flex items-center justify-center gap-2 text-sm my-4">
-            <span className="text-gray-400">
+            <span className="text-gray-400 text-left">
               {campaign.description.slice(0, 100)}...{" "}
               <Link
                 href={`/sage-campaigns/${campaign.campaign_id}`}

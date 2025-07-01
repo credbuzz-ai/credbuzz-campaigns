@@ -1,17 +1,21 @@
 import ReferralHandler from "@/app/components/ReferralHandler";
+import OpenCampaigns from "@/app/components/OpenCampaigns";
 import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen relative">
+      {/* Background Image */}
+      <div className="pointer-events-none select-none absolute inset-0 -z-10 bg-[url('/landingPageBg.png')] bg-cover bg-center" />
+
       <Suspense fallback={null}>
         <ReferralHandler />
       </Suspense>
 
       {/* Hero Section */}
-      <section className="relative py-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-neutral-800 via-neutral-800/95 to-neutral-800/75">
+      <section className="relative py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           {/* Centered Logo */}
           <Link
@@ -99,9 +103,11 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      {/* Open Campaigns Section */}
+      <OpenCampaigns />
 
       {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-100 mb-4">
@@ -156,7 +162,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
