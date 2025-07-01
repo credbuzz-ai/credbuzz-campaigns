@@ -107,6 +107,10 @@ const config: Config = {
           salmon: "#F38C8C", // soft red (alert / danger)
           sand: "#DCD9A2", // muted yellow (warning / info)
         },
+
+        cardBackground: "#151B1AA6",
+        cardBackground2: "#242A29A6",
+        navbarBackground: "#080B0A",
       },
       borderRadius: {
         lg: "var(--radius)",
