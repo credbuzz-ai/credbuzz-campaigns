@@ -54,7 +54,7 @@ function formatDate(dateString: string) {
 export default function CampaignCard({ campaign }: { campaign: Campaign }) {
   return (
     <Link
-      href={`/buzz-board/${campaign.campaign_id}`}
+      href={`/sage-campaigns/${campaign.campaign_id}`}
       className="group hover:scale-[1.02] transition-transform"
     >
       <div className="bg-gray-800/30 p-6 rounded-xl border border-gray-700/30 h-full transition-all duration-200 hover:border-[#00D992]/30">
@@ -77,7 +77,7 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
           <div className="text-gray-300 text-sm mb-4">
             {campaign.description.slice(0, 100)}...
             <Link
-              href={`/buzz-board/${campaign.campaign_id}`}
+              href={`/sage-campaigns/${campaign.campaign_id}`}
               className="ml-1 text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors"
             >
               Read more

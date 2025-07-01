@@ -19,7 +19,7 @@ export default function NotFound() {
 
           <div className="space-y-4">
             <Link
-              href="/buzz-board"
+              href="/sage-campaigns"
               className="btn-secondary w-full inline-flex items-center justify-center bg-[#00D992] text-gray-900 hover:bg-[#00D992]/90"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
