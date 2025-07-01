@@ -352,7 +352,7 @@ export default async function ProfilePage({
         </div>
 
         {/* Smart Feed Sidebar - Matches main content height */}
-        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-8 h-[calc(100vh-4rem)]">
+        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-16 h-[calc(100vh-4rem)]">
           <SmartFeed authorHandle={profile.author_handle} />
         </div>
       </div>

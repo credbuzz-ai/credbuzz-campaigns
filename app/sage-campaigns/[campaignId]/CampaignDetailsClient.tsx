@@ -557,7 +557,7 @@ export default function CampaignDetailsClient({
         </div>
 
         {/* Smart Feed Sidebar */}
-        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-8 h-[calc(100vh-4rem)]">
+        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-16 h-[calc(100vh-4rem)]">
           <MentionsFeed authorHandle={smartFeedHandle} />
         </div>
       </div>

@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { headers } from "next/headers";
 import type React from "react";
+import Footer from "./components/Footer";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -73,12 +74,16 @@ export default async function RootLayout({
         <link rel="icon" href="/logo-green.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/logo-green.svg" />
       </head>
-      <body className={`${inter.className} bg-gray-900 text-white`} suppressHydrationWarning>
+      <body
+        className={`${inter.className} bg-neutral-900 text-white`}
+        suppressHydrationWarning
+      >
         <PrivyProvider>
           <UserProvider>
             <SignupProvider>
               <Header />
               <main>{children}</main>
+              <Footer />
               <Toaster />
             </SignupProvider>
           </UserProvider>

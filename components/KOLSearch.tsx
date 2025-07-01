@@ -1,6 +1,6 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
@@ -109,8 +109,20 @@ export default function KOLSearch() {
             value={searchTerm}
             onChange={handleSearchChange}
             placeholder="Search KOL by name or Twitter handle (min. 4 characters)..."
-            className="block w-full pl-10 pr-3 py-2 border border-gray-600 rounded-lg bg-neutral-900 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00D992]/50 focus:border-transparent"
+            className="block w-full pl-10 pr-10 py-2 border border-gray-600 rounded-lg bg-neutral-900 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00D992]/50 focus:border-transparent"
           />
+          {searchTerm && !searchLoading && (
+            <button
+              onClick={() => {
+                setSearchTerm("");
+                setSearchResults([]);
+                setShowResults(false);
+              }}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center hover:opacity-75 transition-opacity"
+            >
+              <X className="h-5 w-5 text-gray-400" />
+            </button>
+          )}
           {searchLoading && (
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#00D992]"></div>
@@ -128,14 +140,14 @@ export default function KOLSearch() {
 
       {/* Search Results Dropdown */}
       {showResults && searchResults.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-neutral-800 border border-gray-700 rounded-lg shadow-lg max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-          {searchResults.length > 0 && (
+        <div className="absolute z-50 w-full mt-2 bg-neutral-900 border border-gray-700 rounded-lg shadow-lg max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+          {/* {searchResults.length > 0 && (
             <div className="sticky top-0 bg-neutral-800 backdrop-blur-sm px-4 py-2 border-b border-gray-700">
               <p className="text-xs text-gray-400">
                 Found {searchResults.length} results
               </p>
             </div>
-          )}
+          )} */}
           {searchResults.map((kol) => (
             <button
               key={kol.author_handle}

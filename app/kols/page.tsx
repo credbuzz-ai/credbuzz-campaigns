@@ -219,7 +219,7 @@ export default function KOLsPage() {
                   value={searchTerm}
                   onChange={handleSearchChange}
                   placeholder="Search by username (min. 4 characters)..."
-                  className="flex-1 px-4 py-2 bg-cardBackground border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
+                  className="flex-1 px-4 py-2 bg-neutral-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
                 />
                 {searchLoading && (
                   <div className="absolute right-24 top-1/2 transform -translate-y-1/2">
@@ -250,7 +250,7 @@ export default function KOLsPage() {
         </div>
 
         {/* Content */}
-        <div className="card-trendsage bg-cardBackground">
+        <div className="card-trendsage bg-neutral-800">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
@@ -275,25 +275,10 @@ export default function KOLsPage() {
             </div>
           ) : (
             <>
-              {/* Table Header */}
-              <div className="px-6 py-4 border-b border-gray-700">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-400">
-                    Showing {startItem}-{endItem} of {formatNumber(totalItems)}{" "}
-                    KOLs
-                  </div>
-                  {!searchResult && (
-                    <div className="text-xs text-gray-500">
-                      Page {currentPage} of {totalPages}
-                    </div>
-                  )}
-                </div>
-              </div>
-
               {/* Table */}
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-4rem)]">
                 <table className="w-full">
-                  <thead className="bg-cardBackground">
+                  <thead className="bg-neutral-800 border-b border-gray-700 sticky top-0">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Rank
@@ -315,14 +300,14 @@ export default function KOLsPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-cardBackground divide-y divide-gray-700">
+                  <tbody className="bg-neutral-800 divide-y divide-gray-700">
                     {displayedKols.map((kol, index) => {
                       const rank =
                         (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
                       return (
                         <tr
                           key={kol.author_handle}
-                          className="hover:bg-cardBackground2 transition-colors group cursor-pointer"
+                          className="hover:bg-neutral-800 transition-colors group cursor-pointer"
                           onClick={() => {
                             router.push(`/kols/${kol.author_handle}`);
                           }}
