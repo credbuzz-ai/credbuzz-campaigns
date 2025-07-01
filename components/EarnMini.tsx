@@ -4,7 +4,8 @@ import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { Task } from "@/lib/types";
-import { Check, ExternalLink, Gem, Share2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Check, Copy, ExternalLink, Gem, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ReferralCard } from "./ReferralCard";
 import TooltipInfo from "./TooltipInfo";
@@ -16,6 +17,7 @@ export default function EarnMini() {
   const [referralCount, setReferralCount] = useState(
     user?.total_referrals || 0
   );
+  const [isCopied, setIsCopied] = useState(false);
 
   const referralUrl = user?.referral_code
     ? `https://trendsage.xyz?referral_code=${user.referral_code}`
@@ -134,10 +136,13 @@ export default function EarnMini() {
     return n.toString();
   };
 
-  const copyReferral = () => {
-    if (!referralUrl) return;
-    navigator.clipboard.writeText(referralUrl);
-    toast({ title: "Referral link copied!" });
+  const copyReferralCode = () => {
+    const shareText = `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${referralUrl}`;
+    navigator.clipboard.writeText(shareText);
+    setIsCopied(true);
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 2000);
   };
 
   const shareOnX = () => {
@@ -234,25 +239,53 @@ export default function EarnMini() {
           </CardContent>
         </Card>
 
-        <Card className=" shadow-xl border-none bg-transparent col-span-5">
-          <CardHeader className="pb-2">
+        <Card className="shadow-xl border-none bg-transparent col-span-5">
+          <CardHeader className="py-0">
             <CardTitle className="text-gray-100">
-              Share Your Referral Link
-            </CardTitle>
-            <p className="text-sm text-gray-400 flex items-center">
               <TooltipInfo
                 text="Your friends earn 10 SAGE each when they join using your referral link. You will also earn 10 SAGE when they follow @0xtrendsage on X."
                 className="mr-2"
               />
-              Refer and Earn 10 SAGE each time someone uses your referral link.
-            </p>
-          </CardHeader>
+              Share Your Referral Link to earn SAGE
+            </CardTitle>
+          </CardHeader>{" "}
           <CardContent className="pt-6">
             <ReferralCard referralCode={user?.referral_code || ""} />
-            <div className="grid grid-cols-2 gap-4 mt-6">
+            <div className="grid grid-cols-3 gap-3 mt-6">
+              {/* Action Button */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={isCopied ? "copied" : "copy"}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Button
+                    onClick={copyReferralCode}
+                    className="w-full bg-gradient-to-r from-[#00D992] to-[#00F5A8] hover:from-[#00F5A8] hover:to-[#00D992] text-gray-900 font-medium shadow-lg text-sm rounded-xl"
+                    size="default"
+                  >
+                    {isCopied ? (
+                      <motion.div
+                        className="flex items-center justify-center"
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        <span>Copied!</span>
+                      </motion.div>
+                    ) : (
+                      <motion.div className="flex items-center justify-center">
+                        <Copy className="h-4 w-4 mr-1" />
+                        <span>Copy Link</span>
+                      </motion.div>
+                    )}
+                  </Button>
+                </motion.div>
+              </AnimatePresence>
               <Button
                 onClick={shareOnX}
-                className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
+                className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-1 rounded-xl text-sm"
                 size="sm"
               >
                 <span>Share on X</span>
@@ -260,7 +293,7 @@ export default function EarnMini() {
 
               <Button
                 onClick={shareOnTelegram}
-                className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
+                className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-1 rounded-xl text-sm"
                 size="sm"
               >
                 <Share2 className="h-4 w-4" />
