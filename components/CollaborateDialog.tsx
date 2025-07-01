@@ -522,7 +522,7 @@ export default function CollaborateDialog({
   const AuthConnectionUI = () => (
     <div className="text-center py-8 space-y-6">
       <div className="flex justify-center">
-        <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center">
+        <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center">
           <svg
             className="w-8 h-8 text-[#00D992]"
             viewBox="0 0 24 24"
@@ -542,10 +542,10 @@ export default function CollaborateDialog({
         </p>
       </div>
       <div className="space-y-3">
-        <Button
+        <button
           onClick={login}
           disabled={isProcessing}
-          className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium h-10 px-6 w-full"
+          className="btn-primarynew flex items-center justify-center gap-2 min-w-[160px] w-full"
         >
           {isProcessing ? (
             <>
@@ -561,15 +561,14 @@ export default function CollaborateDialog({
               Account
             </>
           )}
-        </Button>
-        <Button
+        </button>
+        <button
           type="button"
-          variant="outline"
           onClick={() => setOpen(false)}
-          className="border-gray-600 text-gray-400 hover:bg-gray-800 hover:text-gray-200 h-10 w-full"
+          className="btn-secondarynew inline-flex items-center justify-center min-w-[160px] w-full"
         >
           Cancel
-        </Button>
+        </button>
       </div>
     </div>
   );
@@ -578,7 +577,7 @@ export default function CollaborateDialog({
   const WalletConnectionUI = () => (
     <div className="text-center py-8 space-y-6">
       <div className="flex justify-center">
-        <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center">
+        <div className="w-16 h-16 bg-neutral-800 rounded-full flex items-center justify-center">
           <Wallet className="w-8 h-8 text-[#00D992]" />
         </div>
       </div>
@@ -643,7 +642,7 @@ export default function CollaborateDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-600 text-gray-100 shadow-2xl">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-neutral-900 border-gray-600 text-gray-100 shadow-2xl">
         <DialogHeader className="space-y-3 pb-6 border-b border-gray-700">
           <DialogTitle className="text-2xl font-bold text-gray-100">
             Create New Campaign
@@ -693,7 +692,7 @@ export default function CollaborateDialog({
                         <Input
                           {...field}
                           placeholder="@handle"
-                          className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                          className="bg-neutral-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
                           onChange={(e) => {
                             // Ensure handle starts with @
                             let value = e.target.value;
@@ -724,7 +723,7 @@ export default function CollaborateDialog({
                       <Input
                         {...field}
                         placeholder="Enter campaign name"
-                        className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                        className="bg-neutral-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
                       />
                     </FormControl>
                     <FormMessage className="text-red-400 text-xs" />
@@ -745,7 +744,7 @@ export default function CollaborateDialog({
                       <Textarea
                         {...field}
                         placeholder="Describe your collaboration opportunity..."
-                        className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] min-h-[80px] resize-none"
+                        className="bg-neutral-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] min-h-[80px] resize-none"
                       />
                     </FormControl>
                     <FormMessage className="text-red-400 text-xs" />
@@ -767,7 +766,7 @@ export default function CollaborateDialog({
                       <Input
                         {...field}
                         type="datetime-local"
-                        className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                        className="bg-neutral-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
                         min={getCurrentDateTime()}
                         onChange={(e) => {
                           // Convert to simple datetime string
@@ -808,7 +807,7 @@ export default function CollaborateDialog({
                       value={field.value}
                     >
                       <FormControl>
-                        <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9">
+                        <SelectTrigger className="bg-neutral-800 border-gray-600 text-gray-100 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9">
                           <SelectValue placeholder="Select blockchain" />
                         </SelectTrigger>
                       </FormControl>
@@ -874,7 +873,7 @@ export default function CollaborateDialog({
                         value={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-100 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9">
+                          <SelectTrigger className="bg-neutral-800 border-gray-600 text-gray-100 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9">
                             <SelectValue placeholder="Select token" />
                           </SelectTrigger>
                         </FormControl>
@@ -902,7 +901,7 @@ export default function CollaborateDialog({
                             placeholder="Enter ERC20 token address"
                             value={newTokenAddress}
                             onChange={(e) => setNewTokenAddress(e.target.value)}
-                            className="bg-gray-800 border-gray-600 text-gray-100"
+                            className="bg-neutral-800 border-gray-600 text-gray-100"
                           />
                           <Button
                             type="button"
@@ -945,7 +944,7 @@ export default function CollaborateDialog({
                           step="0.0001"
                           min="0.0001"
                           placeholder="0.0001"
-                          className="bg-gray-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                          className="bg-neutral-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
                           onChange={(e) => {
                             const value = parseFloat(e.target.value);
                             field.onChange(value || 0.0001);

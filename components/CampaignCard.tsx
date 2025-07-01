@@ -66,7 +66,7 @@ function getTimeRemaining(endDateString: string): string {
 export default function CampaignCard({ campaign }: { campaign: Campaign }) {
   return (
     <Link href={`/sage-campaigns/${campaign.campaign_id}`}>
-      <div className="bg-cardBackground p-6 rounded-xl border-2 border-gray-700/30 h-full transition-all duration-200 hover:border-[#00D992]/30">
+      <div className="max-w-sm bg-cardBackground p-6 rounded-xl border-2 border-gray-700/30 h-full transition-all duration-200 hover:border-[#00D992]/30">
         <div className="flex flex-col justify-between items-start mb-4 border-b-2 border-gray-700/30">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center justify-center gap-2 text-sm">

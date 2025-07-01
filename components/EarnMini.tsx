@@ -4,7 +4,6 @@ import { Progress } from "@/components/ui/progress";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import { Task } from "@/lib/types";
-import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, ExternalLink, Gem, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { ReferralCard } from "./ReferralCard";
@@ -252,37 +251,23 @@ export default function EarnMini() {
           <CardContent className="pt-6">
             <ReferralCard referralCode={user?.referral_code || ""} />
             <div className="grid grid-cols-3 gap-3 mt-6">
-              {/* Action Button */}
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={isCopied ? "copied" : "copy"}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <Button
-                    onClick={copyReferralCode}
-                    className="w-full bg-gradient-to-r from-[#00D992] to-[#00F5A8] hover:from-[#00F5A8] hover:to-[#00D992] text-gray-900 font-medium shadow-lg text-sm rounded-xl"
-                    size="default"
-                  >
-                    {isCopied ? (
-                      <motion.div
-                        className="flex items-center justify-center"
-                        initial={{ scale: 0.8 }}
-                        animate={{ scale: 1 }}
-                      >
-                        <Check className="h-4 w-4 mr-1" />
-                        <span>Copied!</span>
-                      </motion.div>
-                    ) : (
-                      <motion.div className="flex items-center justify-center">
-                        <Copy className="h-4 w-4 mr-1" />
-                        <span>Copy Link</span>
-                      </motion.div>
-                    )}
-                  </Button>
-                </motion.div>
-              </AnimatePresence>
+              <Button
+                onClick={copyReferralCode}
+                className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-1 rounded-xl text-sm"
+                size="sm"
+              >
+                {isCopied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    <span>Copy Link</span>
+                  </>
+                )}
+              </Button>
               <Button
                 onClick={shareOnX}
                 className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-1 rounded-xl text-sm"

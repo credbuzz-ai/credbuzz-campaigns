@@ -55,7 +55,7 @@ export default function BuzzBoard() {
             </div>
             <CollaborateDialog mode="public">
               <button
-                className="px-6 py-3 bg-[#00D992]/90 hover:bg-[#00F5A8]/90 text-gray-900 font-semibold rounded-xl transition-colors flex items-center gap-2"
+                className="btn-primarynew inline-flex items-center justify-center min-w-[160px]"
                 title="Create a new public campaign"
               >
                 <span>Create Campaign</span>

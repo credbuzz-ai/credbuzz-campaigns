@@ -1,6 +1,6 @@
-import ReferralHandler from "@/app/components/ReferralHandler";
 import OpenCampaigns from "@/app/components/OpenCampaigns";
-import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
+import ReferralHandler from "@/app/components/ReferralHandler";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -166,6 +166,7 @@ export default function LandingPage() {
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
+        {/* CTA Buttons */}
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-gray-100 mb-6">
             Ready to Transform Your Marketing?
@@ -174,11 +175,17 @@ export default function LandingPage() {
             Join the future of influencer marketing with TrendSage
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/sage-campaigns" className="btn-primary">
-              Start Your Campaign
+            <Link
+              href="/sage-campaigns"
+              className="btn-primarynew inline-flex items-center justify-center min-w-[160px]"
+            >
+              Explore campaigns <ArrowRight className="ml-2 w-4 h-4" />
             </Link>
-            <Link href="/kols" className="btn-secondary">
-              Become a KOL
+            <Link
+              href="/kols"
+              className="btn-secondarynew inline-flex items-center justify-center min-w-[160px]"
+            >
+              Find top KOLs
             </Link>
           </div>
         </div>

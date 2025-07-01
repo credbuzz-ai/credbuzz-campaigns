@@ -16,7 +16,7 @@ export const ReferralCard = ({ referralCode }: ReferralCardProps) => {
       className="w-full mx-auto"
     >
       <motion.div
-        className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-xl border border-[#00D992]/20 shadow-xl overflow-hidden transform-gpu"
+        className="relative bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 rounded-xl border border-[#00D992]/20 shadow-xl overflow-hidden transform-gpu"
         whileHover={{ scale: 1.02, borderColor: "rgba(0, 217, 146, 0.4)" }}
         transition={{ type: "spring", damping: 15 }}
         onHoverStart={() => setIsHovered(true)}
@@ -65,7 +65,7 @@ export const ReferralCard = ({ referralCode }: ReferralCardProps) => {
 
           {/* Code Display */}
           <motion.div
-            className="bg-gradient-to-br from-gray-800/90 to-gray-900/90 rounded-lg border border-[#00D992]/30 p-4 mb-4 relative overflow-hidden"
+            className="bg-gradient-to-br from-neutral-800/90 to-neutral-900/90 rounded-lg border border-[#00D992]/30 p-4 mb-4 relative overflow-hidden"
             whileHover={{ borderColor: "rgba(0, 217, 146, 0.5)" }}
             animate={{
               boxShadow: isHovered
