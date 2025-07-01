@@ -907,7 +907,7 @@ export default function FollowersOverview({
   // Loading and error states
   if (loading && followers.length === 0) {
     return (
-      <div className="card-trendsage bg-[#080B0A]">
+      <div className="card-trendsage bg-neutral-900">
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-100">
             Followers Overview
@@ -923,7 +923,7 @@ export default function FollowersOverview({
   if (error && !loading) {
     // Show error only if not actively loading new data
     return (
-      <div className="card-trendsage bg-[#080B0A]">
+      <div className="card-trendsage bg-neutral-900">
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-100">
             Followers Overview
@@ -935,7 +935,7 @@ export default function FollowersOverview({
   }
 
   return (
-    <div className="card-trendsage bg-[#080B0A]">
+    <div className="card-trendsage bg-neutral-900">
       {/* Header */}
       <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-100">

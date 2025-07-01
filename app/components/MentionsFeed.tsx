@@ -277,7 +277,7 @@ export default function MentionsFeed({
   };
 
   return (
-    <div className="card-trendsage sticky top-8 h-full bg-[#080B0A] flex flex-col">
+    <div className="card-trendsage sticky top-8 h-full bg-neutral-900 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <AtSign className="w-5 h-5 text-[#00D992]" />

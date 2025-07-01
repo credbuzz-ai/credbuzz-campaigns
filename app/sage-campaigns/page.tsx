@@ -7,24 +7,23 @@ import { Campaign } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const statusOptions = ["All", "Published", "Fulfilled", "Discarded"];
+// const statusOptions = ["All", "Published", "Fulfilled", "Discarded"];
 
 export default function BuzzBoard() {
   // const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  // const [selectedStatus, setSelectedStatus] = useState("All");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
-    // const matchesSearch =
-    //   campaign.campaign_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    //   campaign.owner_x_handle.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      selectedStatus === "All" ||
-      campaign.status === selectedStatus.toUpperCase();
-
-    // return matchesSearch && matchesStatus;
-    return matchesStatus;
-  });
+  // const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
+  // const matchesSearch =
+  //   campaign.campaign_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //   campaign.owner_x_handle.toLowerCase().includes(searchTerm.toLowerCase());
+  // const matchesStatus =
+  //   selectedStatus === "All" ||
+  //   campaign.status === selectedStatus.toUpperCase();
+  // return matchesSearch && matchesStatus;
+  // return matchesStatus;
+  // });
 
   const fetchCampaigns = async () => {
     setLoading(true);
@@ -41,7 +40,7 @@ export default function BuzzBoard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#080B0A] py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-neutral-900 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -112,7 +111,7 @@ export default function BuzzBoard() {
           </div>
         </div> */}
         {/* Campaign Card Guide */}
-        <div className="mb-6 p-3 bg-gray-800/30 rounded-xl border border-gray-700/30 text-xs text-gray-400 grid grid-cols-1 md:grid-cols-3 gap-2">
+        <div className="mb-6 p-3 bg-cardBackground rounded-xl border border-gray-700/30 text-xs text-gray-400 grid grid-cols-1 md:grid-cols-3 gap-2">
           <div>
             <span className="font-semibold text-gray-300">Rewards:</span> Total
             rewards for influencers
@@ -136,7 +135,7 @@ export default function BuzzBoard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCampaigns.map(
+            {campaigns.map(
               (campaign) =>
                 campaign.is_visible && (
                   <CampaignCard
@@ -148,7 +147,7 @@ export default function BuzzBoard() {
           </div>
         )}
 
-        {filteredCampaigns && filteredCampaigns.length === 0 && !loading && (
+        {campaigns && campaigns.length === 0 && !loading && (
           <div className="text-center py-12">
             <div className="text-gray-400 text-lg mb-2 flex items-center justify-center gap-2">
               <svg

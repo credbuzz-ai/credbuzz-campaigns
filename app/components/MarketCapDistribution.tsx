@@ -525,7 +525,7 @@ export default function MarketCapDistribution({
   }
 
   return (
-    <div className="card-trendsage">
+    <div className="card-trendsage bg-neutral-900">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
@@ -536,7 +536,7 @@ export default function MarketCapDistribution({
         </div>
 
         {/* Time Period Filter */}
-        <div className="flex bg-gray-700 rounded-lg p-1">
+        <div className="flex bg-neutral-800 rounded-lg p-1">
           {TIME_PERIODS.map((period) => (
             <button
               key={period.value}

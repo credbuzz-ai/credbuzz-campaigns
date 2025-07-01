@@ -278,7 +278,7 @@ export default function SmartFeed({
   };
 
   return (
-    <div className="card-trendsage sticky top-8">
+    <div className="card-trendsage sticky top-8 h-full bg-neutral-900 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#00D992]" />
@@ -378,7 +378,7 @@ export default function SmartFeed({
       )}
 
       {/* Tweet list */}
-      <div className="space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar relative">
+      <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar relative">
         {tweets.map((tweet, index) => {
           const isExpanded = expandedTweets.has(tweet.tweet_id);
           const shouldTruncate = tweet.body.length > 200;
