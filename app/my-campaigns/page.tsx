@@ -496,7 +496,7 @@ export default function MyCampaigns() {
                 <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg">
                   <DialogHeader className="text-center">
                     <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
-                      How to earn SAGE
+                      How to earn SAGE?
                     </DialogTitle>
                   </DialogHeader>
 
@@ -514,8 +514,8 @@ export default function MyCampaigns() {
                       </AccordionTrigger>
                       <AccordionContent className="text-[#CFCFCF] text-sm">
                         SAGE are points you earn for posting quality content
-                        that sticks on crypto Twitter (CT) about projects that
-                        have active Snaps campaigns.
+                        that resonates with the crypto Twitter (CT) community
+                        about projects that have active campaigns.
                       </AccordionContent>
                     </AccordionItem>
 
