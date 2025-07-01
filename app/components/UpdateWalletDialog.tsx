@@ -24,10 +24,16 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
     setIsLoading(true);
 
     try {
-      const response = await apiClient.put("/user/update-user", {
-        evm_wallet: evmWallet,
-        solana_wallet: solanaWallet,
-      });
+      // Create payload with only non-empty wallet addresses
+      const payload: { evm_wallet?: string; solana_wallet?: string } = {};
+      if (evmWallet.trim()) {
+        payload.evm_wallet = evmWallet;
+      }
+      if (solanaWallet.trim()) {
+        payload.solana_wallet = solanaWallet;
+      }
+
+      const response = await apiClient.put("/user/update-user", payload);
 
       if (response.status === 200) {
         toast({
@@ -37,11 +43,10 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
         await refreshUser();
         onClose();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
-        title: "Error",
-        description: "Failed to update wallet addresses",
-        variant: "destructive",
+        title: "Failed to update wallet addresses",
+        description: error.response.data.detail,
       });
     } finally {
       setIsLoading(false);
