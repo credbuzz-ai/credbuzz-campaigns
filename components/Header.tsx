@@ -8,11 +8,11 @@ import { useEffect, useRef, useState } from "react";
 
 const navItems = [
   {
-    label: "Buzz Board",
-    href: "/buzz-board",
+    label: "Sage Campaigns",
+    href: "/sage-campaigns",
   },
   {
-    label: "KOLs",
+    label: "Find KOLs",
     href: "/kols",
   },
   // {
@@ -98,7 +98,7 @@ export default function Header() {
                 onClick={login}
                 disabled={isProcessing}
               >
-                {isProcessing ? "Connecting..." : "Connect X"}
+                {isProcessing ? "Connecting..." : "Login with X"}
               </button>
             )}
             {ready && authenticated && (
@@ -185,7 +185,7 @@ export default function Header() {
                   onClick={login}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? "Connecting..." : "Connect X"}
+                  {isProcessing ? "Connecting..." : "Login with X"}
                 </button>
               )}
               {ready && authenticated && (
