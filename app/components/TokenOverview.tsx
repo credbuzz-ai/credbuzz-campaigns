@@ -663,7 +663,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
   }
 
   return (
-    <div className="card-trendsage">
+    <div className="card-trendsage bg-neutral-900">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -729,7 +729,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         <h4 className="text-md font-semibold text-gray-100 mb-3">
           Token Narratives Map
         </h4>
-        <div className="flex flex-col lg:flex-row gap-6 bg-gray-800 rounded-xl p-4 border border-gray-700">
+        <div className="flex flex-col lg:flex-row gap-6 bg-neutral-800 rounded-xl p-4 border border-gray-700">
           {/* Visualization Container */}
           <div className="flex-1 overflow-x-auto">
             <svg

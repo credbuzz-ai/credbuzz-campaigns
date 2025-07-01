@@ -6,7 +6,7 @@ export default function ExpandableDescription({
   description: string;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const maxLength = 100;
+  const maxLength = 80;
 
   if (description.length <= maxLength) {
     return <p className="text-gray-300 text-sm mb-4">{description}</p>;

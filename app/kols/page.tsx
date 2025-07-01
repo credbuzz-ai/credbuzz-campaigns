@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Eye, Star, Users } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 // Add debounce function at the top level
@@ -39,6 +40,7 @@ interface LeaderboardResponse {
 const ITEMS_PER_PAGE = 50;
 
 export default function KOLsPage() {
+  const router = useRouter();
   const [kols, setKols] = useState<KOL[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -197,7 +199,7 @@ export default function KOLsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-neutral-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -217,7 +219,7 @@ export default function KOLsPage() {
                   value={searchTerm}
                   onChange={handleSearchChange}
                   placeholder="Search by username (min. 4 characters)..."
-                  className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
+                  className="flex-1 px-4 py-2 bg-cardBackground border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
                 />
                 {searchLoading && (
                   <div className="absolute right-24 top-1/2 transform -translate-y-1/2">
@@ -248,7 +250,7 @@ export default function KOLsPage() {
         </div>
 
         {/* Content */}
-        <div className="card-trendsage">
+        <div className="card-trendsage bg-cardBackground">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
@@ -291,7 +293,7 @@ export default function KOLsPage() {
               {/* Table */}
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-700">
+                  <thead className="bg-cardBackground">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Rank
@@ -313,14 +315,17 @@ export default function KOLsPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-gray-800 divide-y divide-gray-700">
+                  <tbody className="bg-cardBackground divide-y divide-gray-700">
                     {displayedKols.map((kol, index) => {
                       const rank =
                         (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
                       return (
                         <tr
                           key={kol.author_handle}
-                          className="hover:bg-gray-700 transition-colors group"
+                          className="hover:bg-cardBackground2 transition-colors group cursor-pointer"
+                          onClick={() => {
+                            router.push(`/kols/${kol.author_handle}`);
+                          }}
                         >
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">
                             #{rank}

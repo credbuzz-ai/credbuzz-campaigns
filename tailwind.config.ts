@@ -1,4 +1,4 @@
-import type { Config } from "tailwindcss"
+import type { Config } from "tailwindcss";
 
 const config: Config = {
   darkMode: ["class"],
@@ -81,6 +81,36 @@ const config: Config = {
           700: "#4A5568",
           600: "#718096",
         },
+        // Neutral grayscale & deep greens
+        neutral: {
+          100: "#CFCFCF", // light gray
+          200: "#9CA7A4", // cool gray
+          300: "#6A7B78", // sage green (light)
+          400: "#4D5B59", // sage green (medium)
+          500: "#2D3B39", // deep sage
+          600: "#1E2A28", // evergreen
+          700: "#151B1A", // charcoal
+          800: "#060F11", // rich black
+          900: "#080B0A", // deep black
+        },
+
+        // Brand greens (primary palette)
+        brand: {
+          50: "#DFFCF6", // mint tint
+          200: "#A9F0DF", // mint light
+          400: "#66E2C1", // mint
+          600: "#00D992", // brand green (primary)
+        },
+
+        // Supporting accent colors
+        support: {
+          salmon: "#F38C8C", // soft red (alert / danger)
+          sand: "#DCD9A2", // muted yellow (warning / info)
+        },
+
+        cardBackground: "#151B1AA6",
+        cardBackground2: "#242A29A6",
+        navbarBackground: "#080B0A",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -115,5 +145,5 @@ const config: Config = {
     },
   },
   plugins: [],
-}
-export default config
+};
+export default config;

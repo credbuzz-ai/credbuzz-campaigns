@@ -109,7 +109,7 @@ export default function KOLSearch() {
             value={searchTerm}
             onChange={handleSearchChange}
             placeholder="Search KOL by name or Twitter handle (min. 4 characters)..."
-            className="block w-full pl-10 pr-3 py-2 border border-gray-600 rounded-lg bg-gray-800 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00D992]/50 focus:border-transparent"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-600 rounded-lg bg-neutral-900 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00D992]/50 focus:border-transparent"
           />
           {searchLoading && (
             <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -128,9 +128,9 @@ export default function KOLSearch() {
 
       {/* Search Results Dropdown */}
       {showResults && searchResults.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+        <div className="absolute z-50 w-full mt-2 bg-neutral-800 border border-gray-700 rounded-lg shadow-lg max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
           {searchResults.length > 0 && (
-            <div className="sticky top-0 bg-gray-800/90 backdrop-blur-sm px-4 py-2 border-b border-gray-700">
+            <div className="sticky top-0 bg-neutral-800 backdrop-blur-sm px-4 py-2 border-b border-gray-700">
               <p className="text-xs text-gray-400">
                 Found {searchResults.length} results
               </p>
@@ -140,7 +140,7 @@ export default function KOLSearch() {
             <button
               key={kol.author_handle}
               onClick={() => handleResultClick(kol.author_handle)}
-              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-0"
+              className="w-full px-4 py-3 flex items-center gap-3 hover:bg-neutral-700 transition-colors border-b border-gray-700 last:border-0"
             >
               <img
                 src={kol.profile_image_url}

@@ -1,50 +1,113 @@
 import ReferralHandler from "@/app/components/ReferralHandler";
+import OpenCampaigns from "@/app/components/OpenCampaigns";
 import { ArrowRight, Shield, TrendingUp, Zap } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen relative">
+      {/* Background Image */}
+      <div className="pointer-events-none select-none absolute inset-0 -z-10 bg-[url('/landingPageBg.png')] bg-cover bg-center" />
+
       <Suspense fallback={null}>
         <ReferralHandler />
       </Suspense>
 
       {/* Hero Section */}
-      <section className="relative py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <h1 className="text-5xl md:text-7xl font-bold text-gray-100 mb-6">
-              The Future of
-              <span className="block bg-gradient-to-r from-[#00D992] to-[#00F5A8] bg-clip-text text-transparent">
-                Web3 Influence
-              </span>
-            </h1>
-            <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
-              AI-powered decentralized marketplace connecting brands with
-              authentic web3 Key Opinion Leaders. Build trust, drive engagement,
-              and scale your campaigns with blockchain transparency.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                href="/sage-campaigns"
-                className="btn-primary inline-flex items-center"
-              >
-                Explore Campaigns <ArrowRight className="ml-2 w-4 h-4" />
-              </Link>
-              <Link
-                href="/kols"
-                className="btn-secondary inline-flex items-center"
-              >
-                View KOL Profiles
-              </Link>
+      <section className="relative py-24 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto text-center">
+          {/* Centered Logo */}
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center mb-12 select-none"
+          >
+            <img
+              src="/logo-green.svg"
+              alt="TrendSage"
+              className="w-8 h-8 md:w-10 md:h-10 mr-2"
+            />
+            <span className="text-lg md:text-2xl font-semibold text-neutral-100">
+              TrendSage
+            </span>
+          </Link>
+
+          {/* Main Heading */}
+          <h1 className="text-2xl md:text-3xl lg:text-5xl font-semibold text-neutral-100 leading-tight mb-6">
+            The Future of Web3 Influence
+          </h1>
+
+          {/* Sub-heading */}
+          <p className="text-lg md:text-xl text-neutral-300 mb-10 max-w-3xl mx-auto">
+            AI-powered decentralized marketplace connecting brands with
+            authentic Web3 Key Opinion Leaders. Build trust, drive engagement,
+            and scale your campaigns with blockchain transparency.
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/kols"
+              className="btn-secondarynew inline-flex items-center justify-center min-w-[160px]"
+            >
+              Find top KOLs
+            </Link>
+            <Link
+              href="/sage-campaigns"
+              className="btn-primarynew inline-flex items-center justify-center min-w-[160px]"
+            >
+              Explore campaigns <ArrowRight className="ml-2 w-4 h-4" />
+            </Link>
+          </div>
+
+          {/* Key Metrics */}
+          <div className="mt-16 max-w-5xl mx-auto">
+            <div className="grid grid-cols-2 md:grid-cols-4 text-center border border-neutral-600 border-dashed">
+              {/* 10K+ */}
+              <div className="py-8 px-6 flex flex-col gap-1 border-neutral-600 border-dashed md:border-r last:md:border-none">
+                <span className="text-lg md:text-xl font-semibold text-brand-50">
+                  10K+
+                </span>
+                <span className="text-neutral-300 text-sm md:text-base">
+                  Reward pool
+                </span>
+              </div>
+              {/* 500+ */}
+              <div className="py-8 px-6 flex flex-col gap-1 border-neutral-600 border-dashed md:border-r last:md:border-none">
+                <span className="text-lg md:text-xl font-semibold text-brand-50">
+                  500+
+                </span>
+                <span className="text-neutral-300 text-sm md:text-base">
+                  Active Campaigns
+                </span>
+              </div>
+              {/* $50M+ */}
+              <div className="py-8 px-6 flex flex-col gap-1 border-neutral-600 border-dashed md:border-r last:md:border-none">
+                <span className="text-lg md:text-xl font-semibold text-brand-50">
+                  $50M+
+                </span>
+                <span className="text-neutral-300 text-sm md:text-base">
+                  Campaign value
+                </span>
+              </div>
+              {/* 98% */}
+              <div className="py-8 px-6 flex flex-col gap-1">
+                <span className="text-lg md:text-xl font-semibold text-brand-50">
+                  98%
+                </span>
+                <span className="text-neutral-300 text-sm md:text-base">
+                  Success Rate
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </section>
+      {/* Open Campaigns Section */}
+      <OpenCampaigns />
 
       {/* Features Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
+      {/* <section className="py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-100 mb-4">
@@ -99,39 +162,7 @@ export default function LandingPage() {
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-800/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 text-center">
-            <div className="group">
-              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">
-                10K+
-              </div>
-              <div className="text-gray-300">Verified KOLs</div>
-            </div>
-            <div className="group">
-              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">
-                500+
-              </div>
-              <div className="text-gray-300">Active Campaigns</div>
-            </div>
-            <div className="group">
-              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">
-                $50M+
-              </div>
-              <div className="text-gray-300">Campaign Value</div>
-            </div>
-            <div className="group">
-              <div className="text-4xl font-bold text-[#00D992] mb-2 group-hover:scale-110 transition-transform">
-                98%
-              </div>
-              <div className="text-gray-300">Success Rate</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      </section> */}
 
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">

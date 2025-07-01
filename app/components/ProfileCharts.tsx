@@ -96,7 +96,7 @@ function MetricChart({
         }));
 
   return (
-    <div className="card-trendsage group">
+    <div className="card-trendsage group bg-neutral-900">
       <div className="mb-3">
         <h3 className="text-sm font-medium text-gray-400 mb-1">{title}</h3>
         <div className="flex items-end gap-2">
@@ -205,7 +205,7 @@ function ActivityHeatmap({
     const colorScale = d3
       .scaleLinear<string>()
       .domain([0, maxTweets])
-      .range(["#1f2937", "#00D992"]);
+      .range(["#1f2f37", "#00D992"]);
 
     // Create main group
     const g = svg
@@ -363,7 +363,7 @@ function ActivityHeatmap({
   }, [activityData]);
 
   return (
-    <div className="card-trendsage">
+    <div className="card-trendsage bg-neutral-800">
       <h3 className="text-lg font-semibold text-gray-100 mb-4">
         Activity Heatmap
       </h3>
