@@ -99,7 +99,7 @@ export default function CampaignLeaderboard({
   };
 
   return (
-    <Card className="bg-gray-800 border-gray-700">
+    <Card className="bg-[#080B0A] border-gray-700">
       <div className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="space-y-2">

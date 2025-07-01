@@ -364,13 +364,13 @@ export default function CampaignDetailsClient({
     : campaign.owner_x_handle.replace("@", "").toLowerCase();
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-[#080B0A]">
       <div className="flex items-start">
         {/* Main Content */}
         <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
           <div className="max-w-6xl mx-auto">
             {/* Campaign Header */}
-            <Card className="bg-gray-800 border-gray-700 mb-8">
+            <Card className="bg-[#080B0A] border-gray-700 mb-8">
               <div className="p-6">
                 <div className="flex flex-col gap-6">
                   {/* Title and Status Row */}
@@ -389,9 +389,15 @@ export default function CampaignDetailsClient({
                       <StatusBadge status="active" />
                     </div>
                     <div className="flex items-center gap-2">
-                      {(campaign.project_handle || campaign.target_x_handle || campaign.owner_x_handle) && (
+                      {(campaign.project_handle ||
+                        campaign.target_x_handle ||
+                        campaign.owner_x_handle) && (
                         <SocialLink
-                          href={`https://x.com/${(campaign.project_handle || campaign.target_x_handle || campaign.owner_x_handle)?.replace('@', '')}`}
+                          href={`https://x.com/${(
+                            campaign.project_handle ||
+                            campaign.target_x_handle ||
+                            campaign.owner_x_handle
+                          )?.replace("@", "")}`}
                           icon={<XLogo className="w-5 h-5" />}
                           label="Twitter"
                         />
@@ -542,7 +548,7 @@ export default function CampaignDetailsClient({
 // Loading Skeleton Component
 function CampaignSkeleton() {
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-gray-900">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-[#080B0A]">
       <div className="max-w-7xl mx-auto">
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <div className="p-6">
