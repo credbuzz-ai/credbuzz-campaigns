@@ -8,6 +8,7 @@ import { MindshareResponse, UserProfileResponse } from "@/app/types";
 import { XLogo } from "@/components/icons/x-logo";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
 import { differenceInHours } from "date-fns";
@@ -493,51 +494,70 @@ export default function CampaignDetailsClient({
               </div>
             </Card>
 
-            {/* Community Mindshare */}
-            <div className="mb-8 mt-8">
-              <MindshareVisualization
-                data={visualizationData?.result?.mindshare_data || []}
-                selectedTimePeriod={selectedTimePeriod}
-                onTimePeriodChange={(period) => {
-                  setSelectedTimePeriod(period as TimePeriod);
-                  setCurrentPage(1); // Reset to first page when changing period
-                }}
-                loading={loading}
-                setLoading={setLoading}
-                projectName={campaignId}
-                projectHandle={campaign?.target_x_handle || ""}
-              />
-            </div>
+            {/* Tabbed Interface for Mindshare and Followers */}
+            <Tabs defaultValue="mindshare" className="w-full mt-8">
+              <TabsList className="flex w-full border-b border-gray-700/50 mb-8">
+                <TabsTrigger
+                  value="mindshare"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors"
+                >
+                  Mindshare
+                </TabsTrigger>
+                <TabsTrigger
+                  value="followers"
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors"
+                >
+                  Followers Overview
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Followers Overview */}
-            {campaign?.target_x_handle && (
-              <div className="mb-8">
-                <FollowersOverview
-                  authorHandle={campaign.target_x_handle.replace("@", "")}
-                />
-              </div>
-            )}
-
-            {/* Leaderboard */}
-            {mindshareData?.result?.mindshare_data &&
-              mindshareData.result.mindshare_data.length > 0 && (
-                <div className="mb-8">
-                  <CampaignLeaderboard
-                    data={mindshareData.result.mindshare_data}
-                    totalResults={mindshareData.result.total_results}
-                    campaignId={campaignId}
+              <TabsContent value="mindshare" className="space-y-8">
+                {/* Community Mindshare */}
+                <div>
+                  <MindshareVisualization
+                    data={visualizationData?.result?.mindshare_data || []}
                     selectedTimePeriod={selectedTimePeriod}
-                    currentPage={currentPage}
-                    pageSize={pageSize}
-                    onPageChange={handlePageChange}
+                    onTimePeriodChange={(period) => {
+                      setSelectedTimePeriod(period as TimePeriod);
+                      setCurrentPage(1); // Reset to first page when changing period
+                    }}
+                    loading={loading}
+                    setLoading={setLoading}
+                    projectName={campaignId}
+                    projectHandle={campaign?.target_x_handle || ""}
                   />
                 </div>
-              )}
+
+                {/* Leaderboard */}
+                {mindshareData?.result?.mindshare_data &&
+                  mindshareData.result.mindshare_data.length > 0 && (
+                    <div>
+                      <CampaignLeaderboard
+                        data={mindshareData.result.mindshare_data}
+                        totalResults={mindshareData.result.total_results}
+                        campaignId={campaignId}
+                        selectedTimePeriod={selectedTimePeriod}
+                        currentPage={currentPage}
+                        pageSize={pageSize}
+                        onPageChange={handlePageChange}
+                      />
+                    </div>
+                  )}
+              </TabsContent>
+
+              <TabsContent value="followers">
+                {campaign?.target_x_handle && (
+                  <FollowersOverview
+                    authorHandle={campaign.target_x_handle.replace("@", "")}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
         {/* Smart Feed Sidebar */}
-        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-start sticky top-8">
+        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-8 h-[calc(100vh-4rem)]">
           <MentionsFeed authorHandle={smartFeedHandle} />
         </div>
       </div>
