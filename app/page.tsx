@@ -27,7 +27,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
-                href="/buzz-board"
+                href="/sage-campaigns"
                 className="btn-primary inline-flex items-center"
               >
                 Explore Campaigns <ArrowRight className="ml-2 w-4 h-4" />
@@ -143,7 +143,7 @@ export default function LandingPage() {
             Join the future of influencer marketing with TrendSage
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/buzz-board" className="btn-primary">
+            <Link href="/sage-campaigns" className="btn-primary">
               Start Your Campaign
             </Link>
             <Link href="/kols" className="btn-secondary">

@@ -52,7 +52,7 @@ export async function generateMetadata({
     // Ensure absolute URLs for images
     const domain = process.env.NEXT_PUBLIC_APP_URL || "https://trendsage.xyz";
     const ogImageUrl = `${domain}/api/og/campaign/${campaignId}`;
-    const pageUrl = `${domain}/buzz-board/${campaignId}`;
+    const pageUrl = `${domain}/sage-campaigns/${campaignId}`;
 
     // Create a more descriptive Twitter title
     const twitterTitle = campaign.target_x_handle
