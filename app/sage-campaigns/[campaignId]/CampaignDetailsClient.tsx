@@ -365,13 +365,13 @@ export default function CampaignDetailsClient({
     : campaign.owner_x_handle.replace("@", "").toLowerCase();
 
   return (
-    <div className="min-h-screen bg-[#080B0A]">
+    <div className="min-h-screen bg-neutral-900">
       <div className="flex items-start">
         {/* Main Content */}
         <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
           <div className="max-w-6xl mx-auto">
             {/* Campaign Header */}
-            <Card className="bg-[#080B0A] border-gray-700 mb-8">
+            <Card className="bg-neutral-900 border-gray-700 mb-8">
               <div className="p-6">
                 <div className="flex flex-col gap-6">
                   {/* Title and Status Row */}
@@ -496,19 +496,19 @@ export default function CampaignDetailsClient({
 
             {/* Tabbed Interface for Mindshare and Followers */}
             <Tabs defaultValue="mindshare" className="w-full mt-8">
-              <TabsList className="flex w-full border-b border-gray-700/50 mb-8">
-                <TabsTrigger
-                  value="mindshare"
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors"
-                >
-                  Mindshare
-                </TabsTrigger>
-                <TabsTrigger
-                  value="followers"
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors"
-                >
-                  Followers Overview
-                </TabsTrigger>
+              <TabsList className="flex w-full border-b border-gray-700/50 mb-8 bg-transparent">
+                {[
+                  { label: "Mindshare", value: "mindshare" },
+                  { label: "Followers Overview", value: "followers" },
+                ].map((tab) => (
+                  <TabsTrigger
+                    key={tab.value}
+                    value={tab.value}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors bg-transparent"
+                  >
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
               </TabsList>
 
               <TabsContent value="mindshare" className="space-y-8">
@@ -568,7 +568,7 @@ export default function CampaignDetailsClient({
 // Loading Skeleton Component
 function CampaignSkeleton() {
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-[#080B0A]">
+    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-neutral-900">
       <div className="max-w-7xl mx-auto">
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <div className="p-6">

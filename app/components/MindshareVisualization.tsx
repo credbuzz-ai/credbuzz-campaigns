@@ -848,7 +848,7 @@ export default function MindshareVisualization({
   };
 
   return (
-    <div className="card-trendsage bg-[#080B0A]">
+    <div className="card-trendsage bg-neutral-900">
       <div className="flex items-center justify-between mb-6">
         <div className="space-y-2">
           <h3 className="text-xl font-semibold text-gray-100">

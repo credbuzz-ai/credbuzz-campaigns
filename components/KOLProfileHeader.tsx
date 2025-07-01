@@ -86,7 +86,7 @@ export default function KOLProfileHeader({
   };
 
   return (
-    <div className="card-trendsage group mb-8">
+    <div className="card-trendsage group mb-8 bg-neutral-800">
       <div className="flex flex-col sm:flex-row items-start gap-6 relative">
         {/* Collaborate Button - Right top corner, with enhanced logic */}
         <div className="absolute top-0 right-0">
