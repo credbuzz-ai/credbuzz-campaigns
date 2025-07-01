@@ -137,8 +137,7 @@ export default function EarnMini() {
   };
 
   const copyReferralCode = () => {
-    const shareUrl = `https://trendsage.xyz?referral_code=${referralCode}`;
-    const shareText = `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${shareUrl}`;
+    const shareText = `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${referralUrl}`;
     navigator.clipboard.writeText(shareText);
     setIsCopied(true);
     setTimeout(() => {
@@ -252,7 +251,7 @@ export default function EarnMini() {
           </CardHeader>{" "}
           <CardContent className="pt-6">
             <ReferralCard referralCode={user?.referral_code || ""} />
-            <div className="grid grid-cols-2 gap-4 mt-6">
+            <div className="grid grid-cols-3 gap-3 mt-6">
               {/* Action Button */}
               <AnimatePresence mode="wait">
                 <motion.div
@@ -263,7 +262,7 @@ export default function EarnMini() {
                 >
                   <Button
                     onClick={copyReferralCode}
-                    className="w-full bg-gradient-to-r from-[#00D992] to-[#00F5A8] hover:from-[#00F5A8] hover:to-[#00D992] text-gray-900 font-medium shadow-lg"
+                    className="w-full bg-gradient-to-r from-[#00D992] to-[#00F5A8] hover:from-[#00F5A8] hover:to-[#00D992] text-gray-900 font-medium shadow-lg text-sm rounded-xl"
                     size="default"
                   >
                     {isCopied ? (
@@ -272,13 +271,13 @@ export default function EarnMini() {
                         initial={{ scale: 0.8 }}
                         animate={{ scale: 1 }}
                       >
-                        <Check className="h-4 w-4 mr-2" />
+                        <Check className="h-4 w-4 mr-1" />
                         <span>Copied!</span>
                       </motion.div>
                     ) : (
                       <motion.div className="flex items-center justify-center">
-                        <Copy className="h-4 w-4 mr-2" />
-                        <span>Copy Referral Link</span>
+                        <Copy className="h-4 w-4 mr-1" />
+                        <span>Copy Link</span>
                       </motion.div>
                     )}
                   </Button>
@@ -286,7 +285,7 @@ export default function EarnMini() {
               </AnimatePresence>
               <Button
                 onClick={shareOnX}
-                className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
+                className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-1 rounded-xl text-sm"
                 size="sm"
               >
                 <span>Share on X</span>
@@ -294,7 +293,7 @@ export default function EarnMini() {
 
               <Button
                 onClick={shareOnTelegram}
-                className="bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-2 rounded-xl"
+                className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-1 rounded-xl text-sm"
                 size="sm"
               >
                 <Share2 className="h-4 w-4" />
