@@ -298,7 +298,7 @@ export default function CampaignDetailsClient({
       try {
         setLoading(true);
         const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
-        const offset = (currentPage - 1) * pageSize;
+        const offset = (currentPage - 1) * followersLimit;
 
         // Reset states before fetching new data
         setMindshareData(null);
@@ -306,13 +306,13 @@ export default function CampaignDetailsClient({
 
         // Fetch paginated data for the leaderboard
         const paginatedResponse = await apiClient.get(
-          `/mindshare?project_name=${handle}&limit=${pageSize}&offset=${offset}&period=${period}`
+          `/mindshare?project_name=${handle}&limit=${followersLimit}&offset=${offset}&period=${period}`
         );
         setMindshareData(paginatedResponse.data);
 
-        // Always fetch visualization data when period changes
+        // Use the same limit for visualization data to maintain consistency
         const visualizationResponse = await apiClient.get(
-          `/mindshare?project_name=${handle}&limit=100&period=${period}`
+          `/mindshare?project_name=${handle}&limit=${followersLimit}&period=${period}`
         );
         setVisualizationData(visualizationResponse.data);
       } catch (err) {
@@ -327,7 +327,13 @@ export default function CampaignDetailsClient({
     if (campaign?.target_x_handle) {
       fetchMindshare(selectedTimePeriod);
     }
-  }, [campaign?.target_x_handle, selectedTimePeriod, currentPage, pageSize]);
+  }, [
+    campaign?.target_x_handle,
+    selectedTimePeriod,
+    currentPage,
+    followersLimit,
+    pageSize,
+  ]);
 
   useEffect(() => {
     const fetchActivityData = async () => {
@@ -771,9 +777,9 @@ export default function CampaignDetailsClient({
               {/* Feed with Accounts/Mentions Tabs */}
               <div className="w-full md:w-[44%] flex flex-col h-full">
                 {/* External Time Period Filters */}
-                <div className="flex justify-end  pt-4 border-b border-neutral-600 pb-4 pl-4">
+                <div className="flex justify-between  pt-4 border-b border-neutral-600 pb-4">
                   {/* Limit buttons */}
-                  {/* <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
+                  <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
                     {[20, 50, 100].map((num) => (
                       <button
                         key={num}
@@ -787,7 +793,7 @@ export default function CampaignDetailsClient({
                         Top {num}
                       </button>
                     ))}
-                  </div> */}
+                  </div>
                   <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
                     {["30d", "7d", "1d"].map((period) => (
                       <button
@@ -840,7 +846,7 @@ export default function CampaignDetailsClient({
                           campaignId={campaignId}
                           selectedTimePeriod={selectedTimePeriod}
                           currentPage={currentPage}
-                          pageSize={pageSize}
+                          followersLimit={followersLimit}
                           onPageChange={handlePageChange}
                         />
                       )}
