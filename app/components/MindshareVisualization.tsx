@@ -848,10 +848,12 @@ export default function MindshareVisualization({
   };
 
   return (
-    <div className="p-4 bg-neutral-900 border border-neutral-600 border-dashed border-t-0 ">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 bg-neutral-900 border border-neutral-600 border-dashed border-t-0 border-r-0 ">
+      <div className="flex items-center justify-between mb-2">
         <div className="space-y-2">
-          <h3 className="text-xl font-semibold text-gray-100">Mindshare</h3>
+          <h3 className="text-base font-semibold text-neutral-100">
+            Mindshare
+          </h3>
           {/* <p className="text-sm text-gray-400">
             {currentView === "treemap"
               ? "Distribution of community engagement and influence"

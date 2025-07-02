@@ -496,9 +496,9 @@ export default function CampaignDetailsClient({
             </Card>
             <div className="flex flex-row h-full items-stretch">
               {/* Tabbed Interface for Mindshare and Followers */}
-              <div className="w-full md:w-[58.333333%] flex flex-col h-full">
-                <Tabs defaultValue="mindshare" className="w-full h-full mt-8">
-                  <TabsList className="flex w-full border-b pb-5 box-border border-gray-700/50 bg-transparent rounded-none">
+              <div className="w-full md:w-[56%] flex flex-col h-full">
+                <Tabs defaultValue="mindshare" className="w-full h-full mt-5">
+                  <TabsList className="flex w-full bg-transparent rounded-none p-0">
                     {[
                       { label: "Mindshare", value: "mindshare" },
                       { label: "Followers Overview", value: "followers" },
@@ -506,14 +506,14 @@ export default function CampaignDetailsClient({
                       <TabsTrigger
                         key={tab.value}
                         value={tab.value}
-                        className="flex-1 px-4 py-2 pb-5 text-sm font-medium rounded-none text-gray-400 hover:text-gray-200  data-[state=active]:mb-0 data-[state=active]:bg-transparent data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors bg-transparent"
+                        className="flex-1 px-4  border-b py-5  border-neutral-600  text-sm  font-medium rounded-none text-gray-400 hover:text-gray-200  data-[state=active]:mb-0 data-[state=active]:bg-transparent data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors bg-transparent"
                       >
                         {tab.label}
                       </TabsTrigger>
                     ))}
                   </TabsList>
 
-                  <TabsContent value="mindshare" className="space-y-8 mt-0">
+                  <TabsContent value="mindshare" className="space-y-8 mt-2">
                     {/* Community Mindshare */}
                     <div>
                       <MindshareVisualization
@@ -533,7 +533,7 @@ export default function CampaignDetailsClient({
                     {/* Leaderboard moved to Accounts tab in Feed */}
                   </TabsContent>
 
-                  <TabsContent value="followers">
+                  <TabsContent value="followers" className="mt-0">
                     {campaign?.target_x_handle && (
                       <FollowersOverview
                         authorHandle={campaign.target_x_handle.replace("@", "")}
@@ -544,7 +544,7 @@ export default function CampaignDetailsClient({
               </div>
 
               {/* Feed with Accounts/Mentions Tabs */}
-              <div className="w-full md:w-[41.666667%] flex flex-col h-full">
+              <div className="w-full md:w-[44%] flex flex-col h-full">
                 {/* External Time Period Filters */}
                 <div className="flex justify-between  pt-4 border-b border-neutral-600 pb-4 pl-4">
                   {/* Limit buttons */}
@@ -584,10 +584,10 @@ export default function CampaignDetailsClient({
                 </div>
                 <Tabs
                   defaultValue="accounts"
-                  className="w-full h-full mt-0 p-4 border border-neutral-600 border-dashed border-t-0 border-l-0 flex flex-col"
+                  className="w-full h-full mt-0 p-4 border border-neutral-600 border-dashed border-t-0  flex flex-col"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-medium text-gray-300">Feed</h3>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-medium text-neutral-100">Feed</h3>
                     <TabsList className="inline-flex p-0 items-center bg-transparent rounded-md border border-neutral-600">
                       {[
                         { label: "Accounts", value: "accounts" },

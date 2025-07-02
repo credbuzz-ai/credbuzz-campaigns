@@ -373,7 +373,10 @@ export default function MentionsFeed({
               : truncateText(tweet.body);
 
           return (
-            <div key={`${tweet.tweet_id}-${index}`} className=" p-4  ">
+            <div
+              key={`${tweet.tweet_id}-${index}`}
+              className="p-4 border-b border-neutral-600"
+            >
               {/* Tweet header */}
               <div className="flex items-start gap-3 mb-3">
                 <img
