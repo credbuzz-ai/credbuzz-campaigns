@@ -49,6 +49,7 @@ export interface Campaign {
     smart_followers_count?: number;
     engagement_score?: number;
   };
+  campaign_rules?: string;
 }
 
 export type UserType = {
