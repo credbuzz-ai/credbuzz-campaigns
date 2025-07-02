@@ -89,7 +89,7 @@ export default function EarnMini() {
         completed: user?.x_follow_claimed ? 1 : 0,
         points: 50,
         action: claimXFollow,
-        link: "https://x.com/0xtrendsage",
+        link: "https://x.com/intent/follow?screen_name=0xtrendsage",
       },
       {
         id: 2,
