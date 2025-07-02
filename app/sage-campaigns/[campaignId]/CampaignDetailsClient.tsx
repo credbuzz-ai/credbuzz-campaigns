@@ -5,27 +5,6 @@ import FollowersOverview from "@/app/components/FollowersOverview";
 import MentionsFeed from "@/app/components/MentionsFeed";
 import MindshareVisualization from "@/app/components/MindshareVisualization";
 import { MindshareResponse, UserProfileResponse } from "@/app/types";
-import { XLogo } from "@/components/icons/x-logo";
-import { Card } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import apiClient from "@/lib/api";
-import { Campaign } from "@/lib/types";
-import { differenceInHours } from "date-fns";
-import {
-  Clock,
-  ExternalLink,
-  FileText,
-  Globe,
-  Instagram,
-  Wallet,
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import Image from "next/image";
-import { XIcon } from "@/public/icons/XIcon";
-import { TgIcon } from "@/public/icons/TgIcon";
-import { DiscordIcon } from "@/public/icons/DiscordIcon";
-import { BrowserIcon } from "@/public/icons/BrowserIcon";
 import {
   Accordion,
   AccordionContent,
@@ -33,6 +12,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +20,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import apiClient from "@/lib/api";
+import { Campaign } from "@/lib/types";
+import { BrowserIcon } from "@/public/icons/BrowserIcon";
+import { DiscordIcon } from "@/public/icons/DiscordIcon";
+import { TgIcon } from "@/public/icons/TgIcon";
+import { XIcon } from "@/public/icons/XIcon";
+import { ExternalLink } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+?)(?=[.,;:!?\)\]\}]*(?:\s|$))/g;
   return text.split(urlRegex).map((part, index) => {
@@ -687,35 +678,39 @@ export default function CampaignDetailsClient({
                           defaultValue="item-1"
                           className="mt-4"
                         >
-                          <AccordionItem value="item-1" className="border-none">
+                          <AccordionItem
+                            value="item-1"
+                            className="border-none max-h-[500px] overflow-y-auto"
+                          >
                             <AccordionTrigger className="text-[#DFFCF6] text-xl">
                               About campaign
                             </AccordionTrigger>
                             <AccordionContent className="text-[#CFCFCF] text-sm">
-                              SAGE are points you earn for posting quality
-                              content that sticks on CT about projects with
-                              active campaigns.
+                              <ExpandableDescription
+                                description={campaign?.description}
+                              />
                             </AccordionContent>
                           </AccordionItem>
 
-                          <AccordionItem value="item-2" className="border-none">
-                            <AccordionTrigger className="text-[#DFFCF6] text-xl">
-                              Campaign rules
-                            </AccordionTrigger>
-                            <AccordionContent className="text-[#CFCFCF] text-sm">
-                              <ul className="list-disc list-inside space-y-2">
-                                <li>
-                                  Post high-quality content that aligns with
-                                  projects' narratives.
-                                </li>
-                                <li>Create original, educational content.</li>
-                                <li>
-                                  Invite your friends and earn SAGE for each
-                                  invite.
-                                </li>
-                              </ul>
-                            </AccordionContent>
-                          </AccordionItem>
+                          {campaign?.campaign_rules && (
+                            <AccordionItem
+                              value="item-2"
+                              className="border-none"
+                            >
+                              <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                                Campaign rules
+                              </AccordionTrigger>
+                              <AccordionContent className="text-[#CFCFCF] text-sm">
+                                <ul className="list-disc list-inside space-y-2">
+                                  {campaign?.campaign_rules
+                                    ?.split("\n")
+                                    .map((rule, index) => (
+                                      <li key={index}>{linkifyText(rule)}</li>
+                                    ))}
+                                </ul>
+                              </AccordionContent>
+                            </AccordionItem>
+                          )}
                         </Accordion>
                       </DialogContent>
                     </Dialog>
