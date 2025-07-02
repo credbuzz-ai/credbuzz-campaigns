@@ -219,6 +219,7 @@ export default function CampaignDetailsClient({
   >(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(50);
   const pageSize = 100;
 
   useEffect(() => {
@@ -369,7 +370,7 @@ export default function CampaignDetailsClient({
       <div className="flex items-start">
         {/* Main Content */}
         <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl px-4 mx-auto">
             {/* Campaign Header */}
             <Card className="bg-neutral-900 border-gray-700 mb-8">
               <div className="p-6">
@@ -493,73 +494,145 @@ export default function CampaignDetailsClient({
                 </div>
               </div>
             </Card>
+            <div className="flex flex-row h-full items-stretch">
+              {/* Tabbed Interface for Mindshare and Followers */}
+              <div className="w-full md:w-[58.333333%] flex flex-col h-full">
+                <Tabs defaultValue="mindshare" className="w-full h-full mt-8">
+                  <TabsList className="flex w-full border-b pb-5 box-border border-gray-700/50 bg-transparent rounded-none">
+                    {[
+                      { label: "Mindshare", value: "mindshare" },
+                      { label: "Followers Overview", value: "followers" },
+                    ].map((tab) => (
+                      <TabsTrigger
+                        key={tab.value}
+                        value={tab.value}
+                        className="flex-1 px-4 py-2 pb-5 text-sm font-medium rounded-none text-gray-400 hover:text-gray-200  data-[state=active]:mb-0 data-[state=active]:bg-transparent data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors bg-transparent"
+                      >
+                        {tab.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
 
-            {/* Tabbed Interface for Mindshare and Followers */}
-            <Tabs defaultValue="mindshare" className="w-full mt-8">
-              <TabsList className="flex w-full border-b border-gray-700/50 mb-8 bg-transparent">
-                {[
-                  { label: "Mindshare", value: "mindshare" },
-                  { label: "Followers Overview", value: "followers" },
-                ].map((tab) => (
-                  <TabsTrigger
-                    key={tab.value}
-                    value={tab.value}
-                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-400 hover:text-gray-200 data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors bg-transparent"
-                  >
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              <TabsContent value="mindshare" className="space-y-8">
-                {/* Community Mindshare */}
-                <div>
-                  <MindshareVisualization
-                    data={visualizationData?.result?.mindshare_data || []}
-                    selectedTimePeriod={selectedTimePeriod}
-                    onTimePeriodChange={(period) => {
-                      setSelectedTimePeriod(period as TimePeriod);
-                      setCurrentPage(1); // Reset to first page when changing period
-                    }}
-                    loading={loading}
-                    setLoading={setLoading}
-                    projectName={campaignId}
-                    projectHandle={campaign?.target_x_handle || ""}
-                  />
-                </div>
-
-                {/* Leaderboard */}
-                {mindshareData?.result?.mindshare_data &&
-                  mindshareData.result.mindshare_data.length > 0 && (
+                  <TabsContent value="mindshare" className="space-y-8 mt-0">
+                    {/* Community Mindshare */}
                     <div>
-                      <CampaignLeaderboard
-                        data={mindshareData.result.mindshare_data}
-                        totalResults={mindshareData.result.total_results}
-                        campaignId={campaignId}
+                      <MindshareVisualization
+                        data={visualizationData?.result?.mindshare_data || []}
                         selectedTimePeriod={selectedTimePeriod}
-                        currentPage={currentPage}
-                        pageSize={pageSize}
-                        onPageChange={handlePageChange}
+                        onTimePeriodChange={(period) => {
+                          setSelectedTimePeriod(period as TimePeriod);
+                          setCurrentPage(1); // Reset to first page when changing period
+                        }}
+                        loading={loading}
+                        setLoading={setLoading}
+                        projectName={campaignId}
+                        projectHandle={campaign?.target_x_handle || ""}
                       />
                     </div>
-                  )}
-              </TabsContent>
 
-              <TabsContent value="followers">
-                {campaign?.target_x_handle && (
-                  <FollowersOverview
-                    authorHandle={campaign.target_x_handle.replace("@", "")}
-                  />
-                )}
-              </TabsContent>
-            </Tabs>
+                    {/* Leaderboard moved to Accounts tab in Feed */}
+                  </TabsContent>
+
+                  <TabsContent value="followers">
+                    {campaign?.target_x_handle && (
+                      <FollowersOverview
+                        authorHandle={campaign.target_x_handle.replace("@", "")}
+                      />
+                    )}
+                  </TabsContent>
+                </Tabs>
+              </div>
+
+              {/* Feed with Accounts/Mentions Tabs */}
+              <div className="w-full md:w-[41.666667%] flex flex-col h-full">
+                {/* External Time Period Filters */}
+                <div className="flex justify-between  pt-4 border-b border-neutral-600 pb-4 pl-4">
+                  {/* Limit buttons */}
+                  <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
+                    {[20, 50, 100].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => setFollowersLimit(num as 20 | 50 | 100)}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                          followersLimit === num
+                            ? "bg-neutral-700 text-neutral-100"
+                            : "text-neutral-300 hover:text-neutral-100"
+                        }`}
+                      >
+                        Top {num}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
+                    {["30d", "7d", "1d"].map((period) => (
+                      <button
+                        key={period}
+                        onClick={() => {
+                          setSelectedTimePeriod(period as TimePeriod);
+                          setCurrentPage(1);
+                        }}
+                        className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
+                          selectedTimePeriod === period
+                            ? "bg-neutral-700 text-neutral-100"
+                            : "text-neutral-300 hover:text-neutral-100"
+                        }`}
+                      >
+                        {period === "1d" ? "24H" : period.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <Tabs
+                  defaultValue="accounts"
+                  className="w-full h-full mt-0 p-4 border border-neutral-600 border-dashed border-t-0 border-l-0 flex flex-col"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-medium text-gray-300">Feed</h3>
+                    <TabsList className="inline-flex p-0 items-center bg-transparent rounded-md border border-neutral-600">
+                      {[
+                        { label: "Accounts", value: "accounts" },
+                        { label: "Mentions", value: "mentions" },
+                      ].map((tab) => (
+                        <TabsTrigger
+                          key={tab.value}
+                          value={tab.value}
+                          className="px-4 py-2 text-sm font-medium text-neutral-100 hover:text-white rounded-md transition-colors data-[state=active]:bg-neutral-700 data-[state=active]:text-neutral-100"
+                        >
+                          {tab.label}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </div>
+                  {/* Accounts Tab - Campaign Leaderboard */}
+                  <TabsContent value="accounts" className="space-y-4">
+                    {mindshareData?.result?.mindshare_data &&
+                      mindshareData.result.mindshare_data.length > 0 && (
+                        <CampaignLeaderboard
+                          data={mindshareData.result.mindshare_data}
+                          totalResults={mindshareData.result.total_results}
+                          campaignId={campaignId}
+                          selectedTimePeriod={selectedTimePeriod}
+                          currentPage={currentPage}
+                          pageSize={pageSize}
+                          onPageChange={handlePageChange}
+                        />
+                      )}
+                  </TabsContent>
+
+                  {/* Mentions Tab - Mentions Feed */}
+                  <TabsContent value="mentions" className="space-y-4">
+                    <MentionsFeed authorHandle={smartFeedHandle} />
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Smart Feed Sidebar */}
-        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-16 h-[calc(100vh-4rem)]">
+        {/* <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-16 h-[calc(100vh-4rem)]">
           <MentionsFeed authorHandle={smartFeedHandle} />
-        </div>
+        </div> */}
       </div>
     </div>
   );

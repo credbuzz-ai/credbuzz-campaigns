@@ -848,23 +848,21 @@ export default function MindshareVisualization({
   };
 
   return (
-    <div className="card-trendsage bg-neutral-900">
+    <div className="p-4 bg-neutral-900 border border-neutral-600 border-dashed border-t-0 ">
       <div className="flex items-center justify-between mb-6">
         <div className="space-y-2">
-          <h3 className="text-xl font-semibold text-gray-100">
-            Community Mindshare
-          </h3>
-          <p className="text-sm text-gray-400">
+          <h3 className="text-xl font-semibold text-gray-100">Mindshare</h3>
+          {/* <p className="text-sm text-gray-400">
             {currentView === "treemap"
               ? "Distribution of community engagement and influence"
               : "Community members in dodecagon voronoi representation"}
-          </p>
+          </p> */}
         </div>
 
         {/* View Toggle, Timeline Controls and Download Button */}
         <div className="flex gap-4">
           {/* Timeline Period Filters */}
-          {onTimePeriodChange && selectedTimePeriod && (
+          {/*onTimePeriodChange && selectedTimePeriod && (
             <div className="flex gap-1 bg-gray-700 rounded-lg p-1">
               {["30d", "7d", "1d"].map((period) => (
                 <button
@@ -880,10 +878,10 @@ export default function MindshareVisualization({
                 </button>
               ))}
             </div>
-          )}
+          )} */}
 
           {/* Map View Toggle */}
-          <div className="flex gap-2">
+          <div className="flex border border-neutral-600 rounded-lg">
             <button
               onClick={() => {
                 setCurrentView("treemap");
@@ -891,8 +889,8 @@ export default function MindshareVisualization({
               }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 currentView === "treemap"
-                  ? "bg-[#00D992] text-black"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                  ? "bg-neutral-700 text-neutral-100"
+                  : "text-neutral-300 hover:text-neutral-100"
               }`}
             >
               Treemap
@@ -904,8 +902,8 @@ export default function MindshareVisualization({
               }}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 currentView === "voronoi"
-                  ? "bg-[#00D992] text-black"
-                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                  ? "bg-neutral-700 text-neutral-100"
+                  : "text-neutral-300 hover:text-neutral-100"
               }`}
             >
               Voronoi
