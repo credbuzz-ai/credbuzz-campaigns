@@ -116,7 +116,7 @@ export default function KOLsPage() {
           },
           body: JSON.stringify({
             start: 0,
-            limit: 0,
+            limit: ITEMS_PER_PAGE,
             author_handle: term.trim(),
           }),
         }
