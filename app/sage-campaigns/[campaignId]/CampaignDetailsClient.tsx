@@ -21,7 +21,25 @@ import {
   Wallet,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-
+import Image from "next/image";
+import { XIcon } from "@/public/icons/XIcon";
+import { TgIcon } from "@/public/icons/TgIcon";
+import { DiscordIcon } from "@/public/icons/DiscordIcon";
+import { BrowserIcon } from "@/public/icons/BrowserIcon";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+?)(?=[.,;:!?\)\]\}]*(?:\s|$))/g;
   return text.split(urlRegex).map((part, index) => {
@@ -94,10 +112,10 @@ const SocialLink = ({
     href={href}
     target="_blank"
     rel="noopener noreferrer"
-    className="p-2 rounded-full bg-gray-700/50 hover:bg-gray-600/50 transition-colors group"
+    className=" rounded-full  "
     title={label}
   >
-    <div className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors">
+    <div className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors">
       {icon}
     </div>
   </a>
@@ -201,6 +219,39 @@ const InfoBadge = ({
   );
 };
 
+// Insert helper functions for formatted display
+function formatAmount(amount: number): string {
+  const formatDecimal = (value: number) => {
+    const fixed = value.toFixed(4);
+    return fixed.replace(/\.?0+$/, "");
+  };
+
+  if (amount >= 1_000_000_000)
+    return formatDecimal(amount / 1_000_000_000) + "B";
+  if (amount >= 1_000_000) return formatDecimal(amount / 1_000_000) + "M";
+  if (amount >= 1_000) return formatDecimal(amount / 1_000) + "K";
+  return formatDecimal(amount);
+}
+
+function formatNumber(value: number): string {
+  if (value >= 1_000_000)
+    return (value / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (value >= 1_000)
+    return (value / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  return value.toString();
+}
+
+function getPriceUsd(tokenSymbol: string): Promise<number | null> {
+  // very lightweight fetch to Coingecko; falls back to null if error
+  return fetch(
+    `https://api.coingecko.com/api/v3/simple/price?ids=${tokenSymbol.toLowerCase()}&vs_currencies=usd`,
+    { next: { revalidate: 60 } }
+  )
+    .then((r) => r.json())
+    .then((d) => d[tokenSymbol.toLowerCase()]?.usd ?? null)
+    .catch(() => null);
+}
+
 export default function CampaignDetailsClient({
   campaignId,
 }: CampaignDetailsClientProps) {
@@ -221,6 +272,7 @@ export default function CampaignDetailsClient({
   const [isLoading, setIsLoading] = useState(false);
   const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(50);
   const pageSize = 100;
+  const [tokenUsdPrice, setTokenUsdPrice] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchCampaignDetails = async () => {
@@ -317,6 +369,14 @@ export default function CampaignDetailsClient({
     }
   }, [campaign?.target_x_handle]);
 
+  useEffect(() => {
+    if (campaign?.payment_token && campaign.amount) {
+      getPriceUsd(campaign.payment_token)
+        .then((p) => p !== null && setTokenUsdPrice(p))
+        .catch(() => {});
+    }
+  }, [campaign?.payment_token, campaign?.amount]);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -345,25 +405,46 @@ export default function CampaignDetailsClient({
       return "Campaign ended";
     }
 
-    const totalHours = differenceInHours(endDate, now);
-    const days = Math.floor(totalHours / 24);
-    const hours = totalHours % 24;
+    const totalMinutes = Math.floor(
+      (endDate.getTime() - now.getTime()) / 60000
+    );
+    const days = Math.floor(totalMinutes / 1440);
+    const hours = Math.floor((totalMinutes % 1440) / 60);
+    const minutes = totalMinutes % 60;
 
-    if (days > 0) {
+    if (days > 0)
       return `${days} ${days === 1 ? "day" : "days"} ${hours} ${
         hours === 1 ? "hour" : "hours"
       }`;
-    } else {
-      return `${hours} ${hours === 1 ? "hour" : "hours"}`;
-    }
+    if (hours > 0)
+      return `${hours} ${hours === 1 ? "hour" : "hours"} ${minutes} minutes`;
+    return `${minutes} minutes`;
+  };
+
+  // Helper to format time remaining string with different styles for numbers and labels
+  const formatTimeRemainingDisplay = (timeStr: string) => {
+    // Split by space to identify numbers and units
+    const tokens = timeStr.split(/\s+/);
+    return tokens.map((token, idx) => {
+      const isNumber = /^\d+$/.test(token);
+      const className = isNumber
+        ? "text-neutral-100 text-[20px] font-semibold"
+        : "text-neutral-300 text-sm";
+      return (
+        <span key={idx} className={className}>
+          {token}
+          &nbsp;{!isNumber && " "}
+        </span>
+      );
+    });
   };
 
   // Get the handle for the smart feed (prefer project_handle, then target, fallback to owner)
-  const smartFeedHandle = campaign.project_handle
-    ? campaign.project_handle.replace("@", "").toLowerCase()
-    : campaign.target_x_handle
-    ? campaign.target_x_handle.replace("@", "").toLowerCase()
-    : campaign.owner_x_handle.replace("@", "").toLowerCase();
+  const smartFeedHandle = campaign?.project_handle
+    ? campaign?.project_handle.replace("@", "").toLowerCase()
+    : campaign?.target_x_handle
+    ? campaign?.target_x_handle.replace("@", "").toLowerCase()
+    : campaign?.owner_x_handle.replace("@", "").toLowerCase();
 
   return (
     <div className="min-h-screen bg-neutral-900">
@@ -372,128 +453,277 @@ export default function CampaignDetailsClient({
         <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
           <div className="max-w-7xl px-4 mx-auto">
             {/* Campaign Header */}
-            <Card className="bg-neutral-900 border-gray-700 mb-8">
+            <Card className="bg-neutral-900 border-none mb-2">
               <div className="p-6">
                 <div className="flex flex-col gap-6">
-                  {/* Title and Status Row */}
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl font-bold text-gray-100">
-                          {campaign.campaign_name}
-                        </h1>
-                        {campaign.target_x_handle && (
-                          <div className="text-gray-400">
-                            @{campaign.target_x_handle}
-                          </div>
-                        )}
+                  {/* Top section */}
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    {/* Left – logo & basic info */}
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className="relative shrink-0">
+                        <Image
+                          src={
+                            campaign?.owner_info?.profile_image_url ||
+                            "/placeholder-logo.png"
+                          }
+                          alt={campaign?.campaign_name}
+                          width={56}
+                          height={56}
+                          className="rounded-lg object-cover"
+                        />
+                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full ring-2 ring-neutral-900" />
                       </div>
-                      <StatusBadge status="active" />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {(campaign.project_handle ||
-                        campaign.target_x_handle ||
-                        campaign.owner_x_handle) && (
-                        <SocialLink
-                          href={`https://x.com/${(
-                            campaign.project_handle ||
-                            campaign.target_x_handle ||
-                            campaign.owner_x_handle
-                          )?.replace("@", "")}`}
-                          icon={<XLogo className="w-5 h-5" />}
-                          label="Twitter"
-                        />
-                      )}
-                      {campaign.project_telegram && (
-                        <SocialLink
-                          href={campaign.project_telegram}
-                          icon={
-                            <svg
-                              className="w-5 h-5"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
-                              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.226-.461-1.901-.903-1.056-.692-1.653-1.123-2.678-1.799-1.185-.781-.417-1.21.258-1.911.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.241-1.865-.44-.751-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.333-1.386 4.025-1.627 4.477-1.635.099-.002.321.023.465.141.119.098.152.228.166.331.016.119.031.283.02.441z" />
-                            </svg>
-                          }
-                          label="Telegram"
-                        />
-                      )}
-                      {campaign.project_discord && (
-                        <SocialLink
-                          href={campaign.project_discord}
-                          icon={
-                            <svg
-                              className="w-5 h-5"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
-                              <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" />
-                            </svg>
-                          }
-                          label="Discord"
-                        />
-                      )}
-                      {campaign.project_insta && (
-                        <SocialLink
-                          href={campaign.project_insta}
-                          icon={<Instagram className="w-5 h-5" />}
-                          label="Instagram"
-                        />
-                      )}
-                    </div>
-                  </div>
+                      <div className="flex flex-col gap-2 flex-1">
+                        <div className="flex items-center flex-wrap gap-2">
+                          <h1 className="text-2xl font-bold text-gray-100">
+                            {campaign?.campaign_name}
+                          </h1>
+                          {campaign?.target_token_symbol && (
+                            <span className="text-sm font-medium text-gray-400">
+                              ${campaign?.target_token_symbol}
+                            </span>
+                          )}
 
-                  {/* Categories */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    {campaign.project_categories?.split(",").map((category) => (
-                      <CategoryTag key={category} label={category} />
-                    ))}
+                          {/* Social links */}
+                          <div className="flex items-center gap-2 ml-2">
+                            {(campaign?.project_handle ||
+                              campaign?.target_x_handle ||
+                              campaign?.owner_x_handle) && (
+                              <SocialLink
+                                href={`https://x.com/${(
+                                  campaign?.project_handle ||
+                                  campaign?.target_x_handle ||
+                                  campaign?.owner_x_handle
+                                )?.replace("@", "")}`}
+                                icon={<XIcon />}
+                                label="Twitter"
+                              />
+                            )}
+                            {campaign?.project_telegram && (
+                              <SocialLink
+                                href={campaign?.project_telegram}
+                                icon={<TgIcon />}
+                                label="Telegram"
+                              />
+                            )}
+                            {campaign?.project_discord && (
+                              <SocialLink
+                                href={campaign?.project_discord}
+                                icon={<DiscordIcon />}
+                                label="Discord"
+                              />
+                            )}
+                            {campaign?.project_website && (
+                              <SocialLink
+                                href={campaign?.project_website}
+                                icon={<BrowserIcon />}
+                                label="Website"
+                              />
+                            )}
+                          </div>
+                        </div>
+                        {/* Categories */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-support-sand text-xs font-semibold">
+                            {campaign?.campaign_type}
+                          </span>
+                          {campaign?.project_categories
+                            ?.split(",")
+                            .map((category) => (
+                              <CategoryTag key={category} label={category} />
+                            ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Metrics */}
+                    <div className="flex flex-col sm:flex-row gap-12">
+                      <div className="flex flex-col gap-2">
+                        <span className="text-sm text-neutral-200">
+                          Reward pool
+                        </span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-[20px] font-semibold text-neutral-100">
+                            {formatAmount(campaign?.amount)}{" "}
+                            {campaign?.payment_token}
+                          </span>
+                          {tokenUsdPrice !== null && (
+                            <span className="text-xs text-brand-400">
+                              $
+                              {(
+                                campaign?.amount * tokenUsdPrice
+                              ).toLocaleString(undefined, {
+                                maximumFractionDigits: 2,
+                              })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <span className="text-sm text-neutral-200">
+                          Campaign ends in
+                        </span>
+                        <span className="text-sm">
+                          {formatTimeRemainingDisplay(
+                            getCampaignTimeRemaining()
+                          )}
+                        </span>
+                      </div>
+                      {/* <div className="flex flex-col">
+                        <span className="text-sm text-gray-400">
+                          Participants
+                        </span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg font-semibold text-gray-100">
+                            {formatNumber(campaign?.counter || 0)}
+                          </span>
+                          {Boolean((campaign as any).sage_distributed) && (
+                            <span className="text-xs text-teal-400">
+                              {formatNumber((campaign as any).sage_distributed)}{" "}
+                              SAGE distributed
+                            </span>
+                          )}
+                        </div>
+                      </div> */}
+                    </div>
                   </div>
 
                   {/* Description */}
-                  <div className="max-w-2xl">
+                  {/* <div className="max-w-3xl">
                     <ExpandableDescription description={campaign.description} />
-                  </div>
+                  </div> */}
 
-                  {/* Info Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {campaign.project_website && (
-                      <InfoBadge
-                        icon={<Globe className="w-4 h-4" />}
-                        label="Website"
-                        href={campaign.project_website}
-                        detail={new URL(campaign.project_website).hostname}
-                      />
-                    )}
-                    {(campaign.project_whitepaper ||
-                      campaign.project_gitbook) && (
-                      <InfoBadge
-                        icon={<FileText className="w-4 h-4" />}
-                        label="Whitepaper"
-                        href={
-                          campaign.project_whitepaper ||
-                          campaign.project_gitbook
-                        }
-                        detail="View Documentation"
-                      />
-                    )}
-                    <InfoBadge
-                      icon={<Wallet className="w-4 h-4" />}
-                      label="Contract Status"
-                      status="Pre-TGE"
-                      detail="Token Generation Event"
-                    />
-                    <InfoBadge
-                      icon={<Clock className="w-4 h-4" />}
-                      label="Campaign Ends"
-                      status={getCampaignTimeRemaining()}
-                      detail={`Reward: ${campaign.amount} ${campaign.payment_token}`}
-                    />
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button className="px-3 py-1 bg-neutral-800 border border-neutral-500 text-neutral-200 hover:bg-gray-700 hover:text-gray-100">
+                          About ❈SAGE
+                          {/* <span className="text-[#A9F0DF]"> $SAGE</span> */}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg">
+                        <DialogHeader className="text-center">
+                          <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
+                            About SAGE
+                          </DialogTitle>
+                        </DialogHeader>
+
+                        {/* Accordion */}
+                        <Accordion
+                          type="single"
+                          collapsible
+                          defaultValue="item-1"
+                          className="mt-4"
+                        >
+                          {/* What is SAGE */}
+                          <AccordionItem value="item-1" className="border-none">
+                            <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                              What's SAGE?
+                            </AccordionTrigger>
+                            <AccordionContent className="text-[#CFCFCF] text-sm">
+                              SAGE are points you earn for posting quality
+                              content that resonates with the crypto Twitter
+                              (CT) community about projects that have active
+                              campaigns.
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          {/* How to earn SAGE */}
+                          <AccordionItem value="item-2" className="border-none">
+                            <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                              How to earn SAGE?
+                            </AccordionTrigger>
+                            <AccordionContent className="text-[#CFCFCF] text-sm">
+                              <ul className="list-disc list-inside space-y-2">
+                                <li>
+                                  Post high-quality content that aligns with
+                                  projects' narratives.
+                                </li>
+                                <li>Create original, educational content.</li>
+                                <li>
+                                  Invite your friends and earn SAGE for each
+                                  invite.
+                                </li>
+                              </ul>
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          {/* How SAGE is awarded */}
+                          <AccordionItem value="item-3" className="border-none">
+                            <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                              How is SAGE awarded?
+                            </AccordionTrigger>
+                            <AccordionContent className="text-[#CFCFCF] text-sm">
+                              <p>
+                                Projects with active campaigns set custom
+                                narrative guidelines and rules to determine how
+                                SAGE are rewarded in their leaderboards.
+                              </p>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button className="px-3 py-1 rounded-md bg-[#00D992] hover:bg-[#00F5A8] text-gray-900 text-sm font-semibold">
+                          How can I participate?
+                          {/* <span className="text-[#A9F0DF]"> $SAGE</span> */}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg">
+                        <DialogHeader className="text-center">
+                          <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
+                            How can I participate?
+                          </DialogTitle>
+                        </DialogHeader>
+
+                        {/* Accordion */}
+                        <Accordion
+                          type="single"
+                          collapsible
+                          defaultValue="item-1"
+                          className="mt-4"
+                        >
+                          <AccordionItem value="item-1" className="border-none">
+                            <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                              About campaign
+                            </AccordionTrigger>
+                            <AccordionContent className="text-[#CFCFCF] text-sm">
+                              SAGE are points you earn for posting quality
+                              content that sticks on CT about projects with
+                              active campaigns.
+                            </AccordionContent>
+                          </AccordionItem>
+
+                          <AccordionItem value="item-2" className="border-none">
+                            <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                              Campaign rules
+                            </AccordionTrigger>
+                            <AccordionContent className="text-[#CFCFCF] text-sm">
+                              <ul className="list-disc list-inside space-y-2">
+                                <li>
+                                  Post high-quality content that aligns with
+                                  projects' narratives.
+                                </li>
+                                <li>Create original, educational content.</li>
+                                <li>
+                                  Invite your friends and earn SAGE for each
+                                  invite.
+                                </li>
+                              </ul>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                 </div>
               </div>
             </Card>
+
             <div className="flex flex-row h-full items-stretch">
               {/* Tabbed Interface for Mindshare and Followers */}
               <div className="w-full md:w-[56%] flex flex-col h-full">
@@ -546,9 +776,9 @@ export default function CampaignDetailsClient({
               {/* Feed with Accounts/Mentions Tabs */}
               <div className="w-full md:w-[44%] flex flex-col h-full">
                 {/* External Time Period Filters */}
-                <div className="flex justify-between  pt-4 border-b border-neutral-600 pb-4 pl-4">
+                <div className="flex justify-end  pt-4 border-b border-neutral-600 pb-4 pl-4">
                   {/* Limit buttons */}
-                  <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
+                  {/* <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
                     {[20, 50, 100].map((num) => (
                       <button
                         key={num}
@@ -562,7 +792,7 @@ export default function CampaignDetailsClient({
                         Top {num}
                       </button>
                     ))}
-                  </div>
+                  </div> */}
                   <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
                     {["30d", "7d", "1d"].map((period) => (
                       <button
@@ -587,7 +817,9 @@ export default function CampaignDetailsClient({
                   className="w-full h-full mt-0 p-4 border border-neutral-600 border-dashed border-t-0  flex flex-col"
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-medium text-neutral-100">Feed</h3>
+                    <h3 className="text-base font-medium text-neutral-100">
+                      Feed
+                    </h3>
                     <TabsList className="inline-flex p-0 items-center bg-transparent rounded-md border border-neutral-600">
                       {[
                         { label: "Accounts", value: "accounts" },
