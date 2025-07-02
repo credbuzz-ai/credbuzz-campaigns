@@ -109,7 +109,7 @@ export default function KOLSearch() {
             value={searchTerm}
             onChange={handleSearchChange}
             placeholder="Search KOL by name or Twitter handle (min. 4 characters)..."
-            className="block w-full pl-10 pr-10 py-2 border border-gray-600 rounded-lg bg-neutral-900 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00D992]/50 focus:border-transparent"
+            className="block w-full pl-10 pr-10 py-2 border-b border-gray-600 rounded-lg bg-neutral-900 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00D992]/50 focus:border-transparent"
           />
           {searchTerm && !searchLoading && (
             <button

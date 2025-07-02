@@ -110,21 +110,6 @@ export default function BuzzBoard() {
             </div>
           </div>
         </div> */}
-        {/* Campaign Card Guide */}
-        <div className="mb-6 p-3 bg-cardBackground rounded-xl border border-gray-700/30 text-xs text-gray-400 grid grid-cols-1 md:grid-cols-3 gap-2">
-          <div>
-            <span className="font-semibold text-gray-300">Rewards:</span> Total
-            rewards for influencers
-          </div>
-          <div>
-            <span className="font-semibold text-gray-300">Token:</span> Currency
-            used for rewards
-          </div>
-          <div>
-            <span className="font-semibold text-gray-300">Chain:</span>{" "}
-            Blockchain for distribution
-          </div>
-        </div>
         {/* Campaign Grid */}
         {loading ? (
           <div className="text-center py-12">

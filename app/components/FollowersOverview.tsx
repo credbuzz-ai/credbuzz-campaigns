@@ -56,7 +56,7 @@ const getContainerDimensions = () => {
     const screenWidth = window.innerWidth;
     const screenHeight = window.innerHeight;
     // Make the circular container sized appropriately
-    const size = Math.min(screenWidth * 0.6, screenHeight * 0.7, 800);
+    const size = Math.min(screenWidth * 0.6, screenHeight * 0.65, 500);
     return {
       width: size,
       height: size,
@@ -935,18 +935,18 @@ export default function FollowersOverview({
   }
 
   return (
-    <div className="card-trendsage bg-neutral-900">
+    <div className=" bg-neutral-900">
       {/* Header */}
-      <div className="mb-4">
+      {/* <div className="mb-4">
         <h3 className="text-lg font-semibold text-gray-100">
           Followers Overview
         </h3>
-      </div>
+      </div> */}
 
       {/* Controls */}
       <div className="flex flex-wrap gap-4 items-center mb-6">
         {/* Sort By Toggle */}
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-300">Sort by:</label>
           <div className="flex bg-gray-700 rounded-lg p-1">
             <button
@@ -970,10 +970,10 @@ export default function FollowersOverview({
               Total Followers
             </button>
           </div>
-        </div>
+        </div> */}
 
         {/* Limit Toggle */}
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-300">Show:</label>
           <div className="flex bg-gray-700 rounded-lg p-1">
             {([20, 50, 100] as const).map((num) => (
@@ -990,11 +990,11 @@ export default function FollowersOverview({
               </button>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Visualization Container */}
-      <div className="relative flex justify-center items-center">
+      <div className="relative flex justify-center items-center ">
         <div className="text-center relative">
           <FollowersBubbleMap
             followers={followers}
@@ -1004,7 +1004,7 @@ export default function FollowersOverview({
           />
 
           {/* Bottom Right Tags Distribution Chart - positioned relative to bubble map */}
-          <div className="absolute bottom-0 right-0">
+          <div className="absolute bottom-0 -right-10">
             {loading && followers.length === 0 ? (
               <div
                 className="w-48 h-48 bg-gray-800 rounded-full border border-gray-700 flex items-center justify-center"

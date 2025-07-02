@@ -277,19 +277,19 @@ export default function MentionsFeed({
   };
 
   return (
-    <div className="card-trendsage sticky top-8 h-full bg-neutral-900 flex flex-col">
+    <div className=" sticky top-8 bg-neutral-900 flex flex-col h-[500px]">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
+        {/* <div className="flex items-center gap-2">
           <AtSign className="w-5 h-5 text-[#00D992]" />
           <h2 className="text-lg font-semibold text-gray-100">Mentions Feed</h2>
           <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full">
             {pagination.total_count}
           </span>
-        </div>
+        </div> */}
 
         <div className="flex items-start gap-2">
           {/* Sort Dropdown */}
-          <div className="relative">
+          {/* <div className="relative">
             <button
               onClick={() => setShowSortDropdown(!showSortDropdown)}
               className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-700 border border-gray-600 rounded-lg text-gray-300 hover:text-[#00D992] hover:border-[#00D992]/50 transition-colors"
@@ -318,7 +318,7 @@ export default function MentionsFeed({
                 ))}
               </div>
             )}
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -342,7 +342,7 @@ export default function MentionsFeed({
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="border border-gray-700 rounded-lg p-4 animate-pulse"
+              className="rounded-lg p-4 animate-pulse bg-gray-800/50"
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
@@ -375,7 +375,7 @@ export default function MentionsFeed({
           return (
             <div
               key={`${tweet.tweet_id}-${index}`}
-              className="border border-gray-700 rounded-lg p-4 hover:border-[#00D992]/30 transition-colors group"
+              className="p-4 border-b border-neutral-600"
             >
               {/* Tweet header */}
               <div className="flex items-start gap-3 mb-3">
