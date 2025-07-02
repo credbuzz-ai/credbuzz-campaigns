@@ -71,10 +71,12 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center justify-center gap-2 text-sm">
               <Image
-                src={"/logo-green.svg"}
+                src={
+                  campaign.owner_info?.profile_image_url ?? "/logo-green.svg"
+                }
                 alt={campaign.campaign_name}
-                width={24}
-                height={24}
+                width={32}
+                height={32}
               />
               <span className="text-xl font-semibold text-gray-100 group-hover:text-[#00D992] transition-colors">
                 {campaign.campaign_name?.trim()}
