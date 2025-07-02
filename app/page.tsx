@@ -15,7 +15,7 @@ export default function LandingPage() {
       </Suspense>
 
       {/* Hero Section */}
-      <section className="relative py-24 px-4 sm:px-6 lg:px-8">
+      <section className="relative pt-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
           {/* Centered Logo */}
           <Link

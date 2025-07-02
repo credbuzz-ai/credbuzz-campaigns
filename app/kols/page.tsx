@@ -199,7 +199,7 @@ export default function KOLsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-[url('/landingPageBg.png')] bg-cover bg-no-repeat">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -219,7 +219,7 @@ export default function KOLsPage() {
                   value={searchTerm}
                   onChange={handleSearchChange}
                   placeholder="Search by username (min. 4 characters)..."
-                  className="flex-1 px-4 py-2 bg-neutral-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
+                  className="flex-1 px-6 py-4 bg-neutral-800 border-b border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
                 />
                 {searchLoading && (
                   <div className="absolute right-24 top-1/2 transform -translate-y-1/2">
@@ -244,13 +244,12 @@ export default function KOLsPage() {
             </div>
           </div>
           <p className="text-sm sm:text-base text-gray-400 mb-4">
-            Top-performing Key Opinion Leaders ranked by their credibility
-            scores
+            Discover and join active Web3 marketing campaigns scores
           </p>
         </div>
 
         {/* Content */}
-        <div className="card-trendsage bg-neutral-800">
+        <div className="">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
@@ -278,42 +277,44 @@ export default function KOLsPage() {
               {/* Table */}
               <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-4rem)]">
                 <table className="w-full">
-                  <thead className="bg-neutral-800 border-b border-gray-700 sticky top-0">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                  <thead className="bg-[#2B3C39f3] border-b border-gray-700 rounded-md sticky top-0">
+                    <tr className="">
+                      <th className="px-6 py-6 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Rank
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-6 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                         KOL
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Score
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Followers
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Smart Followers
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                      <th className="px-6 py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
                         Avg Views
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-neutral-800 divide-y divide-gray-700">
+                  <tbody className="bg-transparent divide-y divide-none">
                     {displayedKols.map((kol, index) => {
                       const rank =
                         (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
                       return (
                         <tr
                           key={kol.author_handle}
-                          className="hover:bg-neutral-800 transition-colors group cursor-pointer"
+                          className="hover:bg-[#2B3C3933] hover:cursor-pointer transition-colors group cursor-pointer"
                           onClick={() => {
                             router.push(`/kols/${kol.author_handle}`);
                           }}
                         >
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">
-                            #{rank}
+                            <span className="text-gray-200 border border-neutral-600 rounded-md px-2 py-1 bg-neutral-600 text-xs font-semibold">
+                              {rank}
+                            </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
@@ -340,7 +341,7 @@ export default function KOLsPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
+                            <div className="flex items-center justify-center">
                               <Star className="w-4 h-4 text-yellow-400 mr-1" />
                               <span
                                 className={`text-sm font-semibold ${getScoreColor(
@@ -351,14 +352,14 @@ export default function KOLsPage() {
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#DFFCF699] text-center">
                             {formatNumber(kol.followers)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200 text-center">
                             {formatNumber(kol.smart_followers)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center text-sm text-gray-200">
+                            <div className="flex items-center text-sm text-gray-200 justify-center">
                               <Eye className="w-4 h-4 text-gray-400 mr-1" />
                               {formatNumber(kol.avg_views)}
                             </div>
@@ -372,7 +373,7 @@ export default function KOLsPage() {
 
               {/* Pagination */}
               {!searchResult && (
-                <div className="px-6 py-4 border-t border-gray-700">
+                <div className="px-6 py-4 border-t border-neutral-700">
                   <div className="flex items-center justify-between">
                     <div className="text-xs sm:text-sm text-gray-400">
                       Showing {startItem}-{endItem} of{" "}
