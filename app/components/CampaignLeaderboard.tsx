@@ -99,9 +99,9 @@ export default function CampaignLeaderboard({
   };
 
   return (
-    <Card className="bg-neutral-900 border-gray-700">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+    <Card className="bg-neutral-900 border-none h-[500px] overflow-y-auto flex flex-col">
+      <div className="py-2 flex-1 flex flex-col">
+        {/* <div className="flex items-center justify-between mb-6">
           <div className="space-y-2">
             <h3 className="text-xl font-semibold text-gray-100">
               Community Leaderboard
@@ -111,12 +111,12 @@ export default function CampaignLeaderboard({
               {selectedTimePeriod === "1d" ? "24 hours" : selectedTimePeriod}
             </p>
           </div>
-        </div>
+        </div> */}
 
         <div className="relative overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="border-gray-700">
+              <TableRow className=" bg-neutral-700 border-none">
                 <TableHead className="text-gray-300 w-[40%]">Name</TableHead>
                 <TableHead className="text-gray-300 text-center">
                   Invite to Earn
@@ -133,7 +133,7 @@ export default function CampaignLeaderboard({
               {data.map((contributor, index) => (
                 <TableRow
                   key={contributor.author_handle}
-                  className="border-gray-700 hover:bg-gray-700/30 transition-colors"
+                  className="border-gray-700 first:border-t-0 hover:bg-gray-700/30 transition-colors"
                 >
                   <TableCell className="font-medium w-[40%]">
                     <div className="flex items-center gap-3">

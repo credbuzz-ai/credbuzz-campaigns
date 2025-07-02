@@ -41,6 +41,14 @@ export interface Campaign {
   project_discord?: string;
   project_gitbook?: string;
   project_categories?: string;
+  owner_info?: {
+    name?: string;
+    profile_image_url?: string;
+    followers_count: number;
+    followings_count: number;
+    smart_followers_count?: number;
+    engagement_score?: number;
+  };
 }
 
 export type UserType = {
