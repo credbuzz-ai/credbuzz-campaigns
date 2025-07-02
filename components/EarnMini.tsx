@@ -240,7 +240,7 @@ export default function EarnMini() {
 
         <Card className="shadow-xl border-none bg-transparent col-span-5">
           <CardHeader className="py-0">
-            <CardTitle className="text-gray-100">
+            <CardTitle className="text-neutral-100 text-lg">
               <TooltipInfo
                 text="Your friends earn 10 SAGE each when they join using your referral link. You will also earn 10 SAGE when they follow @0xtrendsage on X."
                 className="mr-2"
@@ -248,7 +248,7 @@ export default function EarnMini() {
               Share Your Referral Link to earn SAGE
             </CardTitle>
           </CardHeader>{" "}
-          <CardContent className="pt-6">
+          <CardContent className="pt-2">
             <ReferralCard referralCode={user?.referral_code || ""} />
             <div className="grid grid-cols-3 gap-3 mt-6">
               <Button

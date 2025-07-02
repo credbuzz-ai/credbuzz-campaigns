@@ -1,3 +1,13 @@
+@font-face {
+  font-family: "Season";
+  src: url("/fonts/SeasonVFTRIALVF.woff2") format("woff2"),
+    url("/fonts/SeasonVFTRIALVF.woff") format("woff"),
+    url("/fonts/SeasonVFTRIALVF.ttf") format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -20,10 +30,6 @@
     rgba(255, 255, 255, 0.02) 33%
   );
   background-size: 1000px 100%;
-}
-
-body {
-  font-family: Arial, Helvetica, sans-serif;
 }
 
 @layer utilities {
@@ -103,18 +109,13 @@ body {
     --sidebar-ring: 152 100% 42.5%; /* TrendSage Green */
   }
 
+  * {
+    @apply font-season;
+  }
   html {
     scroll-behavior: smooth;
-  }
-
-  body {
-    @apply text-gray-100;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
+    font-family: "Season", system-ui, -apple-system, BlinkMacSystemFont,
+      "Segoe UI", Roboto, sans-serif;
   }
   body {
     @apply bg-background text-foreground;
