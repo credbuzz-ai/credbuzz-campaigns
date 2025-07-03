@@ -147,7 +147,7 @@ export default function EarnMini() {
   const shareOnX = () => {
     if (!referralUrl) return;
     const text = encodeURIComponent(
-      `Join me on @0xtrendsage and earn 10 SAGE with my referral link! ${referralUrl}`
+      `TrendSage is doing great by helping you turn your Web3 Influence into $$$$.\n\nJoin me on @0xtrendsage and earn 10 SAGE upon joining with my referral URL:\n\n${referralUrl}`
     );
     window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
   };

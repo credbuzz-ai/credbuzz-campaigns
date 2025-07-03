@@ -3,6 +3,9 @@ import { NextRequest } from "next/server";
 
 export const runtime = "edge";
 
+// Enable caching for OG images
+export const revalidate = 3600; // Cache for 1 hour
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_TRENDSAGE_API_URL ||
   process.env.NEXT_PUBLIC_CREDBUZZ_API_URL ||
@@ -13,14 +16,27 @@ export async function GET(request: NextRequest) {
     // Get referral code from URL
     const { searchParams } = new URL(request.url);
     const referralCode = searchParams.get("referral_code");
-    const userData = await fetch(
-      `${API_BASE_URL}/user/get-referral-card-info?referral_code=${referralCode}`
+    let name = searchParams.get("name");
+    let profile_image_url = searchParams.get("profile_image_url");
+
+    // Set cache control headers
+    const headers = new Headers();
+    headers.set(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400"
     );
-    const user = await userData.json();
-    const { name, profile_image_url } = user.result;
+
+    if (!name && !profile_image_url) {
+      const userData = await fetch(
+        `${API_BASE_URL}/user/get-referral-card-info?referral_code=${referralCode}`
+      );
+      const user = await userData.json();
+      name = user.result.name;
+      profile_image_url = user.result.profile_image_url;
+    }
 
     // Create the Open Graph image
-    return new ImageResponse(
+    const imageResponse = new ImageResponse(
       (
         <div
           style={{
@@ -183,11 +199,31 @@ export async function GET(request: NextRequest) {
         height: 630,
       }
     );
+
+    // Copy the headers from the ImageResponse and add our cache headers
+    const finalHeaders = new Headers(imageResponse.headers);
+    finalHeaders.set(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400"
+    );
+
+    // Return a new Response with the same body but updated headers
+    return new Response(imageResponse.body, {
+      status: imageResponse.status,
+      headers: finalHeaders,
+    });
   } catch (error) {
     console.error("Failed to generate OG image:", error);
 
+    // Set cache headers for the fallback image too
+    const headers = new Headers();
+    headers.set(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400"
+    );
+
     // Return a fallback image with the same polished design
-    return new ImageResponse(
+    const fallbackResponse = new ImageResponse(
       (
         <div
           style={{
@@ -433,5 +469,17 @@ export async function GET(request: NextRequest) {
         height: 630,
       }
     );
+
+    // Copy the headers from the fallback ImageResponse and add our cache headers
+    const finalHeaders = new Headers(fallbackResponse.headers);
+    finalHeaders.set(
+      "Cache-Control",
+      "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400"
+    );
+
+    return new Response(fallbackResponse.body, {
+      status: fallbackResponse.status,
+      headers: finalHeaders,
+    });
   }
 }
