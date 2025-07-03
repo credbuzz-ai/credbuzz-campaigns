@@ -1,25 +1,17 @@
+import FollowersOverview from "@/app/components/FollowersOverview";
+import TokenOverview from "@/app/components/TokenOverview";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import KOLProfileHeader from "../../../components/KOLProfileHeader";
-import KOLSearch from "../../../components/KOLSearch";
-import MarketCapDistribution from "../../components/MarketCapDistribution";
 import { ProfileCharts } from "../../components/ProfileCharts";
 import SmartFeed from "../../components/SmartFeed";
-import TokenOverview from "../../components/TokenOverview";
 import type {
   AuthorDetailsResponse,
   ChartDataPoint,
   ProfileData,
   UserProfileResponse,
 } from "../../types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import FollowersOverview from "@/app/components/FollowersOverview";
-import { Card } from "@/components/ui/card";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
-import CollaborateDialog from "@/components/CollaborateDialog";
 
 async function fetchUserProfile(
   authorHandle: string,
@@ -384,10 +376,9 @@ export default async function ProfilePage({
                   className=" mt-1 w-full  border-t  border-neutral-600 "
                 >
                   {/* Community Mindshare */}
-                  <div className="flex flex-row w-full h-full gap-4 ">
-                    <div className="w-full md:w-[56%] flex flex-col h-[500px] items-center justify-center text-lg font-semibold text-gray-200 bg-neutral-200/5 backdrop-blur-xl">
-                      {/* <FollowersOverview authorHandle={profile.author_handle} /> */}
-                      Coming Soon
+                  <div className="flex flex-row w-full h-full ">
+                    <div className="w-full md:w-[56%] flex flex-col h-[550px] items-center justify-center text-lg font-semibold text-gray-200 bg-neutral-200/5 backdrop-blur-xl">
+                      <TokenOverview authorHandle={profile.author_handle} />
                     </div>
                     <div className="w-full md:w-[44%] flex flex-col h-full border border-t-0 border-dashed border-neutral-600 ">
                       <ProfileCharts
@@ -406,7 +397,7 @@ export default async function ProfilePage({
                   className="mt-1 w-full  border-t  border-neutral-600 "
                 >
                   {/* Followers Overview */}
-                  <div className="flex flex-row w-full h-full gap-4 ">
+                  <div className="flex flex-row w-full h-full">
                     <div className="w-full md:w-[56%] flex flex-col h-full">
                       <FollowersOverview authorHandle={profile.author_handle} />
                     </div>

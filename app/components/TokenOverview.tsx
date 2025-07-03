@@ -1,7 +1,6 @@
 "use client";
 
 import * as d3 from "d3";
-import { Coins, Hash, TrendingUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from "../../lib/constants";
 import type { TokenData, TokenOverviewResponse } from "../types";
@@ -663,9 +662,8 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
   }
 
   return (
-    <div className="card-trendsage bg-neutral-900">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="bg-neutral-800 w-full h-full p-4">
+      {/* <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-[#00D992]/20 rounded-xl">
             <Coins className="w-5 h-5 text-[#00D992]" />
@@ -674,8 +672,6 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
             Token Overview
           </h3>
         </div>
-
-        {/* Interval Selector */}
         <div className="flex bg-gray-700 rounded-lg p-1">
           {intervalOptions.map((option) => (
             <button
@@ -691,10 +687,10 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      {/* <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="text-center p-2 bg-[#00D992]/20 rounded-lg border border-[#00D992]/30">
           <Hash className="w-4 h-4 text-[#00D992] mx-auto mb-1" />
           <div className="text-lg font-bold text-gray-100">
@@ -722,14 +718,14 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
               : "-"}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Circular Packing Visualization */}
       <div className="mb-6">
-        <h4 className="text-md font-semibold text-gray-100 mb-3">
+        {/* <h4 className="text-md font-semibold text-gray-100 mb-3">
           Token Narratives Map
-        </h4>
-        <div className="flex flex-col lg:flex-row gap-6 bg-neutral-800 rounded-xl p-4 border border-gray-700">
+        </h4> */}
+        <div className="flex flex-col bg-neutral-800 rounded-xl w-full h-full">
           {/* Visualization Container */}
           <div className="flex-1 overflow-x-auto">
             <svg
@@ -740,7 +736,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           </div>
 
           {/* Legend on the right side */}
-          <div className="lg:w-48 lg:flex-shrink-0">
+          <div className="w-full ml-4">
             <div className="flex items-center justify-between mb-3">
               <h5 className="text-sm font-semibold text-gray-100">
                 Narrative Legend
@@ -754,7 +750,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 lg:space-y-1 lg:gap-0">
+            <div className="flex flex-wrap gap-2">
               {(() => {
                 // Sort narratives by mention count (descending)
                 const sortedNarratives = Object.entries(narrativeColors)
@@ -838,7 +834,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
                   return (
                     <button
                       onClick={() => setShowAllLegends(!showAllLegends)}
-                      className="flex items-center gap-1 py-1 px-2 text-xs text-[#00D992] hover:text-[#00C484] hover:bg-gray-700/50 rounded-md transition-colors duration-200 mt-1"
+                      className="flex items-center gap-1 py-1 px-2 text-xs text-[#00D992] hover:text-[#00C484] hover:bg-gray-700/50 rounded-md transition-colors duration-200"
                     >
                       <span>
                         {showAllLegends
@@ -853,7 +849,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
             </div>
           </div>
         </div>
-        <div className="mt-2 text-xs text-gray-400 text-center">
+        <div className="mt-4 text-xs text-gray-400 text-center">
           Click on narrative bubbles to highlight • Hover over tokens for
           details • Bubble size represents mentions
         </div>
