@@ -4,9 +4,8 @@ import CollaborateDialog from "@/components/CollaborateDialog";
 import { Button } from "@/components/ui/button";
 import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
 import { Loader2 } from "lucide-react";
-import Link from "next/link";
-import { Card } from "./ui/card";
 import Image from "next/image";
+import { Card } from "./ui/card";
 
 interface ProfileData {
   name: string;
@@ -51,7 +50,7 @@ export default function KOLProfileHeader({
         <Button
           onClick={login}
           disabled={isProcessing}
-          className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium"
+          className="bg-[#00D992] hover:bg-[#00C080] text-gray-900 font-medium max-w-48"
         >
           {isProcessing ? (
             <>
@@ -151,12 +150,9 @@ export default function KOLProfileHeader({
                 <span className="text-sm text-neutral-200">Mindshare</span>
                 <span className="text-[20px]">{profile.mindshare}%</span>
               </div>
-              
             </div>
           </div>
           {renderCollaborateButton()}
-
-         
         </div>
       </div>
     </Card>
