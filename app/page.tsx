@@ -75,7 +75,7 @@ export default function LandingPage() {
               {/* 500+ */}
               <div className="py-8 px-6 flex flex-col gap-1 border-neutral-600 border-dashed md:border-r last:md:border-none">
                 <span className="text-lg md:text-xl font-semibold text-brand-50">
-                  500+
+                  3+
                 </span>
                 <span className="text-neutral-300 text-sm md:text-base">
                   Active Campaigns
