@@ -96,11 +96,13 @@ function MetricChart({
         }));
 
   return (
-    <div className="card-trendsage group bg-neutral-900">
+    <div className=" bg-neutral-900">
       <div className="mb-3">
-        <h3 className="text-sm font-medium text-gray-400 mb-1">{title}</h3>
+        <h3 className="text-base font-semibold text-neutral-100  mb-1">
+          {title}
+        </h3>
         <div className="flex items-end gap-2">
-          <span className="text-2xl font-bold text-gray-100">{value}</span>
+          <span className="text-xl font-bold text-neutral-100">{value}</span>
           <div
             className={`flex items-center gap-1 text-xs font-medium ${
               isPositive ? "text-[#00D992]" : "text-red-400"
@@ -115,7 +117,7 @@ function MetricChart({
           </div>
         </div>
       </div>
-      <div className="h-12 relative">
+      <div className="h-28 relative">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={scaledData}
@@ -190,8 +192,8 @@ function ActivityHeatmap({
     });
 
     // Dimensions
-    const margin = { top: 40, right: 20, bottom: 60, left: 60 };
-    const cellSize = 31;
+    const margin = { top: 40, right: 0, bottom: 60, left: 0 };
+    const cellSize = 18;
     const width = 24 * cellSize + margin.left + margin.right;
     const height = 7 * cellSize + margin.top + margin.bottom;
 
@@ -243,18 +245,18 @@ function ActivityHeatmap({
       .text((d) => `${d.toString().padStart(2, "0")}:00`);
 
     // Add day labels (left)
-    g.selectAll(".day-label")
-      .data(days)
-      .enter()
-      .append("text")
-      .attr("class", "day-label")
-      .attr("x", -15)
-      .attr("y", (d, i) => i * cellSize + cellSize / 2)
-      .attr("text-anchor", "end")
-      .attr("dominant-baseline", "middle")
-      .attr("font-size", "12px")
-      .attr("fill", "#9ca3af")
-      .text((d) => d.slice(0, 3));
+    // g.selectAll(".day-label")
+    //   .data(days)
+    //   .enter()
+    //   .append("text")
+    //   .attr("class", "day-label")
+    //   .attr("x", -15)
+    //   .attr("y", (d, i) => i * cellSize + cellSize / 2)
+    //   .attr("text-anchor", "end")
+    //   .attr("dominant-baseline", "middle")
+    //   .attr("font-size", "12px")
+    //   .attr("fill", "#9ca3af")
+    //   .text((d) => d.slice(0, 3));
 
     // Add cells
     g.selectAll(".hour-cell")
@@ -363,12 +365,12 @@ function ActivityHeatmap({
   }, [activityData]);
 
   return (
-    <div className="card-trendsage bg-neutral-800">
-      <h3 className="text-lg font-semibold text-gray-100 mb-4">
-        Activity Heatmap
+    <div className=" bg-neutral-900 mt-2 border-t border-neutral-600 border-dashed p-4 ">
+      <h3 className="text-base font-semibold text-neutral-100 mb-0">
+        Daily Activity Heatmap
       </h3>
       <div className="overflow-auto">
-        <svg ref={svgRef} className="min-w-[800px]" />
+        <svg ref={svgRef} className="min-w-[300px]" />
       </div>
     </div>
   );
@@ -496,8 +498,8 @@ export function ProfileCharts({
   return (
     <div className="space-y-6">
       {/* Metric Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <MetricChart
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-4 p-4">
+        {/* <MetricChart
           title="Followers"
           value={followersMetric.value}
           change={followersMetric.change}
@@ -514,9 +516,9 @@ export function ProfileCharts({
           data={smartFollowersData}
           color="#00D992"
           metricType="smart_followers"
-        />
+        /> */}
         <MetricChart
-          title="Mindshare"
+          title="Mindshare History"
           value={mindshareMetric.value}
           change={mindshareMetric.change}
           isPositive={mindshareMetric.isPositive}
@@ -525,9 +527,6 @@ export function ProfileCharts({
           metricType="mindshare"
         />
       </div>
-
-      {/* Followers Overview */}
-      <FollowersOverview authorHandle={authorHandle} />
 
       {/* Activity Heatmap */}
       <ActivityHeatmap activityData={activityData} />
