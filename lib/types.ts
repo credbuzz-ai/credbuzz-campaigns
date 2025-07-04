@@ -44,12 +44,14 @@ export interface Campaign {
     engagement_score?: number;
   };
   campaign_rules?: string;
+  ignore_accounts?: string;
 }
 
 export type UserType = {
   x_handle: string;
   evm_wallet: string;
   solana_wallet: string;
+  celo_wallet: string;
   referral_code: string;
   referral_code_used: string;
   chart_data?: GraphDataPoint[];

@@ -17,6 +17,7 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
   const { toast } = useToast();
   const [evmWallet, setEvmWallet] = useState(user?.evm_wallet || "");
   const [solanaWallet, setSolanaWallet] = useState(user?.solana_wallet || "");
+  const [celoWallet, setCeloWallet] = useState(user?.celo_wallet || "");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -25,12 +26,19 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
 
     try {
       // Create payload with only non-empty wallet addresses
-      const payload: { evm_wallet?: string; solana_wallet?: string } = {};
+      const payload: {
+        evm_wallet?: string;
+        solana_wallet?: string;
+        celo_wallet?: string;
+      } = {};
       if (evmWallet.trim()) {
         payload.evm_wallet = evmWallet;
       }
       if (solanaWallet.trim()) {
         payload.solana_wallet = solanaWallet;
+      }
+      if (celoWallet.trim()) {
+        payload.celo_wallet = celoWallet;
       }
 
       const response = await apiClient.put("/user/update-user", payload);
@@ -47,6 +55,7 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
       // Reset input fields on error
       setEvmWallet(user?.evm_wallet || "");
       setSolanaWallet(user?.solana_wallet || "");
+      setCeloWallet(user?.celo_wallet || "");
       toast({
         title: "Failed to update wallet addresses",
         description: error.response.data.detail,
@@ -63,7 +72,7 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
           Update Wallet Addresses
         </DialogTitle>
         <DialogDescription className="text-gray-400">
-          Enter your EVM and Solana wallet addresses below.
+          Enter your EVM, Solana and Celo wallet addresses below.
         </DialogDescription>
       </DialogHeader>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -94,6 +103,21 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
             value={solanaWallet}
             onChange={(e) => setSolanaWallet(e.target.value)}
             placeholder="Solana address..."
+            className="bg-gray-800 border-gray-700 text-gray-100"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="celoWallet"
+            className="text-sm text-gray-300 block mb-2"
+          >
+            Celo Wallet Address
+          </label>
+          <Input
+            id="celoWallet"
+            value={celoWallet}
+            onChange={(e) => setCeloWallet(e.target.value)}
+            placeholder="Celo address..."
             className="bg-gray-800 border-gray-700 text-gray-100"
           />
         </div>
