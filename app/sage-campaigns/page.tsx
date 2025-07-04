@@ -1,29 +1,28 @@
 "use client";
 
 import CampaignCard from "@/components/CampaignCard";
-import CollaborateDialog from "@/components/CollaborateDialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-// const statusOptions = ["All", "Published", "Fulfilled", "Discarded"];
+const statusOptions = ["All", "Ongoing", "Completed", "Upcoming"];
 
 export default function BuzzBoard() {
-  // const [searchTerm, setSearchTerm] = useState("");
-  // const [selectedStatus, setSelectedStatus] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("All");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
-  // const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
-  // const matchesSearch =
-  //   campaign.campaign_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //   campaign.owner_x_handle.toLowerCase().includes(searchTerm.toLowerCase());
-  // const matchesStatus =
-  //   selectedStatus === "All" ||
-  //   campaign.status === selectedStatus.toUpperCase();
-  // return matchesSearch && matchesStatus;
-  // return matchesStatus;
-  // });
+  const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
+    const matchesSearch =
+      campaign.campaign_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      campaign.owner_x_handle.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      selectedStatus === "All" ||
+      campaign.status.toLowerCase() === selectedStatus.toLowerCase();
+    return matchesSearch && matchesStatus;
+  });
 
   const fetchCampaigns = async () => {
     setLoading(true);
@@ -47,13 +46,35 @@ export default function BuzzBoard() {
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-4xl font-bold text-gray-100 mb-4">
-                Public Campaigns
+                Explore Campaigns
               </h1>
               <p className="text-xl text-gray-300">
                 Discover and join active Web3 marketing campaigns
               </p>
             </div>
-            <CollaborateDialog mode="public">
+
+            {/* Filters */}
+            <div className="mb-8">
+              <Tabs
+                value={selectedStatus}
+                onValueChange={setSelectedStatus}
+                className="w-full"
+              >
+                <TabsList className="bg-neutral-900 border border-gray-600/30">
+                  {statusOptions.map((status) => (
+                    <TabsTrigger
+                      key={status}
+                      value={status}
+                      className="data-[state=active]:bg-gray-600/50 hover:bg-neutral-800"
+                    >
+                      {status}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {/* <CollaborateDialog mode="public">
               <button
                 className="btn-primarynew inline-flex items-center justify-center min-w-[160px]"
                 title="Create a new public campaign"
@@ -75,41 +96,9 @@ export default function BuzzBoard() {
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
               </button>
-            </CollaborateDialog>
+            </CollaborateDialog> */}
           </div>
         </div>
-        {/* Filters */}
-        {/* <div className="mb-8">
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search campaigns or brands..."
-                className="w-full pl-10 pr-4 py-3 border border-gray-600/30 rounded-xl 
-             bg-gray-700/30 text-gray-100 placeholder-gray-400
-             focus-trendsage transition-all"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex items-center gap-2 min-w-[180px]">
-              <select
-                className="px-4 py-3 border border-gray-600/30 rounded-xl 
-             bg-gray-700/30 text-gray-100 min-w-[150px]
-             focus-trendsage"
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-              >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div> */}
         {/* Campaign Grid */}
         {loading ? (
           <div className="text-center py-12">
@@ -118,9 +107,9 @@ export default function BuzzBoard() {
               Loading campaigns...
             </div>
           </div>
-        ) : (
+        ) : filteredCampaigns.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {campaigns.map(
+            {filteredCampaigns.map(
               (campaign) =>
                 campaign.is_visible && (
                   <CampaignCard
@@ -130,9 +119,7 @@ export default function BuzzBoard() {
                 )
             )}
           </div>
-        )}
-
-        {campaigns && campaigns.length === 0 && !loading && (
+        ) : (
           <div className="text-center py-12">
             <div className="text-gray-400 text-lg mb-2 flex items-center justify-center gap-2">
               <svg
@@ -141,7 +128,7 @@ export default function BuzzBoard() {
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
-                className="text-[#00D992]"
+                className="text-emerald-500"
               >
                 <circle cx="12" cy="12" r="10" strokeWidth="2" />
                 <path
@@ -151,19 +138,39 @@ export default function BuzzBoard() {
                   d="M12 8v4m0 4h.01"
                 />
               </svg>
-              No campaigns found
+              Let's Find Your Perfect Campaign!
             </div>
-            <div className="text-gray-500 text-sm mb-2">
-              Try adjusting your search or filter criteria.
-              <br />
-              <span className="text-gray-400">
-                Tip: Public campaigns are created by brands or projects looking
-                for influencer collaboration. Use the{" "}
-                <span className="text-[#00D992] font-medium">
-                  Create Campaign
-                </span>{" "}
-                button above to start your own!
-              </span>
+            <div className="text-gray-400 text-lg mb-4">
+              {searchTerm ? (
+                <>
+                  We couldn't find any matches for "{searchTerm}"
+                  {selectedStatus !== "All" &&
+                    ` in ${selectedStatus.toLowerCase()} campaigns`}
+                  <br />
+                  <span className="text-emerald-400 font-medium">
+                    Try different keywords or explore all campaigns to discover
+                    exciting opportunities!
+                  </span>
+                </>
+              ) : selectedStatus !== "All" ? (
+                <>
+                  Stay tuned! {selectedStatus} campaigns are coming soon.
+                  <br />
+                  <span className="text-emerald-400 font-medium">
+                    Meanwhile, check out other amazing campaigns in different
+                    stages! 🚀
+                  </span>
+                </>
+              ) : (
+                <>
+                  Get ready for something amazing!
+                  <br />
+                  <span className="text-emerald-400 font-medium">
+                    New campaigns are launching soon. Be the first to join when
+                    they arrive! ✨
+                  </span>
+                </>
+              )}
             </div>
           </div>
         )}
