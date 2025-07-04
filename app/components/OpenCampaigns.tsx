@@ -45,7 +45,7 @@ export default function OpenCampaigns() {
             Loading campaigns...
           </div>
         ) : (
-          <div className="flex w-full justify-center items-center gap-6">
+          <div className="flex w-full justify-center items-center gap-6 flex-wrap">
             {visibleCampaigns.map((campaign) => (
               <CampaignCard key={campaign.campaign_id} campaign={campaign} />
             ))}
