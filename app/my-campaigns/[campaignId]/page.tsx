@@ -162,13 +162,11 @@ export default function CampaignDetailsPage() {
               <div>
                 <span
                   className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-medium ${
-                    campaign.status === "OPEN"
+                    campaign.status === "Ongoing"
                       ? "bg-[#00D992]/10 text-[#00D992] border border-[#00D992]/20"
-                      : campaign.status === "PUBLISHED"
-                      ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                      : campaign.status === "ACCEPTED"
+                      : campaign.status === "Upcoming"
                       ? "bg-purple-500/10 text-purple-400 border border-purple-500/20"
-                      : campaign.status === "FULFILLED"
+                      : campaign.status === "Completed"
                       ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                       : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
                   }`}
@@ -231,7 +229,7 @@ export default function CampaignDetailsPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400">Offer Status</span>
                   <span className="font-medium text-gray-100">
-                    {campaign.status === "FULFILLED"
+                    {campaign.status === "Completed"
                       ? "Fulfilled"
                       : formatDistanceToNow(new Date(campaign.offer_end_date), {
                           addSuffix: true,

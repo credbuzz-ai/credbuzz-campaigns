@@ -1,6 +1,7 @@
 "use client";
 
 import EarnMini from "@/components/EarnMini";
+import SelfIntegration from "@/components/SelfIntegration";
 import {
   Accordion,
   AccordionContent,
@@ -41,7 +42,9 @@ export default function MyCampaigns() {
   const { ready, authenticated } = usePrivy();
   const { toast } = useToast();
   // Top-level tabs: earn rewards vs manage campaigns
-  const [activeTab, setActiveTab] = useState<"earn" | "campaigns">("earn");
+  const [activeTab, setActiveTab] = useState<"earn" | "campaigns" | "identity">(
+    "earn"
+  );
   const [campaignSubTab, setCampaignSubTab] = useState<"created" | "received">(
     "created"
   );
@@ -479,6 +482,13 @@ export default function MyCampaigns() {
                         user.solana_wallet.length - 4
                       )}
                 </p>
+                <p className="text-[#9CA7A4]">
+                  {user.celo_wallet &&
+                    "CELO Wallet: " +
+                      user.celo_wallet.substring(0, 6) +
+                      "..." +
+                      user.celo_wallet.substring(user.celo_wallet.length - 4)}
+                </p>
               </div>
             </div>
             {/* Action buttons */}
@@ -678,6 +688,16 @@ export default function MyCampaigns() {
               >
                 Campaigns
               </button>
+              <button
+                onClick={() => setActiveTab("identity")}
+                className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === "identity"
+                    ? "border-[#00D992] text-[#00D992]"
+                    : "border-transparent text-gray-400 hover:text-gray-300 hover:border-gray-300"
+                }`}
+              >
+                Identity
+              </button>
             </nav>
           </div>
         </div>
@@ -686,6 +706,13 @@ export default function MyCampaigns() {
         {activeTab === "earn" && (
           <div className="">
             <EarnMini />
+          </div>
+        )}
+
+        {/* Identity Verification Tab Content */}
+        {activeTab === "identity" && (
+          <div className="">
+            <SelfIntegration />
           </div>
         )}
 
