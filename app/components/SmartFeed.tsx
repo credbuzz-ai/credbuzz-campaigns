@@ -278,7 +278,7 @@ export default function SmartFeed({
   };
 
   return (
-    <div className="sticky top-8 bg-neutral-900 flex flex-col h-[550px]">
+    <div className="card-trendsage sticky top-8 h-full bg-neutral-900 flex flex-col">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#00D992]" />
@@ -287,7 +287,7 @@ export default function SmartFeed({
 
         <div className="flex items-center gap-2">
           {/* Interval Filter */}
-          {/* <div className="flex bg-gray-700 rounded-lg p-1">
+          <div className="flex bg-gray-700 rounded-lg p-1">
             {intervalOptions.map(({ value, label }) => (
               <button
                 key={value}
@@ -301,20 +301,20 @@ export default function SmartFeed({
                 {label}
               </button>
             ))}
-          </div> */}
+          </div>
 
           {/* Sort Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="flex items-center gap-1 px-4 py-1 text-sm bg-neutral-700 border border-neutral-600  text-brand-50 hover:text-[#00D992] hover:border-[#00D992]/50 transition-colors"
+              className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-700 border border-gray-600 rounded-lg text-gray-300 hover:text-[#00D992] hover:border-[#00D992]/50 transition-colors"
             >
               {getSortLabel()}
               <ChevronDown className="w-3 h-3" />
             </button>
 
             {showSortDropdown && (
-              <div className="absolute right-0 top-full mt-1 z-10 bg-neutral-700 border border-neutral-600  shadow-lg min-w-[150px]">
+              <div className="absolute right-0 top-full mt-1 z-10 bg-gray-800 border border-gray-700 rounded-lg shadow-lg min-w-[150px]">
                 {sortOptions.map(({ value, label }) => (
                   <button
                     key={value}
@@ -322,10 +322,10 @@ export default function SmartFeed({
                       setSortBy(value);
                       setShowSortDropdown(false);
                     }}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-neutral-600 transition-colors ${
+                    className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-700 transition-colors ${
                       sortBy === value
-                        ? "text-[#00D992] bg-neutral-600"
-                        : "text-neutral-200"
+                        ? "text-[#00D992] bg-gray-700"
+                        : "text-gray-300"
                     }`}
                   >
                     {label}
@@ -357,7 +357,7 @@ export default function SmartFeed({
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="rounded-lg p-4 animate-pulse bg-gray-800/50"
+              className="border border-gray-700 rounded-lg p-4 animate-pulse"
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
@@ -390,7 +390,7 @@ export default function SmartFeed({
           return (
             <div
               key={`${tweet.tweet_id}-${index}`}
-              className="p-4 border-b border-neutral-600"
+              className="border border-gray-700 rounded-lg p-4 hover:border-[#00D992]/30 transition-colors group"
             >
               {/* Tweet header */}
               <div className="flex items-start gap-3 mb-3">
