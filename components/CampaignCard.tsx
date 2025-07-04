@@ -15,28 +15,15 @@ function formatAmount(amount: number): string {
 }
 
 function getStatusColor(status: string) {
-  switch (status) {
-    case "PUBLISHED":
-      return "bg-[#00D992]/10 text-[#00D992] border-[#00D992]/20";
-    case "FULFILLED":
-      return "bg-red-500/10 text-red-400 border-red-500/20";
-    case "DISCARDED":
+  switch (status.toLowerCase()) {
+    case "ongoing":
+      return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+    case "completed":
       return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+    case "upcoming":
+      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
     default:
       return "bg-gray-500/10 text-gray-400 border-gray-500/20";
-  }
-}
-
-function getStatusDisplayName(status: string) {
-  switch (status) {
-    case "PUBLISHED":
-      return "Published";
-    case "FULFILLED":
-      return "Fulfilled";
-    case "DISCARDED":
-      return "Discarded";
-    default:
-      return status;
   }
 }
 
@@ -90,7 +77,7 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
                 campaign.status
               )}`}
             >
-              {getStatusDisplayName(campaign.status)}
+              {campaign.status}
             </span>
           </div>
           <div className="flex items-center justify-center gap-2 text-sm my-6">
@@ -113,7 +100,13 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
             </span>
           </div>
           <div className="flex flex-col gap-2">
-            <span className="text-gray-400">Campaign Ends in</span>
+            <span className="text-gray-400">
+              {campaign.status.toLowerCase() === "ongoing"
+                ? "Ends in"
+                : campaign.status.toLowerCase() === "upcoming"
+                ? "Starts in"
+                : "Ended"}
+            </span>
             <span className="text-lg">
               {getTimeRemaining(campaign.offer_end_date)}
             </span>

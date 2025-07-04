@@ -15,13 +15,7 @@ export interface Campaign {
   campaign_type: "Public" | "Targeted";
   campaign_name: string;
   description: string;
-  status:
-    | "OPEN"
-    | "PUBLISHED"
-    | "ACCEPTED"
-    | "FULFILLED"
-    | "UNFULFILLED"
-    | "DISCARDED";
+  status: "Ongoing" | "Completed" | "Upcoming";
   payment_token: string;
   payment_token_address: string;
   payment_token_decimals?: number;
