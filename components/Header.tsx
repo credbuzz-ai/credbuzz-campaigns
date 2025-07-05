@@ -245,7 +245,7 @@ export default function Header() {
 
         {/* Mobile slide-down menu */}
         <div
-          className={`md:hidden overflow-hidden border-t  border-gray-700/50 transition-all duration-300 ease-in-out ${
+          className={`md:hidden overflow-hidden  w-full border-t  border-gray-700/50 transition-all duration-300 ease-in-out z-[100] ${
             isMenuOpen ? "h-screen" : "max-h-0"
           }`}
           style={{ transitionProperty: "max-height" }}
@@ -256,7 +256,7 @@ export default function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium text-2xl mt-0 py-6 px-2 border-b border-neutral-600 ${
+                  className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium text-2xl mt-0 py-6 px-4 border-b border-neutral-600 ${
                     pathname?.startsWith(item.href) ? "!text-[#00D992]" : ""
                   }`}
                 >
