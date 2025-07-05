@@ -1,5 +1,6 @@
 "use client";
 
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ChevronLeft, ChevronRight, Eye, Star, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,6 +42,7 @@ const ITEMS_PER_PAGE = 50;
 
 export default function KOLsPage() {
   const router = useRouter();
+  const isMobile = useIsMobile();
   const [kols, setKols] = useState<KOL[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -199,11 +201,11 @@ export default function KOLsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[url('/landingPageBg.png')] bg-cover bg-no-repeat">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-[url('/landingPageBg.png')] bg-cover bg-no-repeat pt-16 md:pt-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+        <div className="mb-4 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
             <div className="flex items-center gap-3">
               <Users className="w-6 h-6 text-[#00D992]" />
               <h1 className="text-xl sm:text-2xl font-bold text-gray-100">
@@ -212,14 +214,18 @@ export default function KOLsPage() {
             </div>
 
             {/* Search Input */}
-            <div className="flex flex-col gap-2 w-96">
+            <div className="flex flex-col gap-2 w-full sm:w-96">
               <div className="flex gap-2 relative">
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  placeholder="Search by username (min. 4 characters)..."
-                  className="flex-1 px-6 py-4 bg-neutral-800 border-b border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors"
+                  placeholder={
+                    isMobile
+                      ? "Search username..."
+                      : "Search by username (min. 4 characters)..."
+                  }
+                  className="flex-1 px-4 sm:px-6 py-3 sm:py-4 bg-neutral-800 border-b border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-[#00D992] transition-colors text-sm sm:text-base"
                 />
                 {searchLoading && (
                   <div className="absolute right-24 top-1/2 transform -translate-y-1/2">
@@ -229,7 +235,7 @@ export default function KOLsPage() {
                 {searchTerm && (
                   <button
                     onClick={clearSearch}
-                    className="px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 sm:px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                     disabled={searchLoading}
                   >
                     Clear
@@ -237,7 +243,7 @@ export default function KOLsPage() {
                 )}
               </div>
               {minCharMessage && (
-                <div className="text-sm text-amber-400 mt-1">
+                <div className="text-xs sm:text-sm text-amber-400 mt-1">
                   {minCharMessage}
                 </div>
               )}
@@ -275,157 +281,168 @@ export default function KOLsPage() {
           ) : (
             <>
               {/* Table */}
-              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-4rem)]">
-                <table className="w-full">
-                  <thead className="bg-[#2B3C39f3] border-b border-gray-700 rounded-md sticky top-0">
-                    <tr className="">
-                      <th className="px-6 py-6 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Rank
-                      </th>
-                      <th className="px-6 py-6 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        KOL
-                      </th>
-                      <th className="px-6 py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Score
-                      </th>
-                      <th className="px-6 py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Followers
-                      </th>
-                      <th className="px-6 py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Smart Followers
-                      </th>
-                      <th className="px-6 py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
-                        Avg Views
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-transparent divide-y divide-none">
-                    {displayedKols.map((kol, index) => {
-                      const rank =
-                        (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
-                      return (
-                        <tr
-                          key={kol.author_handle}
-                          className="hover:bg-[#2B3C3933] hover:cursor-pointer transition-colors group cursor-pointer"
-                          onClick={() => {
-                            router.push(`/kols/${kol.author_handle}`);
-                          }}
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">
-                            <span className="text-gray-200 border border-neutral-600 rounded-md px-2 py-1 bg-neutral-600 text-xs font-semibold">
-                              {rank}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <img
-                                src={kol.profile_image_url}
-                                alt={kol.name}
-                                className="w-10 h-10 rounded-full mr-3 ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
-                                onError={(e) => {
-                                  e.currentTarget.src =
-                                    "/placeholder.svg?height=40&width=40";
-                                }}
-                              />
-                              <div>
-                                <Link
-                                  href={`/kols/${kol.author_handle}`}
-                                  className="text-sm font-medium text-gray-200 hover:text-[#00D992] transition-colors"
-                                >
-                                  {kol.name}
-                                </Link>
-                                <div className="text-xs text-gray-500">
-                                  @{kol.author_handle}
+              <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-4rem)] -mx-4 sm:mx-0">
+                <div className="min-w-[800px] px-4 sm:px-0">
+                  <table className="w-full">
+                    <thead className="bg-[#2B3C39f3] border-b border-gray-700 rounded-md sticky top-0">
+                      <tr className="">
+                        <th className="px-3 sm:px-6 py-4 sm:py-6 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Rank
+                        </th>
+                        <th className="px-3 sm:px-6 py-4 sm:py-6 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          KOL
+                        </th>
+                        <th className="px-3 sm:px-6 py-4 sm:py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Score
+                        </th>
+                        <th className="px-3 sm:px-6 py-4 sm:py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Followers
+                        </th>
+                        <th className="px-3 sm:px-6 py-4 sm:py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Smart Followers
+                        </th>
+                        <th className="px-3 sm:px-6 py-4 sm:py-6 text-center text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          Avg Views
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-transparent divide-y divide-none">
+                      {displayedKols.map((kol, index) => {
+                        const rank =
+                          (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+                        return (
+                          <tr
+                            key={kol.author_handle}
+                            className="hover:bg-[#2B3C3933] hover:cursor-pointer transition-colors group cursor-pointer"
+                            onClick={() => {
+                              router.push(`/kols/${kol.author_handle}`);
+                            }}
+                          >
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-sm font-medium text-gray-200">
+                              <span className="text-gray-200 border border-neutral-600 rounded-md px-2 py-1 bg-neutral-600 text-xs font-semibold">
+                                {rank}
+                              </span>
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <img
+                                  src={kol.profile_image_url}
+                                  alt={kol.name}
+                                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full mr-2 sm:mr-3 ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
+                                  onError={(e) => {
+                                    e.currentTarget.src =
+                                      "/placeholder.svg?height=40&width=40";
+                                  }}
+                                />
+                                <div>
+                                  <Link
+                                    href={`/kols/${kol.author_handle}`}
+                                    className="text-xs sm:text-sm font-medium text-gray-200 hover:text-[#00D992] transition-colors"
+                                  >
+                                    {kol.name}
+                                  </Link>
+                                  <div className="text-xs text-gray-500">
+                                    @{kol.author_handle}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center justify-center">
-                              <Star className="w-4 h-4 text-yellow-400 mr-1" />
-                              <span
-                                className={`text-sm font-semibold ${getScoreColor(
-                                  kol.score
-                                )}`}
-                              >
-                                {kol.score.toFixed(1)}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-[#DFFCF699] text-center">
-                            {formatNumber(kol.followers)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-200 text-center">
-                            {formatNumber(kol.smart_followers)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center text-sm text-gray-200 justify-center">
-                              <Eye className="w-4 h-4 text-gray-400 mr-1" />
-                              {formatNumber(kol.avg_views)}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                              <div className="flex items-center justify-center">
+                                <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 mr-1" />
+                                <span
+                                  className={`text-xs sm:text-sm font-semibold ${getScoreColor(
+                                    kol.score
+                                  )}`}
+                                >
+                                  {kol.score.toFixed(1)}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-[#DFFCF699] text-center">
+                              {formatNumber(kol.followers)}
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-200 text-center">
+                              {formatNumber(kol.smart_followers)}
+                            </td>
+                            <td className="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                              <div className="flex items-center text-xs sm:text-sm text-gray-200 justify-center">
+                                <Eye className="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-1" />
+                                {formatNumber(kol.avg_views)}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Pagination */}
               {!searchResult && (
-                <div className="px-6 py-4 border-t border-neutral-700">
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs sm:text-sm text-gray-400">
+                <div className="px-3 sm:px-6 py-4 border-t border-neutral-700">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div className="text-xs sm:text-sm text-gray-400 order-2 sm:order-1">
                       Showing {startItem}-{endItem} of{" "}
                       {formatNumber(totalItems)} results
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 order-1 sm:order-2">
                       <button
                         onClick={() => handlePageChange(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="flex items-center px-3 py-1 text-xs sm:text-sm border border-gray-600 rounded hover:bg-gray-700 hover:border-[#00D992]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-300"
+                        className="flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-600 rounded hover:bg-gray-700 hover:border-[#00D992]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-300"
                       >
-                        <ChevronLeft className="w-4 h-4 mr-1" />
-                        Previous
+                        <ChevronLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                        {!isMobile && "Previous"}
                       </button>
 
                       <div className="flex items-center gap-1">
-                        {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                          let pageNum;
-                          if (totalPages <= 5) {
-                            pageNum = i + 1;
-                          } else if (currentPage <= 3) {
-                            pageNum = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i;
-                          } else {
-                            pageNum = currentPage - 2 + i;
-                          }
+                        {[...Array(Math.min(isMobile ? 3 : 5, totalPages))].map(
+                          (_, i) => {
+                            let pageNum;
+                            const maxVisible = isMobile ? 3 : 5;
+                            if (totalPages <= maxVisible) {
+                              pageNum = i + 1;
+                            } else if (
+                              currentPage <= Math.ceil(maxVisible / 2)
+                            ) {
+                              pageNum = i + 1;
+                            } else if (
+                              currentPage >=
+                              totalPages - Math.floor(maxVisible / 2)
+                            ) {
+                              pageNum = totalPages - (maxVisible - 1) + i;
+                            } else {
+                              pageNum =
+                                currentPage - Math.floor(maxVisible / 2) + i;
+                            }
 
-                          return (
-                            <button
-                              key={pageNum}
-                              onClick={() => handlePageChange(pageNum)}
-                              className={`px-3 py-1 text-xs sm:text-sm border rounded transition-colors ${
-                                currentPage === pageNum
-                                  ? "bg-[#00D992] text-gray-900 border-[#00D992]"
-                                  : "border-gray-600 hover:bg-gray-700 hover:border-[#00D992]/50 text-gray-300"
-                              }`}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        })}
+                            return (
+                              <button
+                                key={pageNum}
+                                onClick={() => handlePageChange(pageNum)}
+                                className={`px-2 sm:px-3 py-1 text-xs sm:text-sm border rounded transition-colors ${
+                                  currentPage === pageNum
+                                    ? "bg-[#00D992] text-gray-900 border-[#00D992]"
+                                    : "border-gray-600 hover:bg-gray-700 hover:border-[#00D992]/50 text-gray-300"
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          }
+                        )}
                       </div>
 
                       <button
                         onClick={() => handlePageChange(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="flex items-center px-3 py-1 text-xs sm:text-sm border border-gray-600 rounded hover:bg-gray-700 hover:border-[#00D992]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-300"
+                        className="flex items-center px-2 sm:px-3 py-1 text-xs sm:text-sm border border-gray-600 rounded hover:bg-gray-700 hover:border-[#00D992]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-gray-300"
                       >
-                        Next
-                        <ChevronRight className="w-4 h-4 ml-1" />
+                        {!isMobile && "Next"}
+                        <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
                       </button>
                     </div>
                   </div>
