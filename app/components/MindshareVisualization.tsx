@@ -58,7 +58,7 @@ const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[500px] bg-gray-800/50 rounded-lg animate-pulse">
-      <div className="h-full w-full grid grid-cols-3 gap-3 p-4">
+      <div className="max-w-[320px] md:max-w-full h-full w-full grid grid-cols-3 gap-3 p-4">
         {[...Array(9)].map((_, i) => (
           <div
             key={i}
@@ -848,7 +848,7 @@ export default function MindshareVisualization({
   };
 
   return (
-    <div className="p-4 bg-neutral-900 border border-neutral-600 border-dashed border-t-0 border-r-0 ">
+    <div className="p-4 max-w-[calc(100vw)] bg-neutral-900 border border-neutral-600 border-dashed border-t-0 border-r-0 ">
       <div className="flex items-center justify-between mb-2">
         <div className="space-y-2">
           <h3 className="text-base font-semibold text-neutral-100">

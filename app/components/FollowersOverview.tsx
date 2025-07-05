@@ -527,7 +527,7 @@ const FollowersBubbleMap = ({
             Followers Overview
           </h3>
         </div>
-        <div className="p-6 text-center text-gray-300">
+        <div className="p-6 text-center text-gray-300 h-48">
           Loading followers overview...
         </div>
       </div>
@@ -642,11 +642,11 @@ const TagsDistributionChart = ({
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const width = 160;
-    const height = 160;
+    const width = 120;
+    const height = 120;
     const radius = Math.min(width, height) / 2;
-    const innerRadius = 30;
-    const outerRadius = 65;
+    const innerRadius = 20;
+    const outerRadius = 45;
 
     const g = svg
       .attr("width", width)
@@ -913,7 +913,7 @@ export default function FollowersOverview({
             Followers Overview
           </h3>
         </div>
-        <div className="p-6 text-center text-gray-300">
+        <div className="p-6 text-center text-gray-300 h-52 flex items-center justify-center">
           Loading followers overview...
         </div>
       </div>
@@ -1025,7 +1025,7 @@ export default function FollowersOverview({
               </div>
             ) : followers.length > 0 ? (
               <div
-                className="w-48 h-48 bg-gray-800 rounded-full border border-gray-700 relative flex items-center justify-center"
+                className="w-32 md:w-48 h-32 md:h-48 bg-gray-800 rounded-full border border-gray-700 relative flex items-center justify-center"
                 style={{
                   boxShadow: `
                     0 0 0 1px rgba(0, 217, 146, 0.1),
@@ -1036,10 +1036,10 @@ export default function FollowersOverview({
                   `,
                 }}
               >
-                <div className="absolute top-2 left-0 right-0 text-center z-10">
+                <div className="absolute top-1 left-0 right-0 text-center z-10">
                   <h5 className="text-xs font-medium text-gray-300">Tags</h5>
                 </div>
-                <div className="w-40 h-40 flex items-center justify-center">
+                <div className="w-28 md:w-40 h-28 md:h-40 flex items-center justify-center">
                   <TagsDistributionChart
                     followers={followers}
                     loading={loading && followers.length === 0}

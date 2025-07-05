@@ -447,17 +447,17 @@ export default function CampaignDetailsClient({
     <div className="min-h-screen bg-neutral-900">
       <div className="flex items-start">
         {/* Main Content */}
-        <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
-          <div className="max-w-7xl px-4 mx-auto">
+        <div className="flex-1 py-4 md:py-8 px-0 md:px-8 lg:px-12">
+          <div className="max-w-7xl px-0 md:px-4 mx-auto">
             {/* Campaign Header */}
             <Card className="bg-neutral-900 border-none mb-2">
-              <div className="p-6">
+              <div className="p-4 md:p-6">
                 <div className="flex flex-col gap-6">
                   {/* Top section */}
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                     {/* Left – logo & basic info */}
                     <div className="flex items-start gap-4 flex-1">
-                      <div className="relative shrink-0">
+                      <div className="shrink-0">
                         <Image
                           src={
                             campaign?.owner_info?.profile_image_url ||
@@ -468,7 +468,7 @@ export default function CampaignDetailsClient({
                           height={56}
                           className="rounded-lg object-cover"
                         />
-                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full ring-2 ring-neutral-900" />
+                        {/* <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full ring-2 ring-neutral-900" /> */}
                       </div>
                       <div className="flex flex-col gap-2 flex-1">
                         <div className="flex items-center flex-wrap gap-2">
@@ -534,7 +534,7 @@ export default function CampaignDetailsClient({
                     </div>
 
                     {/* Metrics */}
-                    <div className="flex flex-col sm:flex-row gap-12">
+                    <div className="flex flex-row flex-wrap gap-8 sm:gap-12">
                       <div className="flex flex-col gap-2">
                         <span className="text-sm text-neutral-200">
                           Reward pool
@@ -599,7 +599,7 @@ export default function CampaignDetailsClient({
                           {/* <span className="text-[#A9F0DF]"> $SAGE</span> */}
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg">
+                      <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-[calc(100vw-2rem)] md:max-w-lg ">
                         <DialogHeader className="text-center">
                           <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
                             About SAGE
@@ -670,7 +670,7 @@ export default function CampaignDetailsClient({
                           {/* <span className="text-[#A9F0DF]"> $SAGE</span> */}
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg">
+                      <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800  max-w-[calc(100vw-2rem)] md:max-w-lg ">
                         <DialogHeader className="text-center">
                           <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
                             How can I participate?
@@ -725,10 +725,13 @@ export default function CampaignDetailsClient({
               </div>
             </Card>
 
-            <div className="flex flex-row h-full items-stretch">
+            <div className="flex-col md:flex-row h-full items-stretch">
               {/* Tabbed Interface for Mindshare and Followers */}
               <div className="w-full md:w-[56%] flex flex-col h-full">
-                <Tabs defaultValue="mindshare" className="w-full h-full mt-5">
+                <Tabs
+                  defaultValue="mindshare"
+                  className="max-w-[100vw] w-full h-full mt-5"
+                >
                   <TabsList className="flex w-full bg-transparent rounded-none p-0">
                     {[
                       { label: "Mindshare", value: "mindshare" },
@@ -737,7 +740,7 @@ export default function CampaignDetailsClient({
                       <TabsTrigger
                         key={tab.value}
                         value={tab.value}
-                        className="flex-1 px-4  border-b py-5  border-neutral-600  text-sm  font-medium rounded-none text-gray-400 hover:text-gray-200  data-[state=active]:mb-0 data-[state=active]:bg-transparent data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors bg-transparent"
+                        className="flex-1 px-0 md:px-4 border-b py-5  border-neutral-600  text-sm  font-medium rounded-none text-gray-400 hover:text-gray-200  data-[state=active]:mb-0 data-[state=active]:bg-transparent data-[state=active]:text-[#00D992] data-[state=active]:border-b-2 data-[state=active]:border-[#00D992] transition-colors bg-transparent"
                       >
                         {tab.label}
                       </TabsTrigger>
@@ -777,7 +780,7 @@ export default function CampaignDetailsClient({
               {/* Feed with Accounts/Mentions Tabs */}
               <div className="w-full md:w-[44%] flex flex-col h-full">
                 {/* External Time Period Filters */}
-                <div className="flex justify-between  pt-4 border-b border-neutral-600 pb-4">
+                <div className="justify-between  pt-4 border-b border-neutral-600 pb-4 hidden md:flex">
                   {/* Limit buttons */}
                   <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
                     {[20, 50, 100].map((num) => (
@@ -815,12 +818,9 @@ export default function CampaignDetailsClient({
                 </div>
                 <Tabs
                   defaultValue="accounts"
-                  className="w-full h-full mt-0 p-4 border border-neutral-600 border-dashed border-t-0  flex flex-col"
+                  className="max-w-[100vw] w-full h-full mt-0 p-4 border border-neutral-600 border-dashed border-t-0  flex flex-col"
                 >
                   <div className="flex items-center justify-between">
-                    <h3 className="text-base font-medium text-neutral-100">
-                      Feed
-                    </h3>
                     <TabsList className="inline-flex p-0 items-center bg-transparent rounded-md border border-neutral-600">
                       {[
                         { label: "Accounts", value: "accounts" },
