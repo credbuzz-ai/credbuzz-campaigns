@@ -780,7 +780,7 @@ export default function CampaignDetailsClient({
               {/* Feed with Accounts/Mentions Tabs */}
               <div className="w-full md:w-[44%] flex flex-col h-full">
                 {/* External Time Period Filters */}
-                <div className="justify-between  pt-4 border-b border-neutral-600 pb-4 hidden md:flex">
+                <div className="justify-center md:justify-between  pt-4 border-b border-neutral-600 pb-4 flex flex-col md:flex-row items-center md:items-center gap-4">
                   {/* Limit buttons */}
                   <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
                     {[20, 50, 100].map((num) => (

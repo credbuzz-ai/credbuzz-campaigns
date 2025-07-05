@@ -347,8 +347,9 @@ export default function MindshareVisualization({
               cell.addEventListener("click", async () => {
                 if (dataPoint?.author_handle) {
                   try {
-                    setSelectedAuthor(dataPoint.author_handle);
-                    await fetchMindshareHistory(dataPoint.author_handle);
+                    router.push(`/kols/${dataPoint.author_handle}`);
+                    // setSelectedAuthor(dataPoint.author_handle);
+                    // await fetchMindshareHistory(dataPoint.author_handle);
                   } catch (error) {
                     console.error("Error handling cell click:", error);
                   }
@@ -367,8 +368,9 @@ export default function MindshareVisualization({
           if (config.dataPointIndex !== -1) {
             const dataPoint = chartData[0].data[config.dataPointIndex];
             if (dataPoint?.author_handle) {
-              setSelectedAuthor(dataPoint.author_handle);
-              fetchMindshareHistory(dataPoint.author_handle);
+              router.push(`/kols/${dataPoint.author_handle}`);
+              // setSelectedAuthor(dataPoint.author_handle);
+              // fetchMindshareHistory(dataPoint.author_handle);
             }
           }
         },
@@ -758,8 +760,9 @@ export default function MindshareVisualization({
           }
         })
         .on("click", function () {
-          setSelectedAuthor(site.data.author_handle);
-          fetchMindshareHistory(site.data.author_handle);
+          router.push(`/kols/${site.data.author_handle}`);
+          // setSelectedAuthor(site.data.author_handle);
+          // fetchMindshareHistory(site.data.author_handle);
         });
     });
 
