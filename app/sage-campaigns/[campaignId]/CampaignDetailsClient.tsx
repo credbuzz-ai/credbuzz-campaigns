@@ -725,7 +725,7 @@ export default function CampaignDetailsClient({
               </div>
             </Card>
 
-            <div className="flex-col md:flex-row h-full items-stretch">
+            <div className="flex flex-col md:flex-row h-full items-stretch">
               {/* Tabbed Interface for Mindshare and Followers */}
               <div className="w-full md:w-[56%] flex flex-col h-full">
                 <Tabs
