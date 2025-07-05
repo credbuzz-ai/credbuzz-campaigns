@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const name = searchParams.get("name") || "TrendSage";
     const handle = searchParams.get("handle") || "0xtrendsage";
-    const followers = searchParams.get("followers") || "0";
+    const smartFollowers = searchParams.get("smartFollowers") || "0";
     const rewards = searchParams.get("rewards") || "0";
     const profileImage = searchParams.get("profileImage") || "";
 
@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
               <div
                 style={{
                   display: "flex",
-                  gap: "96px",
+                  gap: "40px",
                 }}
               >
                 <div
@@ -149,7 +149,7 @@ export async function GET(request: NextRequest) {
                       marginBottom: "8px",
                     }}
                   >
-                    Followers
+                    Smart Followers
                   </h3>
                   <p
                     style={{
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
                       fontWeight: "400",
                     }}
                   >
-                    {followers}
+                    {smartFollowers}
                   </p>
                 </div>
                 <div

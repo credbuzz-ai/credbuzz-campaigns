@@ -1,7 +1,7 @@
 "use client";
 
 import { usePrivyDatabaseSync } from "@/hooks/usePrivyDatabaseSync";
-import { Briefcase, EllipsisVertical, Menu, Power, X } from "lucide-react";
+import { Briefcase, Menu, Power, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -236,7 +236,7 @@ export default function Header() {
                 {isMenuOpen ? (
                   <X className="w-6 h-6" />
                 ) : (
-                  <EllipsisVertical className="w-6 h-6" />
+                  <Menu className="w-6 h-6" />
                 )}
               </button>
             )}
