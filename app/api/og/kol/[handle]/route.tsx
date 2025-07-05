@@ -8,6 +8,17 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_CREDBUZZ_API_URL ||
   "https://api.cred.buzz";
 
+// Helper function to format numbers
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return `${(num / 1000000).toFixed(1)}M`;
+  }
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}K`;
+  }
+  return num.toString();
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { handle: string } }
@@ -15,29 +26,25 @@ export async function GET(
   try {
     const { handle } = params;
 
-    // Fetch user profile data
-    const userProfileResponse = await fetch(
+    // Fetch user data using get-user-profile endpoint
+    const userResponse = await fetch(
       `${API_BASE_URL}/user/get-user-profile?handle=${handle}`
     );
 
-    if (!userProfileResponse.ok) {
-      throw new Error("Failed to fetch user profile");
+    if (!userResponse.ok) {
+      throw new Error("Failed to fetch user data");
     }
 
-    const userProfileData = await userProfileResponse.json();
-    const profileImage = userProfileData?.result?.activity_data?.profile_image;
-    const chartData = userProfileData?.result?.chart_data;
+    const userData = await userResponse.json();
+    const user = userData?.result;
 
-    // Fetch author details for additional info
+    // Also fetch author details for name and bio
     const authorDetailsResponse = await fetch(
       `${API_BASE_URL}/user/author-handle-details?author_handle=${handle}`
     );
 
     let authorName = handle;
     let authorBio = "";
-    let followersCount = 0;
-    let smartFollowersCount = 0;
-    let mindshare = 0;
 
     if (authorDetailsResponse.ok) {
       const authorData = await authorDetailsResponse.json();
@@ -45,236 +52,248 @@ export async function GET(
       authorBio = authorData?.result?.bio || "";
     }
 
-    // Get latest metrics from chart data
-    if (chartData && chartData.length > 0) {
-      const latestData = chartData[chartData.length - 1];
-      followersCount = latestData[2];
-      smartFollowersCount = latestData[3];
-      mindshare = latestData[4];
-    }
+    // Build absolute URLs for public assets
+    const baseUrl = new URL(request.url).origin;
+    const blurImageUrl = `${baseUrl}/blur.png`;
 
-    // Create the Open Graph image
+    // Get the latest metrics
+    const latestData = user?.chart_data?.[user.chart_data.length - 1];
+    const smartFollowers = latestData?.[3] || 0;
+    const mindshare = latestData?.[4] || 0;
+
     return new ImageResponse(
       (
         <div
           style={{
-            height: "100%",
-            width: "100%",
+            width: "1200px",
+            height: "628px",
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            backgroundColor: "#0A0F1A",
-            backgroundImage:
-              "radial-gradient(circle at 25px 25px, rgba(55, 65, 81, 0.15) 2px, transparent 0), radial-gradient(circle at 75px 75px, rgba(55, 65, 81, 0.1) 2px, transparent 0)",
-            backgroundSize: "100px 100px",
-            padding: "48px 32px",
+            background: "#000000",
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          {/* Header Section */}
+          {/* Background Image with Blur */}
+          <img
+            src={blurImageUrl}
+            alt="Background"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+
+          {/* Content Container */}
           <div
             style={{
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "24px",
-              marginBottom: "24px",
-              width: "100%",
-              maxWidth: "800px",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              height: "100%",
+              padding: "48px",
+              position: "relative",
+              zIndex: 1,
             }}
           >
-            {/* Profile Image */}
+            {/* Top Row - Profile Info */}
             <div
               style={{
-                width: "120px",
-                height: "120px",
-                borderRadius: "20px",
-                backgroundImage: profileImage
-                  ? `url(${profileImage})`
-                  : "linear-gradient(135deg, #00D992 0%, #00A97F 100%)",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                border: "2px solid rgba(0, 217, 146, 0.6)",
-                boxShadow: "0 0 20px rgba(0, 217, 146, 0.15)",
                 display: "flex",
+                justifyContent: "space-between",
                 alignItems: "center",
-                justifyContent: "center",
               }}
             >
-              {!profileImage && (
+              {/* Profile Section */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "24px",
+                }}
+              >
+                {user?.activity_data?.profile_image ? (
+                  <img
+                    src={user.activity_data.profile_image}
+                    style={{
+                      width: "96px",
+                      height: "96px",
+                      borderRadius: "12px",
+                      objectFit: "cover",
+                    }}
+                    alt="Profile"
+                    crossOrigin="anonymous"
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: "96px",
+                      height: "96px",
+                      borderRadius: "12px",
+                      background: "#00D992",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "60px",
+                      fontWeight: "bold",
+                      color: "#000",
+                    }}
+                  >
+                    {authorName.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <h2
+                    style={{
+                      fontSize: "56px",
+                      color: "#DFFCF6",
+                      margin: 0,
+                      fontWeight: "400",
+                    }}
+                  >
+                    {authorName}
+                  </h2>
+                  <p
+                    style={{
+                      fontSize: "30px",
+                      color: "#A9F0DF",
+                      margin: 0,
+                      marginTop: "8px",
+                    }}
+                  >
+                    @{handle}
+                  </p>
+                </div>
+              </div>
+
+              {/* Stats Section */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "40px",
+                }}
+              >
                 <div
                   style={{
-                    fontSize: "48px",
-                    color: "#FFFFFF",
-                    fontWeight: "bold",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
                   }}
                 >
-                  {handle.charAt(0).toUpperCase()}
+                  <h3
+                    style={{
+                      fontSize: "36px",
+                      color: "#9CA3AF",
+                      margin: 0,
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Smart Followers
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "42px",
+                      color: "white",
+                      margin: 0,
+                      fontWeight: "400",
+                    }}
+                  >
+                    {formatNumber(smartFollowers)}
+                  </p>
                 </div>
-              )}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: "36px",
+                      color: "#9CA3AF",
+                      margin: 0,
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Mindshare
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: "42px",
+                      color: "white",
+                      margin: 0,
+                      fontWeight: "400",
+                    }}
+                  >
+                    {mindshare.toFixed(2)}%
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {/* Title and Handle */}
+            {/* Middle Row - Bio */}
+            {authorBio && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                  gap: "16px",
+                  padding: "32px 0",
+                  borderTop: "2px dashed #374151",
+                  borderBottom: "2px dashed #374151",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "32px",
+                    color: "white",
+                    margin: 0,
+                    fontWeight: "400",
+                    textAlign: "left",
+                  }}
+                >
+                  {authorBio.length > 200
+                    ? `${authorBio.slice(0, 200)}...`
+                    : authorBio}
+                </div>
+              </div>
+            )}
+
+            {/* TrendSage Logo */}
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                gap: "4px",
+                alignItems: "center",
+                gap: "16px",
               }}
             >
-              <h1
-                style={{
-                  fontSize: "72px",
-                  fontWeight: "bold",
-                  color: "#F9FAFB",
-                  margin: 0,
-                  lineHeight: 1,
-                }}
-              >
-                {authorName}
-              </h1>
+              <svg width="48" height="48" viewBox="0 0 349 348" fill="none">
+                <rect width="348" height="348" rx="79" fill="#00D992" />
+                <path
+                  d="M271.333 86V80.5C271.333 69.7 262.333 67 257.833 67H180.833C175.633 67 171.667 71.6054 170.333 73.9082L163.352 86L150.073 109C146.265 115.596 141.728 113 139.419 109L130.181 93C128.941 90.8514 127.203 89.3211 125.333 88.2509C122.331 86.5318 118.991 86 116.833 86H90.3335C80.8335 86 77.3335 95 77.3335 99V164V172.5C77.3335 176 81.0335 183 87.8335 183H107.349H125.333V267.5C125.333 273.5 127.433 281 137.833 281H215.833C222.333 281 233.527 272 225.733 258.5L182.143 183L176.333 172.938C174.349 169.5 174.833 164 180.833 164H259.833C264.333 164 271.333 160.1 271.333 152.5V86Z"
+                  fill="#060F11"
+                />
+              </svg>
               <span
                 style={{
-                  fontSize: "20px",
-                  color: "#00D992",
-                  opacity: 0.9,
-                  fontWeight: "500",
+                  fontSize: "24px",
+                  color: "#A9F0DF",
                 }}
               >
-                @{handle}
+                TrendSage
               </span>
             </div>
           </div>
-
-          {/* Stats Section */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "32px",
-              marginBottom: "48px",
-            }}
-          >
-            {/* Followers */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "rgba(17, 24, 39, 0.95)",
-                borderRadius: "12px",
-                padding: "16px 24px",
-                border: "1px solid rgba(55, 65, 81, 0.3)",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "32px",
-                  color: "#00D992",
-                  fontWeight: "600",
-                }}
-              >
-                {followersCount.toLocaleString()}
-              </span>
-              <span
-                style={{
-                  fontSize: "16px",
-                  color: "#9CA3AF",
-                  fontWeight: "500",
-                }}
-              >
-                Followers
-              </span>
-            </div>
-
-            {/* Smart Followers */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "rgba(17, 24, 39, 0.95)",
-                borderRadius: "12px",
-                padding: "16px 24px",
-                border: "1px solid rgba(55, 65, 81, 0.3)",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "32px",
-                  color: "#00D992",
-                  fontWeight: "600",
-                }}
-              >
-                {smartFollowersCount.toLocaleString()}
-              </span>
-              <span
-                style={{
-                  fontSize: "16px",
-                  color: "#9CA3AF",
-                  fontWeight: "500",
-                }}
-              >
-                Smart Followers
-              </span>
-            </div>
-
-            {/* Mindshare */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "rgba(17, 24, 39, 0.95)",
-                borderRadius: "12px",
-                padding: "16px 24px",
-                border: "1px solid rgba(55, 65, 81, 0.3)",
-              }}
-            >
-              <span
-                style={{
-                  fontSize: "32px",
-                  color: "#00D992",
-                  fontWeight: "600",
-                }}
-              >
-                {mindshare.toFixed(1)}%
-              </span>
-              <span
-                style={{
-                  fontSize: "16px",
-                  color: "#9CA3AF",
-                  fontWeight: "500",
-                }}
-              >
-                Mindshare
-              </span>
-            </div>
-          </div>
-
-          {/* Bio Section */}
-          {authorBio && (
-            <div
-              style={{
-                maxWidth: "800px",
-                textAlign: "center",
-                color: "#D1D5DB",
-                fontSize: "20px",
-                lineHeight: 1.5,
-              }}
-            >
-              {authorBio.length > 200
-                ? `${authorBio.slice(0, 200)}...`
-                : authorBio}
-            </div>
-          )}
         </div>
       ),
       {
         width: 1200,
-        height: 630,
+        height: 628,
       }
     );
   } catch (error) {
@@ -317,7 +336,7 @@ export async function GET(
       ),
       {
         width: 1200,
-        height: 630,
+        height: 628,
       }
     );
   }
