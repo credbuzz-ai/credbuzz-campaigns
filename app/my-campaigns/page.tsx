@@ -359,7 +359,7 @@ export default function MyCampaigns() {
                       <span className="text-[#A9F0DF]"> $SAGE</span>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg mx-4">
+                  <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-lg">
                     <DialogHeader className="text-center">
                       <DialogTitle className="text-[#DFFCF6] text-base sm:text-lg md:text-2xl font-semibold text-center">
                         How to earn SAGE?
