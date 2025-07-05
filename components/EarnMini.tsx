@@ -153,82 +153,103 @@ export default function EarnMini() {
   };
 
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <Card className="bg-transparent border-none col-span-7">
-          <div className="rounded-lg p-4 bg-gradient-to-br from-[#0F3F2E] to-[#044d39]/60 border border-[#155748]/40 shadow-inner">
+    <div className="space-y-4 sm:space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6">
+        <Card className="bg-transparent border-none col-span-1 lg:col-span-7">
+          <div className="rounded-lg p-3 sm:p-4 bg-gradient-to-br from-[#0F3F2E] to-[#044d39]/60 border border-[#155748]/40 shadow-inner">
             <p className="text-sm text-[#66E2C1] mb-1 font-medium tracking-wide">
               Total SAGE earned
             </p>
-            <p className="text-2xl font-semibold text-[#DFFCF6]">
+            <p className="text-xl sm:text-2xl font-semibold text-[#DFFCF6]">
               {formatNumber(user?.total_points ?? 0)}
             </p>
           </div>
-          <CardHeader className="p-4">
-            <CardTitle className="text-[#DFFCF6] text-base font-medium">
+          <CardHeader className="p-3 sm:p-4">
+            <CardTitle className="text-[#DFFCF6] text-base font-medium flex items-center gap-2">
               Tasks for SAGE
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 space-y-5">
+          <CardContent className="p-3 sm:p-4 space-y-4">
             {tasks.map((task) => {
               const progressPercent = (task.completed / task.total) * 100;
+              const isCompleted = task.completed >= task.total;
               return (
                 <div
                   key={task.id}
-                  className="flex items-center justify-between py-3 px-0 rounded-lg"
+                  className={`relative flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-xl space-y-3 sm:space-y-0 p-3 sm:p-4 border ${
+                    isCompleted
+                      ? "bg-[#1E2A28]/30 border-[#1E2A28]"
+                      : "bg-[#1E2A28]/10 border-[#1E2A28]/50 hover:bg-[#1E2A28]/20"
+                  } transition-colors duration-200`}
                 >
                   {/* Left cluster */}
-                  <div className="flex items-center gap-4 min-w-0">
+                  <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
                     {/* number badge */}
-                    <span className="h-6 w-6 flex items-center justify-center rounded-[4px] bg-[#1E2A28] text-[10px] font-semibold text-[#DFFCF6]">
-                      {task.id}
-                    </span>
-                    <div className="w-48">
-                      <p className="text-sm font-medium text-gray-100 leading-4">
-                        {task.title}
-                      </p>
-                      <p className="text-xs text-gray-400 leading-4 mt-1">
-                        {task.description}
-                      </p>
-                    </div>
-                    {task.total > 1 && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-gray-400">
+                    <div className="flex flex-col items-center gap-1">
+                      <span
+                        className={`h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-full text-xs font-semibold ${
+                          isCompleted
+                            ? "bg-[#00D992]/20 text-[#00D992]"
+                            : "bg-[#1E2A28] text-[#DFFCF6]"
+                        }`}
+                      >
+                        {isCompleted ? <Check className="w-4 h-4" /> : task.id}
+                      </span>
+                      {task.total > 1 && (
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap">
                           {task.completed}/{task.total}
                         </span>
-                        <div className="w-24">
-                          <Progress
-                            value={progressPercent}
-                            className="h-1 bg-gray-700"
-                          />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p
+                          className={`text-sm font-medium leading-4 ${
+                            isCompleted ? "text-gray-400" : "text-gray-100"
+                          }`}
+                        >
+                          {task.title}
+                        </p>
+                        <div className="flex items-center gap-1 text-gray-100 text-xs font-medium px-2 py-0.5 rounded-full bg-[#1E2A28]/50">
+                          +{task.points}
+                          <Gem className="w-3 h-3 text-gray-400" />
                         </div>
                       </div>
-                    )}
+                      <p className="text-xs text-gray-400 leading-4 mt-1 line-clamp-2">
+                        {task.description}
+                      </p>
+                      {task.total > 1 && (
+                        <div className="w-full mt-2">
+                          <Progress
+                            value={progressPercent}
+                            className={`h-1.5 ${
+                              isCompleted ? "bg-gray-700/50" : "bg-gray-700"
+                            }`}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Right cluster */}
-                  <div className="flex items-center gap-4 flex-shrink-0">
-                    <div className="flex items-center gap-1 text-gray-100 text-sm font-medium">
-                      +{task.points}
-                      <Gem className="w-3 h-3 text-gray-400" />
-                    </div>
-                    {task.completed >= task.total ? (
+                  <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0 w-full sm:w-auto justify-end">
+                    {isCompleted ? (
                       <Button
                         size="sm"
                         disabled
                         variant="secondary"
-                        className="bg-gray-800 text-gray-400 border-gray-700 hover:bg-gray-700"
+                        className="bg-[#00D992]/10 text-[#00D992] border-[#00D992]/20 hover:bg-[#00D992]/20"
                       >
-                        Done <Check className="w-4 h-4 ml-1" />
+                        Completed <Check className="w-4 h-4 ml-1" />
                       </Button>
                     ) : (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="bg-transparent border-gray-700 text-gray-300 hover:bg-[#00D992] hover:text-[#060F11]"
+                        className="bg-transparent border-gray-700 text-gray-300 hover:bg-[#00D992] hover:text-[#060F11] w-full sm:w-auto justify-center"
                         onClick={() => handleTaskAction(task)}
                       >
-                        Finish task <ExternalLink className="w-3 h-3 ml-1" />
+                        Start Task <ExternalLink className="w-3 h-3 ml-1" />
                       </Button>
                     )}
                   </div>
@@ -238,19 +259,19 @@ export default function EarnMini() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-xl border-none bg-transparent col-span-5">
-          <CardHeader className="py-0">
-            <CardTitle className="text-neutral-100 text-lg">
+        <Card className="shadow-xl border-none bg-transparent col-span-1 lg:col-span-5">
+          <CardHeader className="py-0 px-3 sm:px-6">
+            <CardTitle className="text-neutral-100 text-base sm:text-lg">
               <TooltipInfo
                 text="Your friends earn 10 SAGE each when they join using your referral link. You will also earn 10 SAGE when they follow @0xtrendsage on X."
                 className="mr-2"
               />
               Share Your Referral Link to earn SAGE
             </CardTitle>
-          </CardHeader>{" "}
-          <CardContent className="pt-2">
+          </CardHeader>
+          <CardContent className="pt-2 px-3 sm:px-6">
             <ReferralCard referralCode={user?.referral_code || ""} />
-            <div className="grid grid-cols-3 gap-3 mt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-6">
               <Button
                 onClick={copyReferralCode}
                 className="w-full bg-gray-700/30 hover:bg-gray-600/30 text-gray-100 border border-gray-600/30 h-9 flex items-center justify-center gap-1 rounded-xl text-sm"
