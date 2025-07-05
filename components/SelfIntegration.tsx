@@ -49,17 +49,19 @@ const SelfIntegration = () => {
   }
 
   return (
-    <div className="min-h-screen bg-apple-gray p-8">
+    <div className="">
       <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-semibold mb-8 text-ai-dark">
-          Identity Verification
-        </h2>
+        <div className="flex flex-col gap-2 mb-8">
+          <h2 className="text-2xl font-semibold text-neutral-100">
+            Identity Verification
+          </h2>
+          <p className="text-neutral-400">
+            Scan the QR code below to verify your identity
+          </p>
+        </div>
 
         {!verificationData ? (
           <div className="bg-white rounded-lg p-8 shadow-lg">
-            <p className="text-gray-600 mb-6">
-              Scan the QR code below to verify your identity
-            </p>
             <div className="flex justify-center">
               <SelfQRcodeWrapper
                 selfApp={selfApp}

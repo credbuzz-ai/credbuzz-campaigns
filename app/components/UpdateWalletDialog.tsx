@@ -66,12 +66,12 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
   };
 
   return (
-    <DialogContent className="bg-gray-900 border-gray-800">
+    <DialogContent className="bg-neutral-900 border-neutral-700">
       <DialogHeader>
-        <DialogTitle className="text-gray-100">
+        <DialogTitle className="text-neutral-100">
           Update Wallet Addresses
         </DialogTitle>
-        <DialogDescription className="text-gray-400">
+        <DialogDescription className="text-neutral-400">
           Enter your EVM, Solana and Celo wallet addresses below.
         </DialogDescription>
       </DialogHeader>
@@ -79,7 +79,7 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
         <div>
           <label
             htmlFor="evmWallet"
-            className="text-sm text-gray-300 block mb-2"
+            className="text-sm text-neutral-300 block mb-2"
           >
             EVM Wallet Address
           </label>
@@ -88,13 +88,13 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
             value={evmWallet}
             onChange={(e) => setEvmWallet(e.target.value)}
             placeholder="0x..."
-            className="bg-gray-800 border-gray-700 text-gray-100"
+            className="bg-neutral-800 border-neutral-700 text-neutral-100"
           />
         </div>
         <div>
           <label
             htmlFor="solanaWallet"
-            className="text-sm text-gray-300 block mb-2"
+            className="text-sm text-neutral-300 block mb-2"
           >
             Solana Wallet Address
           </label>
@@ -103,13 +103,13 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
             value={solanaWallet}
             onChange={(e) => setSolanaWallet(e.target.value)}
             placeholder="Solana address..."
-            className="bg-gray-800 border-gray-700 text-gray-100"
+            className="bg-neutral-800 border-neutral-700 text-neutral-100"
           />
         </div>
         <div>
           <label
             htmlFor="celoWallet"
-            className="text-sm text-gray-300 block mb-2"
+            className="text-sm text-neutral-300 block mb-2"
           >
             Celo Wallet Address
           </label>
@@ -118,7 +118,7 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
             value={celoWallet}
             onChange={(e) => setCeloWallet(e.target.value)}
             placeholder="Celo address..."
-            className="bg-gray-800 border-gray-700 text-gray-100"
+            className="bg-neutral-800 border-neutral-700 text-neutral-100"
           />
         </div>
         <div className="flex justify-end gap-3">
@@ -126,14 +126,14 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
             type="button"
             variant="outline"
             onClick={onClose}
-            className="bg-transparent border-gray-700 text-gray-300 hover:bg-gray-800"
+            className="bg-transparent border-neutral-700 text-neutral-300 hover:bg-neutral-800"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             disabled={isLoading}
-            className="bg-[#00D992] text-gray-900 hover:bg-[#00D992]/90"
+            className="bg-[#00D992] text-neutral-900 hover:bg-[#00D992]/90"
           >
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin mr-2" />
