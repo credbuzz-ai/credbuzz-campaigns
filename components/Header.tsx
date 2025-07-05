@@ -75,7 +75,7 @@ export default function Header() {
 
   return (
     <header
-      className={` w-full z-50 transition-all duration-300  ${
+      className={`absolute md:sticky top-0 left-0 w-full z-50 transition-all duration-300  ${
         scrolled
           ? "bg-gray-900/70 backdrop-blur-lg shadow-lg border-b border-gray-800/60"
           : "bg-transparent backdrop-blur-xl border-b border-gray-700/50"
@@ -245,7 +245,7 @@ export default function Header() {
 
         {/* Mobile slide-down menu */}
         <div
-          className={`md:hidden overflow-hidden absolute top-16 left-0 bg-black/90 backdrop-blur-xl w-full border-t  border-gray-700/50 transition-all duration-300 ease-in-out z-[100] ${
+          className={`md:hidden overflow-hidden  w-full border-t  border-gray-700/50 transition-all duration-300 ease-in-out z-[100] ${
             isMenuOpen ? "h-screen" : "max-h-0"
           }`}
           style={{ transitionProperty: "max-height" }}

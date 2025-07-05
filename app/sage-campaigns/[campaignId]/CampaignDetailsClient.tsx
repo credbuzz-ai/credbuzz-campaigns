@@ -444,7 +444,7 @@ export default function CampaignDetailsClient({
     : campaign?.owner_x_handle.replace("@", "").toLowerCase();
 
   return (
-    <div className="min-h-screen bg-neutral-900">
+    <div className="min-h-screen bg-neutral-900 mt-16 md:mt-0">
       <div className="flex items-start">
         {/* Main Content */}
         <div className="flex-1 py-4 md:py-8 px-0 md:px-8 lg:px-12">

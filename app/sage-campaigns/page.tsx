@@ -39,7 +39,7 @@ export default function BuzzBoard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-900 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-neutral-900 py-8 px-4 sm:px-6 lg:px-8 mt-16 md:mt-0">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-0 md:mb-8">
