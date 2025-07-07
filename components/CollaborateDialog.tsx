@@ -74,8 +74,13 @@ export default function CollaborateDialog({
       console.error("Error connecting wallet:", error);
     },
   });
-  const { createNewCampaign, transferToken, contract, getERC20TokenInfo } =
-    useContract();
+  const {
+    createTargetedCampaign,
+    createPublicCampaign,
+    contract,
+    getERC20TokenInfo,
+    approveToken,
+  } = useContract();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -101,7 +106,7 @@ export default function CollaborateDialog({
       campaign_type: mode === "targeted" ? "Targeted" : "Public",
       campaign_name: "",
       description: "",
-      status: mode === "targeted" ? "OPEN" : "PUBLISHED",
+      status: "Ongoing",
       payment_token: "",
       payment_token_address: "",
       payment_token_decimals: 0,
@@ -299,7 +304,7 @@ export default function CollaborateDialog({
       influencer_wallet:
         mode === "targeted" ? influencerWalletAddr : CREDBUZZ_ACCOUNT,
       campaign_type: campaignType,
-      status: mode === "targeted" ? "OPEN" : "PUBLISHED",
+      status: "Ongoing",
       influencer_x_handle: mode === "targeted" ? influencerHandle : undefined,
       target_x_handle:
         mode === "targeted" ? influencerHandle : data.target_x_handle,
@@ -329,28 +334,24 @@ export default function CollaborateDialog({
         ethers.parseUnits(data.amount?.toString() || "0", decimals)
       );
 
-      // 1. First transfer tokens to contract
-      await transferToken(data.payment_token_address || "", amountInWei);
+      // 1. First approve tokens for contract
+      await approveToken(data.payment_token_address || "", amountInWei);
 
       // 2. Create campaign on blockchain
-      const txHash = await createNewCampaign(
-        mode === "targeted" ? influencerWalletAddr : CREDBUZZ_ACCOUNT,
-        amountInWei,
-        convertToTimestamp(data.offer_end_date),
-        convertToTimestamp(data.offer_end_date),
-        data.payment_token_address || ""
-      );
-
-      toast({
-        title: "Transaction Submitted",
-        description: "Waiting for blockchain confirmation...",
-      });
+      await (mode === "targeted"
+        ? createTargetedCampaign(
+            influencerWalletAddr,
+            amountInWei,
+            convertToTimestamp(data.offer_end_date),
+            data.payment_token_address || ""
+          )
+        : createPublicCampaign(
+            convertToTimestamp(data.offer_end_date),
+            amountInWei,
+            data.payment_token_address || ""
+          ));
     } catch (error) {
       console.error("Error creating campaign:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create campaign. Please try again.",
-      });
       setIsSubmitting(false);
     }
   };
@@ -371,7 +372,7 @@ export default function CollaborateDialog({
         campaign_type: data.campaign_type,
         campaign_name: data.campaign_name,
         description: data.description,
-        status: data.campaign_type === "Targeted" ? "OPEN" : "PUBLISHED",
+        status: "Ongoing",
         payment_token: data.payment_token,
         payment_token_address: data.payment_token_address,
         payment_token_decimals: data.payment_token_decimals,
@@ -418,21 +419,26 @@ export default function CollaborateDialog({
   useEffect(() => {
     if (!contract) return;
 
-    const handleCampaignEvent = (campaignId: string) => {
+    const handleTargetedCampaignEvent = (campaignId: string) => {
       if (apiCallInProgressRef.current) return;
       apiCallInProgressRef.current = true;
-
       handleCampaignCreated(campaignId);
     };
 
-    // Listen for both CampaignCreated and OpenCampaignCreated events
-    contract.on("CampaignCreated", handleCampaignEvent);
-    contract.on("OpenCampaignCreated", handleCampaignEvent);
+    const handlePublicCampaignEvent = (campaignId: string) => {
+      if (apiCallInProgressRef.current) return;
+      apiCallInProgressRef.current = true;
+      handleCampaignCreated(campaignId);
+    };
+
+    // Listen for both campaign creation events
+    contract.on("TargetedCampaignCreated", handleTargetedCampaignEvent);
+    contract.on("PublicCampaignCreated", handlePublicCampaignEvent);
 
     return () => {
       // Clean up both event listeners
-      contract.off("CampaignCreated", handleCampaignEvent);
-      contract.off("OpenCampaignCreated", handleCampaignEvent);
+      contract.off("TargetedCampaignCreated", handleTargetedCampaignEvent);
+      contract.off("PublicCampaignCreated", handlePublicCampaignEvent);
       apiCallInProgressRef.current = false;
     };
   }, [contract]);
@@ -766,7 +772,7 @@ export default function CollaborateDialog({
                       <Input
                         {...field}
                         type="datetime-local"
-                        className="bg-neutral-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                        className="bg-neutral-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9 [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[1] [&::-webkit-calendar-picker-indicator]:hover:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100"
                         min={getCurrentDateTime()}
                         onChange={(e) => {
                           // Convert to simple datetime string

@@ -18,6 +18,9 @@ const initialSignupData: UserType = {
   solana_wallet: "",
   referral_code_used: "",
   referral_code: "",
+  celo_wallet: "",
+  referrals: [],
+  partial_referrals: [],
 };
 
 const SignupContext = createContext<SignupContextType | undefined>(undefined);
@@ -69,8 +72,7 @@ export const SignupProvider: React.FC<{ children: ReactNode }> = ({
       if (axios.isAxiosError(error)) {
         localStorage.removeItem("referral_code");
         toast({
-          title: "Error Creating Account",
-          description: "Please try again",
+          title: "Please try again.",
         });
       }
       return false;

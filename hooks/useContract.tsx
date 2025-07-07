@@ -60,20 +60,13 @@ export const useContract = () => {
   }, [walletProvider]);
 
   // Campaign Functions
-  const createNewCampaign = async (
-    selectedInfluencer: string,
+  const createTargetedCampaign = async (
+    selectedKol: string,
     offeringAmount: number,
-    promotionEndsIn: number,
     offerEndsIn: number,
     tokenAddress: string
   ) => {
-    if (
-      !selectedInfluencer ||
-      !offeringAmount ||
-      !promotionEndsIn ||
-      !offerEndsIn ||
-      !tokenAddress
-    ) {
+    if (!selectedKol || !offeringAmount || !offerEndsIn || !tokenAddress) {
       toast({
         title: "All fields are required",
         description: "Please fill all the fields to create a campaign",
@@ -83,10 +76,9 @@ export const useContract = () => {
 
     try {
       if (!contract) throw new Error("Contract not initialized");
-      const tx = await contract.createNewCampaign(
-        selectedInfluencer,
+      const tx = await contract.createTargetedCampaign(
+        selectedKol,
         offeringAmount,
-        promotionEndsIn,
         offerEndsIn,
         tokenAddress,
         { gasLimit: GAS_LIMIT }
@@ -99,12 +91,12 @@ export const useContract = () => {
     }
   };
 
-  const createOpenCampaign = async (
-    promotionEndsIn: number,
+  const createPublicCampaign = async (
+    offerEndsIn: number,
     poolAmount: number,
     tokenAddress: string
   ) => {
-    if (!promotionEndsIn || !poolAmount || !tokenAddress) {
+    if (!offerEndsIn || !poolAmount || !tokenAddress) {
       toast({
         title: "All fields are required",
         description: "Please fill all the fields to create an open campaign",
@@ -114,8 +106,8 @@ export const useContract = () => {
 
     try {
       if (!contract) throw new Error("Contract not initialized");
-      const tx = await contract.createOpenCampaign(
-        promotionEndsIn,
+      const tx = await contract.createPublicCampaign(
+        offerEndsIn,
         poolAmount,
         tokenAddress,
         { gasLimit: GAS_LIMIT }
@@ -123,25 +115,18 @@ export const useContract = () => {
       await tx.wait();
       return tx.hash;
     } catch (error) {
-      console.error("Error creating open campaign:", error);
+      console.error("Error creating public campaign:", error);
       throw error;
     }
   };
 
-  const updateCampaign = async (
+  const updateTargetedCampaign = async (
     campaignId: string,
-    selectedInfluencer: string,
-    promotionEndsIn: number,
+    selectedKol: string,
     offerEndsIn: number,
-    newAmount: number
+    newAmountOffered: number
   ) => {
-    if (
-      !campaignId ||
-      !selectedInfluencer ||
-      !newAmount ||
-      !promotionEndsIn ||
-      !offerEndsIn
-    ) {
+    if (!campaignId || !selectedKol || !newAmountOffered || !offerEndsIn) {
       toast({
         title: "All fields are required",
         description: "Please fill all the fields to update a campaign",
@@ -150,12 +135,11 @@ export const useContract = () => {
     }
     try {
       if (!contract) throw new Error("Contract not initialized");
-      const tx = await contract.updateCampaign(
+      const tx = await contract.updateTargetedCampaign(
         campaignId,
-        selectedInfluencer,
-        promotionEndsIn,
+        selectedKol,
         offerEndsIn,
-        newAmount,
+        newAmountOffered,
         { gasLimit: GAS_LIMIT }
       );
       await tx.wait();
@@ -166,129 +150,154 @@ export const useContract = () => {
     }
   };
 
-  const updateOpenCampaign = async (
-    campaignId: string,
-    promotionEndsIn: number,
-    poolAmount: number,
-    status: number // 1 for FULFILLED, 2 for DISCARDED
-  ) => {
-    if (!campaignId || !promotionEndsIn || !poolAmount) {
+  const fulfilTargetedCampaign = async (campaignId: string) => {
+    if (!campaignId) {
       toast({
-        title: "All fields are required",
-        description: "Please fill all the fields to update an open campaign",
+        title: "Campaign ID is required",
+        description: "Please provide a campaign ID to fulfill",
       });
       return;
     }
     try {
       if (!contract) throw new Error("Contract not initialized");
-      const tx = await contract.updateOpenCampaign(
-        campaignId,
-        promotionEndsIn,
-        poolAmount,
-        status,
-        { gasLimit: GAS_LIMIT }
-      );
+      const tx = await contract.fulfilTargetedCampaign(campaignId, {
+        gasLimit: GAS_LIMIT,
+      });
       await tx.wait();
       return tx.hash;
-    } catch (error) {
-      console.error("Error updating open campaign:", error);
-      throw error;
-    }
-  };
-
-  // Owner Functions
-  const acceptProjectCampaign = async (campaignId: string) => {
-    if (!campaignId) {
-      toast({
-        title: "Campaign ID is required",
-        description: "Please fill all the fields to accept a campaign",
-      });
-      return;
-    }
-
-    try {
-      if (!contract) throw new Error("Contract not initialized");
-      const tx = await contract.acceptProjectCampaign(campaignId, {
-        gasLimit: GAS_LIMIT,
-      });
-      await tx.wait();
-      return tx;
-    } catch (error) {
-      console.error("Error accepting campaign:", error);
-      throw error;
-    }
-  };
-
-  const fulfilProjectCampaign = async (campaignId: string) => {
-    if (!campaignId) {
-      toast({
-        title: "Campaign ID is required",
-        description: "Please fill all the fields to fulfil a campaign",
-      });
-      return;
-    }
-
-    try {
-      if (!contract) throw new Error("Contract not initialized");
-      const tx = await contract.fulfilProjectCampaign(campaignId, {
-        gasLimit: GAS_LIMIT,
-      });
-      await tx.wait();
-      return tx;
     } catch (error) {
       console.error("Error fulfilling campaign:", error);
       throw error;
     }
   };
 
-  const discardCampaign = async (campaignId: string) => {
+  const discardTargetedCampaign = async (campaignId: string) => {
     if (!campaignId) {
       toast({
         title: "Campaign ID is required",
-        description: "Please fill all the fields to discard a campaign",
+        description: "Please provide a campaign ID to discard",
       });
       return;
     }
-
     try {
       if (!contract) throw new Error("Contract not initialized");
-      const tx = await contract.discardCampaign(campaignId, {
+      const tx = await contract.discardTargetedCampaign(campaignId, {
         gasLimit: GAS_LIMIT,
       });
       await tx.wait();
-      return tx;
+      return tx.hash;
     } catch (error) {
       console.error("Error discarding campaign:", error);
       throw error;
     }
   };
-  // Modify transfer function to handle different tokens
-  const transferToken = async (tokenAddress: string, amount: number) => {
-    if (!amount || !tokenAddress) {
+
+  const completePublicCampaign = async (campaignId: string) => {
+    if (!campaignId) {
       toast({
-        title: "Amount and token address are required",
-        description: "Please provide all required fields for token transfer",
+        title: "Campaign ID is required",
+        description: "Please provide a campaign ID to complete",
       });
       return;
     }
     try {
       if (!contract) throw new Error("Contract not initialized");
-      const contractSigner = await walletProvider?.getSigner();
-      const tokenContract = new ethers.Contract(
-        tokenAddress,
-        IERC20Abi,
-        contractSigner
-      );
-      const tx = await tokenContract.transfer(CONTRACT_ADDRESS, amount);
+      const tx = await contract.completePublicCampaign(campaignId, {
+        gasLimit: GAS_LIMIT,
+      });
       await tx.wait();
-      return tx;
+      return tx.hash;
     } catch (error) {
-      console.error("Error transferring tokens:", error);
+      console.error("Error completing public campaign:", error);
       throw error;
     }
   };
 
-  // Fetch ERC20 token info (name, symbol, decimals)
+  const discardPublicCampaign = async (campaignId: string) => {
+    if (!campaignId) {
+      toast({
+        title: "Campaign ID is required",
+        description: "Please provide a campaign ID to discard",
+      });
+      return;
+    }
+    try {
+      if (!contract) throw new Error("Contract not initialized");
+      const tx = await contract.discardPublicCampaign(campaignId, {
+        gasLimit: GAS_LIMIT,
+      });
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      console.error("Error discarding public campaign:", error);
+      throw error;
+    }
+  };
+
+  // Getter functions
+  const getTargetedCampaignsPaginated = async (
+    offset: number,
+    limit: number
+  ) => {
+    try {
+      if (!contract) throw new Error("Contract not initialized");
+      return await contract.getTargetedCampaignsPaginated(offset, limit);
+    } catch (error) {
+      console.error("Error getting targeted campaigns:", error);
+      throw error;
+    }
+  };
+
+  const getUserTargetedCampaigns = async (userAddress: string) => {
+    try {
+      if (!contract) throw new Error("Contract not initialized");
+      return await contract.getUserTargetedCampaigns(userAddress);
+    } catch (error) {
+      console.error("Error getting user targeted campaigns:", error);
+      throw error;
+    }
+  };
+
+  const getTargetedCampaignInfo = async (campaignId: string) => {
+    try {
+      if (!contract) throw new Error("Contract not initialized");
+      return await contract.getTargetedCampaignInfo(campaignId);
+    } catch (error) {
+      console.error("Error getting targeted campaign info:", error);
+      throw error;
+    }
+  };
+
+  const getPublicCampaignsPaginated = async (offset: number, limit: number) => {
+    try {
+      if (!contract) throw new Error("Contract not initialized");
+      return await contract.getPublicCampaignsPaginated(offset, limit);
+    } catch (error) {
+      console.error("Error getting public campaigns:", error);
+      throw error;
+    }
+  };
+
+  const getUserPublicCampaigns = async (userAddress: string) => {
+    try {
+      if (!contract) throw new Error("Contract not initialized");
+      return await contract.getUserPublicCampaigns(userAddress);
+    } catch (error) {
+      console.error("Error getting user public campaigns:", error);
+      throw error;
+    }
+  };
+
+  const getPublicCampaignInfo = async (campaignId: string) => {
+    try {
+      if (!contract) throw new Error("Contract not initialized");
+      return await contract.getPublicCampaignInfo(campaignId);
+    } catch (error) {
+      console.error("Error getting public campaign info:", error);
+      throw error;
+    }
+  };
+
   const getERC20TokenInfo = async (tokenAddress: string) => {
     try {
       if (!walletProvider) throw new Error("Wallet provider not initialized");
@@ -310,23 +319,49 @@ export const useContract = () => {
     }
   };
 
+  const approveToken = async (tokenAddress: string, amount: number) => {
+    try {
+      if (!walletProvider) throw new Error("Wallet provider not initialized");
+      const contractSigner = await walletProvider.getSigner();
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        IERC20Abi,
+        contractSigner
+      );
+
+      const tx = await tokenContract.approve(CONTRACT_ADDRESS, amount);
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      console.error("Error approving token:", error);
+      throw error;
+    }
+  };
+
   return {
     contract,
     isConnected,
     isInitializing,
     walletProvider,
-    // contract functions
+    // Contract initialization
     initContract,
     // Campaign Functions
-    createNewCampaign,
-    createOpenCampaign,
-    updateCampaign,
-    updateOpenCampaign,
-    // Owner Functions
-    acceptProjectCampaign,
-    fulfilProjectCampaign,
-    discardCampaign,
-    transferToken,
+    createTargetedCampaign,
+    createPublicCampaign,
+    updateTargetedCampaign,
+    fulfilTargetedCampaign,
+    discardTargetedCampaign,
+    completePublicCampaign,
+    discardPublicCampaign,
+    // Getter Functions
+    getTargetedCampaignsPaginated,
+    getUserTargetedCampaigns,
+    getTargetedCampaignInfo,
+    getPublicCampaignsPaginated,
+    getUserPublicCampaigns,
+    getPublicCampaignInfo,
+    // Token Functions
+    approveToken,
     getERC20TokenInfo,
   };
 };
