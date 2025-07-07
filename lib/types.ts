@@ -47,6 +47,12 @@ export interface Campaign {
   ignore_accounts?: string;
 }
 
+export type ReferralEntry = {
+  x_handle: string;
+  used_time: string;
+  remaining_action: string;
+};
+
 export type UserType = {
   x_handle: string;
   evm_wallet: string;
@@ -68,6 +74,8 @@ export type UserType = {
   smart_followers?: number;
   engagement_score?: number;
   mindshare?: number;
+  referrals: ReferralEntry[];
+  partial_referrals: ReferralEntry[];
 };
 
 export interface HeatmapData {

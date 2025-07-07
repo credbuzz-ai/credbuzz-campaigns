@@ -1,3 +1,4 @@
+import { ReferralTable } from "@/app/components/ReferralTable";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -306,6 +307,23 @@ export default function EarnMini() {
                 <span>Telegram</span>
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Referral Stats Card */}
+        <Card className="col-span-1 lg:col-span-12 border-neutral-700">
+          <CardHeader className="p-3 sm:p-4">
+            <CardTitle className="text-[#DFFCF6] text-base font-medium flex items-center gap-2">
+              Your Referrals
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4">
+            {user?.referrals && (
+              <ReferralTable
+                referrals={user.referrals}
+                partialReferrals={user.partial_referrals || []}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
