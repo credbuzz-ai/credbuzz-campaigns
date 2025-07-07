@@ -33,6 +33,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import UpdateWalletDialog from "../components/UpdateWalletDialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MyCampaigns() {
   const router = useRouter();
@@ -156,10 +157,120 @@ export default function MyCampaigns() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-[#00D992] mx-auto mb-4" />
-          <p className="text-gray-400">Loading your campaigns...</p>
+      <div className="min-h-screen bg-neutral-900">
+        <div className="max-w-6xl mx-auto px-4 sm:px-0 lg:px-0 py-8 pt-20 sm:pt-8">
+          {/* Profile Header Skeleton */}
+          <div className="flex flex-col lg:flex-row justify-between gap-6 items-start mb-6">
+            <div className="flex flex-col gap-4 sm:gap-8 w-full">
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                <Skeleton className="w-16 sm:w-20 h-16 sm:h-20 rounded-lg" />
+                <div className="flex flex-col gap-1 sm:gap-2 items-center sm:items-start">
+                  <Skeleton className="h-8 w-48" />
+                  <Skeleton className="h-5 w-32" />
+                </div>
+              </div>
+              <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3">
+                <Skeleton className="h-9 w-32" />
+                <Skeleton className="h-9 w-32" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            </div>
+            <div className="w-full lg:w-60 flex flex-col gap-2">
+              <Skeleton className="h-16 w-full" />
+              <Skeleton className="h-16 w-full" />
+            </div>
+          </div>
+
+          {/* Tab Navigation Skeleton */}
+          <div className="border-b border-gray-700 mb-8">
+            <div className="flex justify-between items-center">
+              <nav className="-mb-px flex space-x-8">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+              </nav>
+            </div>
+          </div>
+
+          {/* Earn SAGE Section Skeleton */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Section - SAGE Stats and Tasks */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Total SAGE Earned */}
+              <div className="bg-neutral-800/20 rounded-lg p-6">
+                <Skeleton className="h-5 w-32 mb-2" />{" "}
+                {/* "Total SAGE earned" text */}
+                <Skeleton className="h-12 w-24" /> {/* Large number */}
+              </div>
+
+              {/* Tasks for SAGE */}
+              <div className="space-y-4">
+                <Skeleton className="h-5 w-32" /> {/* "Tasks for SAGE" text */}
+                {/* Task Items */}
+                <div className="space-y-4">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="bg-neutral-800/20 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-6 w-6 rounded-full" />
+                          <Skeleton className="h-5 w-32" />
+                        </div>
+                        <Skeleton className="h-8 w-24" />
+                      </div>
+                      <Skeleton className="h-2 w-full rounded-full" />{" "}
+                      {/* Progress bar */}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Referrals Table */}
+              <div className="bg-neutral-800/20 rounded-lg p-4">
+                <Skeleton className="h-6 w-32 mb-4" />{" "}
+                {/* "Your Referrals" text */}
+                <div className="grid grid-cols-4 gap-4 mb-3">
+                  <Skeleton className="h-5 w-20" /> {/* X Handle */}
+                  <Skeleton className="h-5 w-24" /> {/* Used Time */}
+                  <Skeleton className="h-5 w-16" /> {/* Status */}
+                  <Skeleton className="h-5 w-32" /> {/* Remaining Action */}
+                </div>
+                {[1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="grid grid-cols-4 gap-4 py-3 border-t border-neutral-700"
+                  >
+                    <Skeleton className="h-5 w-24" />
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-24" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right Section - Share Referral Card */}
+            <div className="lg:col-span-1">
+              <div className="bg-neutral-800/20 rounded-lg p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <Skeleton className="h-5 w-5" /> {/* Icon */}
+                  <Skeleton className="h-5 w-48" /> {/* Title */}
+                </div>
+                <div className="flex items-center gap-4 mb-6">
+                  <Skeleton className="h-16 w-16 rounded-lg" /> {/* Avatar */}
+                  <div className="flex-1">
+                    <Skeleton className="h-5 w-32 mb-2" />
+                    <Skeleton className="h-4 w-48" />
+                  </div>
+                </div>
+                <Skeleton className="h-10 w-full mb-4" /> {/* Claim button */}
+                <div className="flex gap-2">
+                  <Skeleton className="h-9 flex-1" />
+                  <Skeleton className="h-9 flex-1" />
+                  <Skeleton className="h-9 flex-1" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -323,7 +434,7 @@ export default function MyCampaigns() {
 
   return (
     <div className="min-h-screen bg-neutral-900">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-20 sm:pt-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-0 lg:px-0 py-8 pt-20 sm:pt-8">
         {/* Profile Header */}
         {user && (
           <div className="flex flex-col lg:flex-row justify-between gap-6 items-start mb-6">
