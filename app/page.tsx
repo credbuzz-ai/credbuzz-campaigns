@@ -8,7 +8,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen relative">
       {/* Background Image */}
-      <div className="pointer-events-none select-none absolute inset-0 -z-10 bg-[url('/landingPageBg.png')] bg-cover bg-center" />
+      <div className="pointer-events-none select-none absolute inset-0 -z-10 bg-[url('/landingPageBg.png')] bg-cover bg-center opacity-40" />
 
       <Suspense fallback={null}>
         <ReferralHandler />
@@ -16,7 +16,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative pt-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-3xl mx-auto text-center">
           {/* Centered Logo */}
           <Link
             href="/"
@@ -171,7 +171,7 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
         {/* CTA Buttons */}
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-3xl mx-auto text-center">
           <h2 className="text-4xl font-bold text-gray-100 mb-6">
             Ready to Transform Your Marketing?
           </h2>
