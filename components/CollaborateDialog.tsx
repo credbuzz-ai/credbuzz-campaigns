@@ -772,7 +772,7 @@ export default function CollaborateDialog({
                       <Input
                         {...field}
                         type="datetime-local"
-                        className="bg-neutral-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9"
+                        className="bg-neutral-800 border-gray-600 text-gray-100 placeholder:text-gray-500 focus:border-[#00D992] focus:ring-1 focus:ring-[#00D992] h-9 [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert-[1] [&::-webkit-calendar-picker-indicator]:hover:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100"
                         min={getCurrentDateTime()}
                         onChange={(e) => {
                           // Convert to simple datetime string
