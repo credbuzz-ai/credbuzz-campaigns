@@ -852,7 +852,7 @@ export default function MindshareVisualization({
 
   return (
     <div className="p-4 max-w-[calc(100vw)] bg-neutral-900 border border-neutral-600 border-dashed border-t-0 border-r-0 ">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between ">
         <div className="space-y-2">
           <h3 className="text-base font-semibold text-neutral-100">
             Mindshare
@@ -917,7 +917,7 @@ export default function MindshareVisualization({
         </div>
       </div>
 
-      <div className="w-full h-[500px] relative" ref={chartRef}>
+      <div className="w-full h-[513px] relative" ref={chartRef}>
         {/* Loading Overlay */}
         {showLoadingOverlay && (
           <div className="absolute inset-0 bg-gray-800/50 rounded-lg animate-pulse flex items-center justify-center z-10">

@@ -134,7 +134,7 @@ export default function CampaignDetailsPage() {
 
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-gray-900">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Campaign Header */}
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <div className="p-6">
@@ -390,7 +390,7 @@ export default function CampaignDetailsPage() {
 function CampaignSkeleton() {
   return (
     <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-gray-900">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <div className="p-6">
             <Skeleton className="h-8 w-3/4 mb-4 bg-gray-700" />

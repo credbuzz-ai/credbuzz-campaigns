@@ -448,10 +448,10 @@ export default function CampaignDetailsClient({
       <div className="flex items-start">
         {/* Main Content */}
         <div className="flex-1 py-4 md:py-8 px-0 md:px-8 lg:px-12">
-          <div className="max-w-7xl px-0 md:px-4 mx-auto">
+          <div className="max-w-6xl px-0 md:px-0 mx-auto">
             {/* Campaign Header */}
             <Card className="bg-neutral-900 border-none mb-2">
-              <div className="p-4 md:p-6">
+              <div className="p-4 md:p-6 md:px-0">
                 <div className="flex flex-col gap-6">
                   {/* Top section */}
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">

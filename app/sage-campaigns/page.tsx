@@ -39,8 +39,10 @@ export default function BuzzBoard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-900 py-8 px-4 sm:px-6 lg:px-8 mt-16 md:mt-0">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen relative py-8 px-4 sm:px-6 lg:px-8 mt-16 md:mt-0">
+      <div className="pointer-events-none select-none absolute inset-0 -z-10 bg-[url('/landingPageBg.png')] bg-cover bg-center opacity-40" />
+
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-0 md:mb-8">
           <div className="flex flex-col gap-8 md:flex-row justify-between items-start mb-0 md:mb-4">
@@ -60,12 +62,12 @@ export default function BuzzBoard() {
                 onValueChange={setSelectedStatus}
                 className="w-full"
               >
-                <TabsList className="bg-neutral-900 border border-neutral-600 p-0">
+                <TabsList className="bg-neutral-900 border border-neutral-600 p-0 h-auto">
                   {statusOptions.map((status) => (
                     <TabsTrigger
                       key={status}
                       value={status}
-                      className="data-[state=active]:bg-neutral-700 hover:bg-neutral-700"
+                      className="data-[state=active]:bg-neutral-700 hover:bg-neutral-700 px-3 py-2 rounded-none"
                     >
                       {status}
                     </TabsTrigger>

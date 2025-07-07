@@ -81,7 +81,7 @@ export default function Header() {
           : "bg-transparent backdrop-blur-xl border-b border-gray-700/50"
       }`}
     >
-      <div className="max-w-6xl mx-auto ">
+      <div className="max-w-6xl mx-auto px-4 md:px-0">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2 group">
             <img
@@ -125,7 +125,7 @@ export default function Header() {
                   onClick={() =>
                     setIsProfileDropdownOpen(!isProfileDropdownOpen)
                   }
-                  className="w-8 h-8 rounded-full border-2 border-transparent hover:border-[#00D992]/50 transition-all"
+                  className="w-8 h-8 rounded-full border-2 border-transparent hover:border-brand-600/50 transition-all"
                 >
                   <img
                     src={getProfileImage()}
@@ -138,14 +138,14 @@ export default function Header() {
                   />
                 </button>
                 {isProfileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
-                    <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700">
+                  <div className="absolute right-0 mt-2 w-48 bg-navbarBackground border border-neutral-600 rounded-lg shadow-lg py-1 z-50">
+                    <div className="px-4 py-2 text-xs text-neutral-200 border-b border-neutral-600">
                       {getDisplayName()}
                     </div>
                     <Link
                       href="/my-campaigns"
                       onClick={() => setIsProfileDropdownOpen(false)}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 hover:text-[#00D992] transition-colors flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-neutral-100 hover:bg-neutral-700 hover:text-brand-600 transition-colors flex items-center gap-2"
                     >
                       <Briefcase className="w-4 h-4" />
                       Profile & Campaigns
@@ -155,7 +155,7 @@ export default function Header() {
                         logout();
                         setIsProfileDropdownOpen(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 hover:text-[#00D992] transition-colors flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-neutral-100 hover:bg-neutral-700 hover:text-brand-600 transition-colors flex items-center gap-2"
                     >
                       <Power className="w-4 h-4" />
                       Sign out
@@ -184,7 +184,7 @@ export default function Header() {
                   onClick={() =>
                     setIsMobileProfileDropdownOpen(!isMobileProfileDropdownOpen)
                   }
-                  className="w-8 h-8 rounded-full border-2 border-transparent hover:border-[#00D992]/50 transition-all"
+                  className="w-8 h-8 rounded-full border-2 border-transparent hover:border-brand-600/50 transition-all"
                 >
                   <img
                     src={getProfileImage()}
@@ -197,8 +197,8 @@ export default function Header() {
                   />
                 </button>
                 {isMobileProfileDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg py-1 z-50">
-                    <div className="px-4 py-2 text-xs text-gray-400 border-b border-gray-700 truncate">
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-navbarBackground border border-neutral-600 rounded-lg shadow-lg py-1 z-50">
+                    <div className="px-4 py-2 text-xs text-neutral-200 border-b border-neutral-600 truncate">
                       {getDisplayName()}
                     </div>
                     <Link
@@ -207,7 +207,7 @@ export default function Header() {
                         setIsMobileProfileDropdownOpen(false);
                         setIsMenuOpen(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 hover:text-[#00D992] transition-colors flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-neutral-100 hover:bg-neutral-700 hover:text-brand-600 transition-colors flex items-center gap-2"
                     >
                       <Briefcase className="w-4 h-4" />
                       Profile & Campaigns
@@ -218,7 +218,7 @@ export default function Header() {
                         setIsMobileProfileDropdownOpen(false);
                         setIsMenuOpen(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-300 hover:bg-gray-700 hover:text-[#00D992] transition-colors flex items-center gap-2"
+                      className="w-full px-4 py-2 text-left text-sm text-neutral-100 hover:bg-neutral-700 hover:text-brand-600 transition-colors flex items-center gap-2"
                     >
                       <Power className="w-4 h-4" />
                       Sign out
@@ -230,7 +230,7 @@ export default function Header() {
             {/* Hamburger */}
             {authenticated && (
               <button
-                className="text-gray-300 hover:text-[#00D992] transition-colors duration-300 focus:outline-none"
+                className="text-neutral-100 hover:text-brand-600 transition-colors duration-300 focus:outline-none"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
               >
                 {isMenuOpen ? (
