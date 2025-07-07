@@ -1,28 +1,51 @@
 [
+  { "inputs": [], "stateMutability": "nonpayable", "type": "constructor" },
   {
-    "inputs": [],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
+    "inputs": [
+      { "internalType": "uint256", "name": "deadline", "type": "uint256" },
+      { "internalType": "uint256", "name": "currentTime", "type": "uint256" }
+    ],
+    "name": "CampaignExpired",
+    "type": "error"
   },
   {
     "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "required",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "available",
-        "type": "uint256"
-      }
+      { "internalType": "bytes32", "name": "campaignId", "type": "bytes32" }
+    ],
+    "name": "CampaignNotFound",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "required", "type": "uint256" },
+      { "internalType": "uint256", "name": "available", "type": "uint256" }
     ],
     "name": "ContractBalanceInsufficient",
     "type": "error"
   },
+  { "inputs": [], "name": "EnforcedPause", "type": "error" },
+  { "inputs": [], "name": "ExpectedPause", "type": "error" },
+  { "inputs": [], "name": "FundTransferError", "type": "error" },
   {
-    "inputs": [],
-    "name": "FundTransferError",
+    "inputs": [
+      { "internalType": "uint256", "name": "requiredFunds", "type": "uint256" },
+      { "internalType": "uint256", "name": "sentFunds", "type": "uint256" }
+    ],
+    "name": "InsufficientFundsError",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "provided", "type": "address" }
+    ],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "InvalidAmount",
     "type": "error"
   },
   {
@@ -43,208 +66,49 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "enum OpenCampaignStatus",
-        "name": "expected",
-        "type": "uint8"
-      },
-      {
-        "internalType": "enum OpenCampaignStatus",
-        "name": "actual",
-        "type": "uint8"
-      }
+      { "internalType": "uint256", "name": "deadline", "type": "uint256" },
+      { "internalType": "uint256", "name": "currentTime", "type": "uint256" }
     ],
-    "name": "InvalidOpenCampaignStatus",
+    "name": "InvalidDeadline",
     "type": "error"
   },
+  { "inputs": [], "name": "InvalidERC20Implementation", "type": "error" },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "owner",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "tokenAddress", "type": "address" }
+    ],
+    "name": "InvalidTokenAddress",
+    "type": "error"
+  },
+  { "inputs": [], "name": "NotAContract", "type": "error" },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "owner", "type": "address" }
     ],
     "name": "OwnableInvalidOwner",
     "type": "error"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "account",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "account", "type": "address" }
     ],
     "name": "OwnableUnauthorizedAccount",
     "type": "error"
   },
-  {
-    "inputs": [],
-    "name": "ReentrancyGuardReentrantCall",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "Unauthorized",
-    "type": "error"
-  },
+  { "inputs": [], "name": "ReentrancyGuardReentrantCall", "type": "error" },
+  { "inputs": [], "name": "Unauthorized", "type": "error" },
+  { "inputs": [], "name": "ZeroAddressToken", "type": "error" },
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      }
-    ],
-    "name": "AcceptanceDeadlineReached",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "acceptedBy",
-        "type": "address"
-      }
-    ],
-    "name": "CampaignAccepted",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "CampaignCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      }
-    ],
-    "name": "CampaignFulfilled",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "updatedBy",
-        "type": "address"
-      }
-    ],
-    "name": "CampaignUpdated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [],
-    "name": "FundWithdrawalSuccessful",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "completedBy",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "isFulfilled",
-        "type": "bool"
-      }
-    ],
-    "name": "OpenCampaignCompleted",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "poolAmount",
+        "name": "newMinimumOffering",
         "type": "uint256"
       }
     ],
-    "name": "OpenCampaignCreated",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "updatedBy",
-        "type": "address"
-      }
-    ],
-    "name": "OpenCampaignUpdated",
+    "name": "MinimumOfferingUpdated",
     "type": "event"
   },
   {
@@ -271,6 +135,19 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Paused",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "previousFees",
         "type": "uint256"
@@ -289,13 +166,19 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "bytes4",
+        "indexed": true,
+        "internalType": "bytes32",
         "name": "campaignId",
-        "type": "bytes4"
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "completedBy",
+        "type": "address"
       }
     ],
-    "name": "ProjectPaymentReturned",
+    "name": "PublicCampaignCompleted",
     "type": "event"
   },
   {
@@ -303,166 +186,216 @@
     "inputs": [
       {
         "indexed": true,
+        "internalType": "bytes32",
+        "name": "campaignId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
         "internalType": "address",
-        "name": "userAddress",
+        "name": "user",
         "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "poolAmount",
+        "type": "uint256"
       }
     ],
-    "name": "UserCreated",
+    "name": "PublicCampaignCreated",
     "type": "event"
   },
   {
+    "anonymous": false,
     "inputs": [
       {
-        "internalType": "bytes4",
+        "indexed": true,
+        "internalType": "bytes32",
         "name": "campaignId",
-        "type": "bytes4"
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "discardedBy",
+        "type": "address"
       }
     ],
-    "name": "acceptProjectCampaign",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "name": "PublicCampaignDiscarded",
+    "type": "event"
   },
   {
+    "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "campaignId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
         "internalType": "address",
-        "name": "tokenAddress",
+        "name": "updatedBy",
+        "type": "address"
+      }
+    ],
+    "name": "PublicCampaignUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "campaignId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "user",
         "type": "address"
       },
       {
+        "indexed": false,
         "internalType": "uint256",
-        "name": "decimals",
+        "name": "amount",
         "type": "uint256"
       }
     ],
-    "name": "addAllowedToken",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
+    "name": "TargetedCampaignCreated",
+    "type": "event"
   },
   {
+    "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "campaignId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
         "internalType": "address",
-        "name": "tokenAddress",
+        "name": "discardedBy",
         "type": "address"
       }
     ],
-    "name": "allowedTokens",
-    "outputs": [
+    "name": "TargetedCampaignDiscarded",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
       {
-        "internalType": "bool",
-        "name": "isTokenAllowed",
-        "type": "bool"
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "campaignId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "fulfilledBy",
+        "type": "address"
       }
     ],
+    "name": "TargetedCampaignFulfilled",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "campaignId",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "updatedBy",
+        "type": "address"
+      }
+    ],
+    "name": "TargetedCampaignUpdated",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "Unpaused",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MINIMUM_OFFERING",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
+      { "internalType": "bytes32", "name": "campaignId", "type": "bytes32" }
     ],
-    "name": "allowedTokensList",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "bool",
-        "name": "isFulfilled",
-        "type": "bool"
-      }
-    ],
-    "name": "completeOpenCampaign",
+    "name": "completePublicCampaign",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "selectedKol",
-        "type": "address"
-      },
+      { "internalType": "uint256", "name": "offerEndsIn", "type": "uint256" },
+      { "internalType": "uint256", "name": "poolAmount", "type": "uint256" },
+      { "internalType": "address", "name": "tokenAddress", "type": "address" }
+    ],
+    "name": "createPublicCampaign",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "selectedKol", "type": "address" },
       {
         "internalType": "uint256",
         "name": "offeringAmount",
         "type": "uint256"
       },
-      {
-        "internalType": "uint256",
-        "name": "promotionEndsIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "offerEndsIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
-      }
+      { "internalType": "uint256", "name": "offerEndsIn", "type": "uint256" },
+      { "internalType": "address", "name": "tokenAddress", "type": "address" }
     ],
-    "name": "createNewCampaign",
+    "name": "createTargetedCampaign",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "promotionEndsIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "poolAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
-      }
+      { "internalType": "bytes32", "name": "campaignId", "type": "bytes32" }
     ],
-    "name": "createOpenCampaign",
+    "name": "discardPublicCampaign",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      }
+      { "internalType": "bytes32", "name": "campaignId", "type": "bytes32" }
     ],
-    "name": "discardCampaign",
+    "name": "discardTargetedCampaign",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -470,63 +403,57 @@
   {
     "inputs": [],
     "name": "divider",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      }
+      { "internalType": "bytes32", "name": "campaignId", "type": "bytes32" }
     ],
-    "name": "fulfilProjectCampaign",
+    "name": "fulfilTargetedCampaign",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "getAllCampaigns",
-    "outputs": [
-      {
-        "internalType": "bytes4[]",
-        "name": "",
-        "type": "bytes4[]"
-      }
+    "inputs": [
+      { "internalType": "bytes32", "name": "campaignId", "type": "bytes32" }
     ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getAllOpenCampaigns",
+    "name": "getPublicCampaignInfo",
     "outputs": [
       {
-        "internalType": "bytes4[]",
+        "components": [
+          { "internalType": "bytes32", "name": "id", "type": "bytes32" },
+          {
+            "internalType": "address",
+            "name": "creatorAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "offerEndsIn",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "poolAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "enum CampaignStatus",
+            "name": "campaignStatus",
+            "type": "uint8"
+          }
+        ],
+        "internalType": "struct PublicCampaign",
         "name": "",
-        "type": "bytes4[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getAllowedTokens",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
+        "type": "tuple"
       }
     ],
     "stateMutability": "view",
@@ -534,26 +461,26 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      }
+      { "internalType": "uint256", "name": "offset", "type": "uint256" },
+      { "internalType": "uint256", "name": "limit", "type": "uint256" }
     ],
-    "name": "getCampaignInfo",
+    "name": "getPublicCampaignsPaginated",
+    "outputs": [
+      { "internalType": "bytes32[]", "name": "campaigns", "type": "bytes32[]" },
+      { "internalType": "uint256", "name": "total", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "campaignId", "type": "bytes32" }
+    ],
+    "name": "getTargetedCampaignInfo",
     "outputs": [
       {
         "components": [
-          {
-            "internalType": "bytes4",
-            "name": "id",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "uint256",
-            "name": "createdAt",
-            "type": "uint256"
-          },
+          { "internalType": "bytes32", "name": "id", "type": "bytes32" },
           {
             "internalType": "address",
             "name": "creatorAddress",
@@ -567,11 +494,6 @@
           {
             "internalType": "uint256",
             "name": "offerEndsIn",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "promotionEndsIn",
             "type": "uint256"
           },
           {
@@ -590,7 +512,7 @@
             "type": "uint8"
           }
         ],
-        "internalType": "struct Campaign",
+        "internalType": "struct TargetedCampaign",
         "name": "",
         "type": "tuple"
       }
@@ -600,89 +522,35 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      }
+      { "internalType": "uint256", "name": "offset", "type": "uint256" },
+      { "internalType": "uint256", "name": "limit", "type": "uint256" }
     ],
-    "name": "getOpenCampaignInfo",
+    "name": "getTargetedCampaignsPaginated",
     "outputs": [
-      {
-        "components": [
-          {
-            "internalType": "bytes4",
-            "name": "id",
-            "type": "bytes4"
-          },
-          {
-            "internalType": "address",
-            "name": "creatorAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "promotionEndsIn",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "poolAmount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "enum OpenCampaignStatus",
-            "name": "campaignStatus",
-            "type": "uint8"
-          },
-          {
-            "internalType": "address",
-            "name": "tokenAddress",
-            "type": "address"
-          }
-        ],
-        "internalType": "struct OpenCampaign",
-        "name": "",
-        "type": "tuple"
-      }
+      { "internalType": "bytes32[]", "name": "campaigns", "type": "bytes32[]" },
+      { "internalType": "uint256", "name": "total", "type": "uint256" }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "userAddress", "type": "address" }
     ],
-    "name": "getUserCampaigns",
+    "name": "getUserPublicCampaigns",
     "outputs": [
-      {
-        "internalType": "bytes4[]",
-        "name": "",
-        "type": "bytes4[]"
-      }
+      { "internalType": "bytes32[]", "name": "", "type": "bytes32[]" }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "userAddress",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "userAddress", "type": "address" }
     ],
-    "name": "getUserOpenCampaigns",
+    "name": "getUserTargetedCampaigns",
     "outputs": [
-      {
-        "internalType": "bytes4[]",
-        "name": "",
-        "type": "bytes4[]"
-      }
+      { "internalType": "bytes32[]", "name": "", "type": "bytes32[]" }
     ],
     "stateMutability": "view",
     "type": "function"
@@ -690,40 +558,29 @@
   {
     "inputs": [],
     "name": "owner",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "pause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "paused",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "platformFeesPercentage",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
-      }
-    ],
-    "name": "removeAllowedToken",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -736,29 +593,19 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
-      }
-    ],
-    "name": "tokenDecimals",
-    "outputs": [
-      {
         "internalType": "uint256",
-        "name": "tokenDecimals",
+        "name": "newMinimumOffering",
         "type": "uint256"
       }
     ],
-    "stateMutability": "view",
+    "name": "setMinimumOffering",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "newOwner",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "newOwner", "type": "address" }
     ],
     "name": "transferOwnership",
     "outputs": [],
@@ -766,75 +613,33 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "unpause",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "address",
-        "name": "selectedKol",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "promotionEndsIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "offerEndsIn",
-        "type": "uint256"
-      },
+      { "internalType": "uint256", "name": "newFees", "type": "uint256" }
+    ],
+    "name": "updatePlatformFees",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "bytes32", "name": "campaignId", "type": "bytes32" },
+      { "internalType": "address", "name": "selectedKol", "type": "address" },
+      { "internalType": "uint256", "name": "offerEndsIn", "type": "uint256" },
       {
         "internalType": "uint256",
         "name": "newAmountOffered",
         "type": "uint256"
       }
     ],
-    "name": "updateCampaign",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "bytes4",
-        "name": "campaignId",
-        "type": "bytes4"
-      },
-      {
-        "internalType": "uint256",
-        "name": "promotionEndsIn",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "poolAmount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "enum OpenCampaignStatus",
-        "name": "newStatus",
-        "type": "uint8"
-      }
-    ],
-    "name": "updateOpenCampaign",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "newFees",
-        "type": "uint256"
-      }
-    ],
-    "name": "updatePlatformFees",
+    "name": "updateTargetedCampaign",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -848,19 +653,12 @@
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "tokenAddress",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "tokenAddress", "type": "address" }
     ],
     "name": "withdrawToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
-  {
-    "stateMutability": "payable",
-    "type": "receive"
-  }
+  { "stateMutability": "payable", "type": "receive" }
 ]
