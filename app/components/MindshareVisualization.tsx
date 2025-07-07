@@ -920,7 +920,7 @@ export default function MindshareVisualization({
       <div className="w-full h-[513px] relative" ref={chartRef}>
         {/* Loading Overlay */}
         {showLoadingOverlay && (
-          <div className="absolute inset-0 bg-gray-800/50 rounded-lg animate-pulse flex items-center justify-center z-10">
+          <div className="absolute inset-0 bg-gray-800/50 rounded-lg animate-pulse flex items-center justify-center mt-2 z-10">
             <div className="flex items-center gap-3">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
               <span className="text-gray-300">Loading visualization...</span>

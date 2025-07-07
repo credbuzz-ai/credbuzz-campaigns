@@ -874,31 +874,158 @@ export default function CampaignDetailsClient({
 // Loading Skeleton Component
 function CampaignSkeleton() {
   return (
-    <div className="min-h-screen py-8 px-4 sm:px-6 lg:px-8 bg-neutral-900">
-      <div className="max-w-7xl mx-auto">
-        <Card className="bg-gray-800 border-gray-700 mb-8">
-          <div className="p-6">
-            <Skeleton className="h-8 w-3/4 mb-4 bg-gray-700" />
-            <Skeleton className="h-4 w-1/2 mb-6 bg-gray-700" />
-            <Skeleton className="h-24 w-full bg-gray-700" />
-          </div>
-        </Card>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="bg-gray-800 border-gray-700">
-              <div className="p-6">
-                <Skeleton className="h-6 w-1/3 mb-4 bg-gray-700" />
-                <div className="space-y-3">
-                  {[1, 2, 3].map((j) => (
-                    <div key={j} className="flex justify-between">
-                      <Skeleton className="h-4 w-1/3 bg-gray-700" />
-                      <Skeleton className="h-4 w-1/3 bg-gray-700" />
+    <div className="min-h-screen bg-neutral-900 mt-16 md:mt-0">
+      <div className="flex items-start">
+        {/* Main Content */}
+        <div className="flex-1 py-4 md:py-8 px-0 md:px-8 lg:px-12">
+          <div className="max-w-6xl px-0 md:px-0 mx-auto">
+            {/* Campaign Header Skeleton */}
+            <Card className="bg-neutral-900 border-none mb-2">
+              <div className="p-4 md:p-6 md:px-0">
+                <div className="flex flex-col gap-6">
+                  {/* Top section */}
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    {/* Left – logo & basic info */}
+                    <div className="flex items-start gap-4 flex-1">
+                      <Skeleton className="h-14 w-14 rounded-lg" />
+                      <div className="flex flex-col gap-2 flex-1">
+                        <div className="flex items-center flex-wrap gap-2">
+                          <Skeleton className="h-8 w-48" />
+                          <Skeleton className="h-6 w-20" />
+                          <div className="flex items-center gap-2 ml-2">
+                            {[1, 2, 3, 4].map((i) => (
+                              <Skeleton
+                                key={i}
+                                className="h-5 w-5 rounded-full"
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Skeleton className="h-6 w-24" />
+                          <Skeleton className="h-6 w-32" />
+                          <Skeleton className="h-6 w-28" />
+                        </div>
+                      </div>
                     </div>
-                  ))}
+
+                    {/* Metrics */}
+                    <div className="flex flex-row flex-wrap gap-8 sm:gap-12">
+                      <div className="flex flex-col gap-2">
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-7 w-32" />
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Skeleton className="h-5 w-32" />
+                        <Skeleton className="h-7 w-40" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap items-center gap-3">
+                    <Skeleton className="h-9 w-32" />
+                    <Skeleton className="h-9 w-40" />
+                  </div>
                 </div>
               </div>
             </Card>
-          ))}
+
+            <div className="flex flex-col md:flex-row h-full items-stretch">
+              {/* Mindshare and Followers Section */}
+              <div className="w-full md:w-[56%] flex flex-col h-full">
+                <div className="flex w-full bg-transparent rounded-none p-0 mt-4 pb-2 border-b border-neutral-600">
+                  <Skeleton className="h-12 w-32" />
+                  <Skeleton className="h-12 w-32 ml-4" />
+                </div>
+
+                {/* Mindshare Visualization Skeleton */}
+                <div className="mt-5">
+                  <div className="w-full h-[513px] bg-neutral-900 rounded-lg">
+                    <div className="max-w-[320px] md:max-w-full h-full w-full grid grid-cols-3 gap-3 p-4">
+                      {[...Array(9)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="bg-neutral-700/30 rounded-lg"
+                          style={{
+                            height: `${Math.max(50, Math.random() * 100)}%`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feed Section */}
+              <div className="w-full md:w-[44%] flex flex-col h-full">
+                {/* Filter Controls */}
+                <div className="justify-center md:justify-between pt-4 border-b border-neutral-600 pb-4 flex flex-col md:flex-row items-center md:items-center gap-4">
+                  <Skeleton className="h-10 w-48" />
+                  <Skeleton className="h-10 w-32" />
+                </div>
+
+                {/* Feed Content */}
+                <div className="mt-0 p-4 border border-neutral-600 border-dashed border-t-0 flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="inline-flex p-0 items-center bg-transparent rounded-md border border-neutral-600">
+                      <Skeleton className="h-9 w-24" />
+                      <Skeleton className="h-9 w-24 ml-2" />
+                    </div>
+                  </div>
+
+                  {/* Leaderboard Table Skeleton */}
+                  <div className="space-y-4">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-neutral-700/30">
+                          <th className="p-3">
+                            <Skeleton className="h-6 w-24" />
+                          </th>
+                          <th className="p-3">
+                            <Skeleton className="h-6 w-16" />
+                          </th>
+                          <th className="p-3">
+                            <Skeleton className="h-6 w-16" />
+                          </th>
+                          <th className="p-3">
+                            <Skeleton className="h-6 w-16" />
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...Array(5)].map((_, i) => (
+                          <tr
+                            key={i}
+                            className="border-t border-neutral-700/30"
+                          >
+                            <td className="p-3">
+                              <div className="flex items-center gap-3">
+                                <Skeleton className="h-8 w-8 rounded-full" />
+                                <div>
+                                  <Skeleton className="h-5 w-32" />
+                                  <Skeleton className="h-4 w-24 mt-1" />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <Skeleton className="h-8 w-20" />
+                            </td>
+                            <td className="p-3">
+                              <Skeleton className="h-6 w-16" />
+                            </td>
+                            <td className="p-3">
+                              <Skeleton className="h-6 w-16" />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
