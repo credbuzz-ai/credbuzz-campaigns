@@ -399,7 +399,7 @@ export default function CampaignDetailsClient({
     const now = new Date();
 
     if (endDate <= now) {
-      return "Campaign ended";
+      return "Ended";
     }
 
     const totalMinutes = Math.floor(
@@ -558,7 +558,9 @@ export default function CampaignDetailsClient({
                       </div>
                       <div className="flex flex-col gap-3">
                         <span className="text-sm text-neutral-200">
-                          Campaign ends in
+                          {campaign.status === "Ongoing"
+                            ? "Campaign ends in"
+                            : "Campaign has"}
                         </span>
                         <span className="text-sm">
                           {formatTimeRemainingDisplay(

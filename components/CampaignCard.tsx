@@ -105,7 +105,7 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
                 ? "Ends in"
                 : campaign.status.toLowerCase() === "upcoming"
                 ? "Starts in"
-                : "Ended"}
+                : "Campaign has"}
             </span>
             <span className="text-lg">
               {getTimeRemaining(campaign.offer_end_date)}
