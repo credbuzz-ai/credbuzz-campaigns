@@ -8,7 +8,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen relative">
       {/* Background Image */}
-      <div className="pointer-events-none select-none absolute inset-0 -z-10 bg-[url('/landingPageBg.png')] bg-cover bg-center opacity-50" />
+      <div className="pointer-events-none select-none absolute inset-0 -z-10 bg-[url('/landingPageBg.png')] bg-cover bg-center opacity-40" />
 
       <Suspense fallback={null}>
         <ReferralHandler />

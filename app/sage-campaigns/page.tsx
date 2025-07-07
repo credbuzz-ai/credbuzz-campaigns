@@ -2,12 +2,40 @@
 
 import CampaignCard from "@/components/CampaignCard";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
-import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const statusOptions = ["All", "Ongoing", "Completed", "Upcoming"];
+
+const CampaignCardSkeleton = () => (
+  <div className="max-w-sm bg-cardBackground p-6 rounded-md border-2 border-gray-700/30 h-full">
+    <div className="flex flex-col justify-between items-start mb-4 border-b border-gray-700/30">
+      <div className="flex items-center justify-between w-full">
+        <div className="flex items-center justify-center gap-2 text-sm">
+          <Skeleton className="h-8 w-8 rounded-full" />
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-4 w-12" />
+        </div>
+        <Skeleton className="h-6 w-20 rounded-full" />
+      </div>
+      <div className="flex items-center justify-center gap-2 text-sm my-6">
+        <Skeleton className="h-16 w-full" />
+      </div>
+    </div>
+    <div className="flex justify-between items-center text-sm">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-6 w-32" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-6 w-32" />
+      </div>
+    </div>
+  </div>
+);
 
 export default function BuzzBoard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,8 +67,10 @@ export default function BuzzBoard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-900 py-8 px-4 sm:px-6 lg:px-8 mt-16 md:mt-0">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen relative py-8 px-4 sm:px-6 lg:px-8 mt-16 md:mt-0">
+      <div className="pointer-events-none select-none absolute inset-0 -z-10 bg-[url('/landingPageBg.png')] bg-cover bg-center opacity-40" />
+
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-0 md:mb-8">
           <div className="flex flex-col gap-8 md:flex-row justify-between items-start mb-0 md:mb-4">
@@ -60,12 +90,12 @@ export default function BuzzBoard() {
                 onValueChange={setSelectedStatus}
                 className="w-full"
               >
-                <TabsList className="bg-neutral-900 border border-neutral-600 p-0">
+                <TabsList className="bg-neutral-900 border border-neutral-600 p-0 h-auto">
                   {statusOptions.map((status) => (
                     <TabsTrigger
                       key={status}
                       value={status}
-                      className="data-[state=active]:bg-neutral-700 hover:bg-neutral-700"
+                      className="data-[state=active]:bg-neutral-700 hover:bg-neutral-700 px-3 py-2 rounded-none"
                     >
                       {status}
                     </TabsTrigger>
@@ -101,11 +131,10 @@ export default function BuzzBoard() {
         </div>
         {/* Campaign Grid */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="text-gray-400 text-lg mb-2 flex items-center justify-center gap-2">
-              <Loader2 className="animate-spin" />
-              Loading campaigns...
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, index) => (
+              <CampaignCardSkeleton key={index} />
+            ))}
           </div>
         ) : filteredCampaigns.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
