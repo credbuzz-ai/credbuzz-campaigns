@@ -106,7 +106,7 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
             className="bg-neutral-800 border-neutral-700 text-neutral-100"
           />
         </div>
-        <div>
+        {/* <div>
           <label
             htmlFor="celoWallet"
             className="text-sm text-neutral-300 block mb-2"
@@ -120,7 +120,7 @@ const UpdateWalletDialog = ({ onClose }: { onClose: () => void }) => {
             placeholder="Celo address..."
             className="bg-neutral-800 border-neutral-700 text-neutral-100"
           />
-        </div>
+        </div> */}
         <div className="flex justify-end gap-3">
           <Button
             type="button"
