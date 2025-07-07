@@ -585,7 +585,7 @@ export default function MyCampaigns() {
                 </div>
               )}
 
-              {user.celo_wallet && (
+              {/* {user.celo_wallet && (
                 <div className="flex items-center justify-between w-full max-w-sm lg:max-w-none p-2 rounded-lg bg-gray-800/50 border border-gray-700">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-[#FCFF52]/10 flex items-center justify-center">
@@ -615,7 +615,7 @@ export default function MyCampaigns() {
                     <Copy className="w-4 h-4 text-gray-400" />
                   </button>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         )}
