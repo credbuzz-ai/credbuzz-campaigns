@@ -60,6 +60,23 @@ export const useContract = () => {
   }, [walletProvider]);
 
   // Campaign Functions
+  const getTokenBalance = async (tokenAddress: string) => {
+    try {
+      if (!walletProvider) throw new Error("Wallet provider not initialized");
+      const contractSigner = await walletProvider.getSigner();
+      const signerAddress = await contractSigner.getAddress();
+      const tokenContract = new ethers.Contract(
+        tokenAddress,
+        IERC20Abi,
+        contractSigner
+      );
+      return await tokenContract.balanceOf(signerAddress);
+    } catch (error) {
+      console.error("Error fetching token balance:", error);
+      throw error;
+    }
+  };
+
   const createTargetedCampaign = async (
     selectedKol: string,
     offeringAmount: number,
@@ -76,6 +93,17 @@ export const useContract = () => {
 
     try {
       if (!contract) throw new Error("Contract not initialized");
+
+      // Check token balance first
+      const balance = await getTokenBalance(tokenAddress);
+      if (balance < offeringAmount) {
+        toast({
+          title: "Insufficient balance",
+          description: `You need ${offeringAmount} tokens but only have ${balance} tokens`,
+        });
+        return;
+      }
+
       const tx = await contract.createTargetedCampaign(
         selectedKol,
         offeringAmount,
@@ -329,6 +357,15 @@ export const useContract = () => {
         contractSigner
       );
 
+      const currentAllowance = await tokenContract.allowance(
+        contractSigner.getAddress(),
+        CONTRACT_ADDRESS
+      );
+
+      if (currentAllowance >= amount) {
+        return;
+      }
+
       const tx = await tokenContract.approve(CONTRACT_ADDRESS, amount);
       await tx.wait();
       return tx.hash;
@@ -363,5 +400,6 @@ export const useContract = () => {
     // Token Functions
     approveToken,
     getERC20TokenInfo,
+    getTokenBalance,
   };
 };
