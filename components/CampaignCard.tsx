@@ -36,16 +36,33 @@ function getTimeRemaining(endDateString: string): string {
     return "Ended";
   }
 
-  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  const seconds = Math.floor((diffInMs % (1000 * 60)) / 1000);
+  const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
   const hours = Math.floor(
     (diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
   );
-  const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  const months = Math.floor(days / 30);
 
   const parts = [];
-  if (days > 0) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
-  if (hours > 0) parts.push(`${hours} hr${hours !== 1 ? "s" : ""}`);
-  if (minutes > 0) parts.push(`${minutes} min${minutes !== 1 ? "s" : ""}`);
+
+  if (days >= 30) {
+    // If more than 30 days, show months and remaining days
+    parts.push(`${months} month${months !== 1 ? "s" : ""}`);
+    const remainingDays = days % 30;
+    if (remainingDays > 0) {
+      parts.push(`${remainingDays} day${remainingDays !== 1 ? "s" : ""}`);
+    }
+  } else if (hours >= 1) {
+    // If less than 30 days but more than 1 hour
+    if (days > 0) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+    if (hours > 0) parts.push(`${hours} hr${hours !== 1 ? "s" : ""}`);
+    if (minutes > 0) parts.push(`${minutes} min${minutes !== 1 ? "s" : ""}`);
+  } else {
+    // If less than 1 hour, show minutes and seconds
+    if (minutes > 0) parts.push(`${minutes} min${minutes !== 1 ? "s" : ""}`);
+    parts.push(`${seconds} sec${seconds !== 1 ? "s" : ""}`);
+  }
 
   return parts.join(" ");
 }
