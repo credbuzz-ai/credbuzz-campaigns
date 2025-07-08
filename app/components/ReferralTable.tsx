@@ -80,14 +80,14 @@ export function ReferralTable({
 
   if (allReferrals.length === 0) {
     return (
-      <div className="rounded-lg border border-neutral-700 bg-neutral-800/30 p-8 text-center">
-        <div className="mx-auto w-12 h-12 rounded-full bg-gray-700/30 flex items-center justify-center mb-4">
-          <ExternalLink className="w-6 h-6 text-gray-400" />
+      <div className="rounded-lg border border-neutral-600 bg-neutral-900 p-8 text-center">
+        <div className="mx-auto w-12 h-12 rounded-full bg-neutral-700 flex items-center justify-center mb-4">
+          <ExternalLink className="w-6 h-6 text-neutral-400" />
         </div>
-        <h3 className="text-lg font-medium text-gray-200 mb-2">
+        <h3 className="text-lg font-medium text-neutral-200 mb-2">
           No Referrals Yet
         </h3>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-neutral-400">
           Share your referral link to start earning rewards
         </p>
       </div>
@@ -95,36 +95,36 @@ export function ReferralTable({
   }
 
   return (
-    <div className="rounded-lg border border-neutral-700 overflow-hidden">
+    <div className="rounded-lg border border-neutral-600 overflow-hidden">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-gray-800/50 border-neutral-700">
+            <TableRow className="hover:bg-neutral-800/50 border-neutral-600">
               <TableHead
-                className="cursor-pointer hover:text-gray-200 transition-colors"
+                className="cursor-pointer hover:text-neutral-200 transition-colors"
                 onClick={() => handleSort("x_handle")}
               >
                 <div className="flex items-center gap-2">
                   X Handle
-                  <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                  <ArrowUpDown className="h-4 w-4 text-neutral-400" />
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:text-gray-200 transition-colors"
+                className="cursor-pointer hover:text-neutral-200 transition-colors"
                 onClick={() => handleSort("used_time")}
               >
                 <div className="flex items-center gap-2">
                   Used Time
-                  <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                  <ArrowUpDown className="h-4 w-4 text-neutral-400" />
                 </div>
               </TableHead>
               <TableHead
-                className="cursor-pointer hover:text-gray-200 transition-colors"
+                className="cursor-pointer hover:text-neutral-200 transition-colors"
                 onClick={() => handleSort("status")}
               >
                 <div className="flex items-center gap-2">
                   Status
-                  <ArrowUpDown className="h-4 w-4 text-gray-400" />
+                  <ArrowUpDown className="h-4 w-4 text-neutral-400" />
                 </div>
               </TableHead>
               <TableHead>Remaining Action</TableHead>
@@ -134,7 +134,7 @@ export function ReferralTable({
             {allReferrals.map((referral, index) => (
               <TableRow
                 key={referral.x_handle + index}
-                className="hover:bg-gray-800/50 border-neutral-700"
+                className="hover:bg-neutral-800 border-neutral-600"
               >
                 <TableCell className="font-medium">
                   <a
@@ -144,13 +144,13 @@ export function ReferralTable({
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-[#00D992] hover:text-[#00D992]/80 transition-colors"
+                    className="flex items-center gap-2 text-brand-600 hover:text-brand-600/80 transition-colors"
                   >
                     {referral.x_handle}
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 </TableCell>
-                <TableCell className="text-gray-300">
+                <TableCell className="text-neutral-200">
                   {formatDate(referral.used_time)}
                 </TableCell>
                 <TableCell>
@@ -173,7 +173,7 @@ export function ReferralTable({
                 </TableCell>
                 <TableCell>
                   {referral.remaining_action === "NONE" ? (
-                    <div className="flex items-center gap-1.5 text-green-400">
+                    <div className="flex items-center gap-1.5 text-brand-600">
                       <Check className="h-4 w-4" />
                       <span className="text-sm">All Complete</span>
                     </div>
@@ -184,7 +184,7 @@ export function ReferralTable({
                           <div className="inline-flex items-center gap-1.5 rounded-full border border-neutral-600 px-2.5 py-0.5 text-xs font-semibold text-gray-300">
                             {referral.remaining_action === "X_FOLLOW" &&
                               "Follow on X"}
-                            <HelpCircle className="h-3 w-3 text-gray-400" />
+                            <HelpCircle className="h-3 w-3 text-neutral-200" />
                           </div>
                         </TooltipTrigger>
                         <TooltipContent>
