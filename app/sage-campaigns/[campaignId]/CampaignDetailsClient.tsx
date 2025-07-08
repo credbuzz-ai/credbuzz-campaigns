@@ -402,20 +402,38 @@ export default function CampaignDetailsClient({
       return "Ended";
     }
 
-    const totalMinutes = Math.floor(
-      (endDate.getTime() - now.getTime()) / 60000
+    const diffInMs = endDate.getTime() - now.getTime();
+    const seconds = Math.floor((diffInMs % (1000 * 60)) / 1000);
+    const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+    const hours = Math.floor(
+      (diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
     );
-    const days = Math.floor(totalMinutes / 1440);
-    const hours = Math.floor((totalMinutes % 1440) / 60);
-    const minutes = totalMinutes % 60;
+    const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+    const months = Math.floor(days / 30);
 
-    if (days > 0)
-      return `${days} ${days === 1 ? "day" : "days"} ${hours} ${
-        hours === 1 ? "hour" : "hours"
-      }`;
-    if (hours > 0)
-      return `${hours} ${hours === 1 ? "hour" : "hours"} ${minutes} minutes`;
-    return `${minutes} minutes`;
+    const parts = [];
+
+    if (days >= 30) {
+      // If more than 30 days, show months and remaining days
+      parts.push(`${months} ${months === 1 ? "month" : "months"}`);
+      const remainingDays = days % 30;
+      if (remainingDays > 0) {
+        parts.push(`${remainingDays} ${remainingDays === 1 ? "day" : "days"}`);
+      }
+    } else if (hours >= 1) {
+      // If less than 30 days but more than 1 hour
+      if (days > 0) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
+      if (hours > 0) parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
+      if (minutes > 0)
+        parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+    } else {
+      // If less than 1 hour, show minutes and seconds
+      if (minutes > 0)
+        parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+      parts.push(`${seconds} ${seconds === 1 ? "second" : "seconds"}`);
+    }
+
+    return parts.join(" ");
   };
 
   // Helper to format time remaining string with different styles for numbers and labels
