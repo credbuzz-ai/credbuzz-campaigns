@@ -57,7 +57,7 @@ export default function EarnMini() {
 
       toast({
         title: "X follow claimed successfully",
-        description: "100 Buzz Points have been added to your account",
+        description: "50 SAGE have been added to your account",
       });
     } catch (error: any) {
       toast({
