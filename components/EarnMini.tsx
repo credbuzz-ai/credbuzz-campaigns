@@ -311,7 +311,7 @@ export default function EarnMini() {
         </Card>
 
         {/* Referral Stats Card */}
-        <Card className="col-span-1 lg:col-span-12 border-neutral-600 bg-neutral-900">
+        <Card className="col-span-1 lg:col-span-12 border-neutral-600 bg-neutral-900 hidden">
           <CardHeader className="p-3 sm:p-4">
             <CardTitle className="text-[#DFFCF6] text-base font-medium flex items-center gap-2">
               Your Referrals
