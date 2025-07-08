@@ -80,6 +80,7 @@ export default function CollaborateDialog({
     contract,
     getERC20TokenInfo,
     approveToken,
+    getTokenBalance,
   } = useContract();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -117,6 +118,7 @@ export default function CollaborateDialog({
       project_wallet: "",
       influencer_wallet: "",
       target_x_handle: "",
+      is_visible: true,
     },
   });
 
@@ -334,10 +336,24 @@ export default function CollaborateDialog({
         ethers.parseUnits(data.amount?.toString() || "0", decimals)
       );
 
-      // 1. First approve tokens for contract
+      // 1. Check balance first
+      const balance = await getTokenBalance(data.payment_token_address || "");
+      if (balance < amountInWei) {
+        toast({
+          title: "Insufficient balance",
+          description: `You need ${amountInWei / 10 ** decimals} ${
+            selectedToken?.symbol
+          } tokens but only have ${Number(balance) / 10 ** decimals} ${
+            selectedToken?.symbol
+          } tokens. Please get more tokens before creating the campaign.`,
+        });
+        return;
+      }
+
+      // 2. Approve tokens for contract
       await approveToken(data.payment_token_address || "", amountInWei);
 
-      // 2. Create campaign on blockchain
+      // 3. Create campaign on blockchain
       await (mode === "targeted"
         ? createTargetedCampaign(
             influencerWalletAddr,
@@ -382,6 +398,7 @@ export default function CollaborateDialog({
         counter: data.chain === "Solana" ? data.counter : null,
         project_wallet: data.project_wallet,
         influencer_wallet: data.influencer_wallet ?? CREDBUZZ_ACCOUNT,
+        is_visible: data.is_visible,
       };
 
       // Make API call to save campaign in database
