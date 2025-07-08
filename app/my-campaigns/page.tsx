@@ -60,6 +60,7 @@ export default function MyCampaigns() {
     useState<boolean>(false);
   const [isSocialCardDownloading, setIsSocialCardDownloading] =
     useState<boolean>(false);
+  const [isImageLoading, setIsImageLoading] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -549,7 +550,13 @@ export default function MyCampaigns() {
                 </Dialog>
 
                 {/* View social card popup */}
-                <Dialog>
+                <Dialog
+                  onOpenChange={(open: boolean) => {
+                    if (!open) {
+                      setIsImageLoading(true);
+                    }
+                  }}
+                >
                   <DialogTrigger asChild>
                     <Button className="text-sm sm:text-base bg-[#00D992] text-[#060F11] hover:bg-[#00D992]/90 font-semibold">
                       View social card
@@ -569,24 +576,66 @@ export default function MyCampaigns() {
 
                     {/* Social preview card */}
                     <div className="w-full">
-                      <img
-                        src={
-                          user
-                            ? `/api/social-card?${new URLSearchParams({
-                                name: user.name || "TrendSage",
-                                handle: user.x_handle || "0xtrendsage",
-                                smartFollowers: (
-                                  user.smart_followers || 0
-                                ).toString(),
-                                rewards: (user.total_points || 0).toString(),
-                                profileImage: user.profile_image_url || "",
-                              })}`
-                            : "/api/social-card"
-                        }
-                        alt="Social Card Preview"
-                        className="w-full h-auto rounded-lg border border-gray-600/30 shadow-lg"
-                        style={{ aspectRatio: "1200/628" }}
-                      />
+                      <div className="w-full rounded-lg border border-gray-600/30">
+                        {isImageLoading && (
+                          <div className="w-full h-[275px] rounded-lg bg-neutral-900 p-4 flex flex-col justify-between">
+                            {/* Profile Section */}
+                            <div className="flex items-center gap-3">
+                              <Skeleton className="w-12 h-12 rounded-full" />{" "}
+                              {/* Profile Picture */}
+                              <div className="space-y-2">
+                                <Skeleton className="h-4 w-32" /> {/* Name */}
+                                <Skeleton className="h-3 w-24" /> {/* Handle */}
+                              </div>
+                            </div>
+
+                            {/* Main Text */}
+                            <div className="space-y-2">
+                              <Skeleton className="h-5 w-3/4" />
+                              <Skeleton className="h-5 w-1/2" />
+                            </div>
+
+                            {/* Stats Section */}
+                            <div className="flex justify-between items-center">
+                              <div className="space-y-1">
+                                <Skeleton className="h-3 w-24" />{" "}
+                                {/* Smart Followers Label */}
+                                <Skeleton className="h-5 w-16" />{" "}
+                                {/* Followers Count */}
+                              </div>
+                              <div className="space-y-1">
+                                <Skeleton className="h-3 w-24" />{" "}
+                                {/* Rewards Label */}
+                                <Skeleton className="h-5 w-16" />{" "}
+                                {/* SAGE Amount */}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <img
+                          src={
+                            user
+                              ? `/api/social-card?${new URLSearchParams({
+                                  name: user.name || "TrendSage",
+                                  handle: user.x_handle || "0xtrendsage",
+                                  smartFollowers: (
+                                    user.smart_followers || 0
+                                  ).toString(),
+                                  rewards: (user.total_points || 0).toString(),
+                                  profileImage: user.profile_image_url || "",
+                                })}`
+                              : "/api/social-card"
+                          }
+                          alt="Social Card Preview"
+                          className={`w-full h-auto rounded-lg border border-gray-600/30 shadow-lg ${
+                            isImageLoading ? "hidden" : ""
+                          }`}
+                          style={{ aspectRatio: "1200/628" }}
+                          onLoad={() => {
+                            setIsImageLoading(false);
+                          }}
+                        />
+                      </div>
                     </div>
                     {/* Action buttons */}
                     <div className="flex gap-2 justify-end mt-2">
