@@ -3,7 +3,6 @@
 import { CREDBUZZ_API_URL } from "@/lib/constants";
 import {
   AtSign,
-  ChevronDown,
   Eye,
   Hash,
   Heart,
@@ -272,8 +271,25 @@ export default function MentionsFeed({
     return text.substring(0, maxLength);
   };
 
-  const getSortLabel = () => {
-    return sortOptions.find((option) => option.value === sortBy)?.label;
+  const likeTweet = (tweetId: string) => {
+    window.open(
+      `https://twitter.com/intent/like?tweet_id=${tweetId}`,
+      "_blank"
+    );
+  };
+
+  const replyTweet = (tweetId: string) => {
+    window.open(
+      `https://twitter.com/intent/tweet?in_reply_to=${tweetId}`,
+      "_blank"
+    );
+  };
+
+  const retweetTweet = (tweetId: string) => {
+    window.open(
+      `https://twitter.com/intent/retweet?tweet_id=${tweetId}`,
+      "_blank"
+    );
   };
 
   return (
@@ -427,23 +443,32 @@ export default function MentionsFeed({
               )}
 
               {/* Tweet metrics */}
-              <div className="flex items-center gap-4 text-xs text-gray-400">
-                <div className="flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
+              <div className="flex items-center gap-6 text-sm text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  <Eye className="w-4 h-4" />
                   <span>{formatNumber(tweet.view_count)}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Heart className="w-3 h-3" />
+                <button
+                  className="flex items-center gap-1.5 hover:text-red-500 transition-colors group"
+                  onClick={() => likeTweet(tweet.tweet_id)}
+                >
+                  <Heart className="w-4 h-4 group-hover:fill-red-500 transition-colors" />
                   <span>{formatNumber(tweet.like_count)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MessageCircle className="w-3 h-3" />
+                </button>
+                <button
+                  className="flex items-center gap-1.5 hover:text-blue-500 transition-colors group"
+                  onClick={() => replyTweet(tweet.tweet_id)}
+                >
+                  <MessageCircle className="w-4 h-4 group-hover:fill-blue-500 transition-colors" />
                   <span>{formatNumber(tweet.reply_count)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Repeat2 className="w-3 h-3" />
+                </button>
+                <button
+                  className="flex items-center gap-1.5 hover:text-green-500 transition-colors group"
+                  onClick={() => retweetTweet(tweet.tweet_id)}
+                >
+                  <Repeat2 className="w-4 h-4 transition-colors" />
                   <span>{formatNumber(tweet.retweet_count)}</span>
-                </div>
+                </button>
               </div>
             </div>
           );
