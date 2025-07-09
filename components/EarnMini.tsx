@@ -165,12 +165,12 @@ export default function EarnMini() {
               {formatNumber(user?.total_points ?? 0)}
             </p>
           </div>
-          <CardHeader className="p-3 sm:p-4">
-            <CardTitle className="text-[#DFFCF6] text-base font-medium flex items-center gap-2">
+          <CardHeader className="px-0 pb-0">
+            <CardTitle className="text-[#DFFCF6] text-xl font-semibold flex items-center">
               Tasks for SAGE
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 sm:p-4 space-y-4">
+          <CardContent className="p-0 py-4 space-y-4">
             {tasks.map((task) => {
               const progressPercent = (task.completed / task.total) * 100;
               const isCompleted = task.completed >= task.total;
