@@ -277,6 +277,27 @@ export default function SmartFeed({
     return sortOptions.find((option) => option.value === sortBy)?.label;
   };
 
+  const likeTweet = (tweetId: string) => {
+    window.open(
+      `https://twitter.com/intent/like?tweet_id=${tweetId}`,
+      "_blank"
+    );
+  };
+
+  const replyTweet = (tweetId: string) => {
+    window.open(
+      `https://twitter.com/intent/tweet?in_reply_to=${tweetId}`,
+      "_blank"
+    );
+  };
+
+  const retweetTweet = (tweetId: string) => {
+    window.open(
+      `https://twitter.com/intent/retweet?tweet_id=${tweetId}`,
+      "_blank"
+    );
+  };
+
   return (
     <div className="card-trendsage sticky top-8 h-full bg-neutral-900 flex flex-col">
       <div className="flex items-center justify-between mb-4">
@@ -390,14 +411,14 @@ export default function SmartFeed({
           return (
             <div
               key={`${tweet.tweet_id}-${index}`}
-              className="border border-gray-700 rounded-lg p-4 hover:border-[#00D992]/30 transition-colors group"
+              className="border border-gray-700 rounded-lg p-4 hover:border-[#00D992]/30 transition-colors"
             >
               {/* Tweet header */}
               <div className="flex items-start gap-3 mb-3">
                 <img
                   src={tweet.profile_image_url}
                   alt={`@${tweet.author_handle}`}
-                  className="w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
+                  className="w-10 h-10 rounded-full ring-2 ring-transparent hover:ring-[#00D992]/50 transition-all"
                   onError={(e) => {
                     e.currentTarget.src = "/placeholder.svg?height=40&width=40";
                   }}
@@ -442,23 +463,32 @@ export default function SmartFeed({
               )}
 
               {/* Tweet metrics */}
-              <div className="flex items-center gap-4 text-xs text-gray-400">
-                <div className="flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
+              <div className="flex items-center gap-6 text-sm text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  <Eye className="w-4 h-4" />
                   <span>{formatNumber(tweet.view_count)}</span>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Heart className="w-3 h-3" />
+                <button
+                  className="flex items-center gap-1.5 hover:text-red-500 transition-colors group"
+                  onClick={() => likeTweet(tweet.tweet_id)}
+                >
+                  <Heart className="w-4 h-4 group-hover:fill-red-500 transition-colors" />
                   <span>{formatNumber(tweet.like_count)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MessageCircle className="w-3 h-3" />
+                </button>
+                <button
+                  className="flex items-center gap-1.5 hover:text-blue-500 transition-colors group"
+                  onClick={() => replyTweet(tweet.tweet_id)}
+                >
+                  <MessageCircle className="w-4 h-4 group-hover:fill-blue-500 transition-colors" />
                   <span>{formatNumber(tweet.reply_count)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Repeat2 className="w-3 h-3" />
+                </button>
+                <button
+                  className="flex items-center gap-1.5 hover:text-green-500 transition-colors group"
+                  onClick={() => retweetTweet(tweet.tweet_id)}
+                >
+                  <Repeat2 className="w-4 h-4 transition-colors" />
                   <span>{formatNumber(tweet.retweet_count)}</span>
-                </div>
+                </button>
               </div>
             </div>
           );
