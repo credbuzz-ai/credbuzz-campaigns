@@ -1,5 +1,9 @@
-import { Metadata } from "next";
+"use client";
+
+import ScrollToTop from "@/components/ScrollToTop";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { notFound, redirect } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import KOLProfileHeader from "../../../components/KOLProfileHeader";
 import KOLSearch from "../../../components/KOLSearch";
 import MarketCapDistribution from "../../components/MarketCapDistribution";
@@ -203,125 +207,64 @@ function formatAccountCreatedDate(dateString?: string): string {
   }
 }
 
-// Server-side metadata generation
-export async function generateMetadata({
-  params,
-}: {
-  params: { profileName: string };
-}): Promise<Metadata> {
-  const { profileName } = params;
-  const API_BASE_URL =
-    process.env.NEXT_PUBLIC_TRENDSAGE_API_URL ||
-    process.env.NEXT_PUBLIC_CREDBUZZ_API_URL ||
-    "https://api.cred.buzz";
-
-  try {
-    // Fetch user profile data
-    const userProfileResponse = await fetch(
-      `${API_BASE_URL}/user/get-user-profile?handle=${profileName}`
-    );
-
-    if (!userProfileResponse.ok) {
-      throw new Error("Failed to fetch user profile");
-    }
-
-    const userProfileData = await userProfileResponse.json();
-
-    // Fetch author details for additional info
-    const authorDetailsResponse = await fetch(
-      `${API_BASE_URL}/user/author-handle-details?author_handle=${profileName}`
-    );
-
-    let authorName = profileName;
-    let authorBio = "";
-
-    if (authorDetailsResponse.ok) {
-      const authorData = await authorDetailsResponse.json();
-      authorName = authorData?.result?.name || profileName;
-      authorBio = authorData?.result?.bio || "";
-    }
-
-    // Create an optimized title
-    const baseTitle = authorName;
-    const titleSuffix = " | TrendSage KOL";
-    const title =
-      baseTitle.length > 40
-        ? `${baseTitle.substring(0, 37)}...${titleSuffix}`
-        : `${baseTitle}${titleSuffix}`;
-
-    const description =
-      authorBio.length > 150
-        ? `${authorBio.slice(0, 150)}...`
-        : authorBio ||
-          `Check out ${authorName}'s Web3 KOL profile on TrendSage`;
-
-    // Ensure absolute URLs for images
-    const domain = process.env.NEXT_PUBLIC_APP_URL || "https://trendsage.xyz";
-    const ogImageUrl = `${domain}/api/og/kol/${profileName}`;
-    const pageUrl = `${domain}/kols/${profileName}`;
-
-    return {
-      title,
-      description,
-      openGraph: {
-        title,
-        description,
-        url: pageUrl,
-        siteName: "TrendSage",
-        images: [
-          {
-            url: ogImageUrl,
-            width: 1200,
-            height: 630,
-            alt: `${authorName}'s TrendSage KOL Profile`,
-          },
-        ],
-        locale: "en_US",
-        type: "profile",
-      },
-      twitter: {
-        card: "summary_large_image",
-        title,
-        description,
-        images: [ogImageUrl],
-        creator: "@trendsage_xyz",
-      },
-    };
-  } catch (error) {
-    return {
-      title: "TrendSage KOL Profile",
-      description: "Web3 KOL Marketplace",
-    };
-  }
-}
-
-export default async function ProfilePage({
+export default function ProfilePage({
   params,
 }: {
   params: { profileName: string };
 }) {
-  const { profileName } = await params;
+  const { profileName } = params;
+  const smartFeedContainerRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+  const [profileData, setProfileData] = useState<{
+    profile: ProfileData;
+    chartData: ChartDataPoint[];
+    activityData: UserProfileResponse["result"]["activity_data"];
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  if (!profileName) {
-    redirect("/kols/eliz883");
+  useEffect(() => {
+    if (!profileName) {
+      redirect("/kols/eliz883");
+      return;
+    }
+
+    async function loadData() {
+      try {
+        const data = await getProfileData(profileName);
+        if (!data) {
+          notFound();
+          return;
+        }
+        setProfileData(data);
+      } catch (error) {
+        console.error("Failed to load profile data:", error);
+        notFound();
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [profileName]);
+
+  if (loading || !profileData) {
+    return (
+      <div className="min-h-screen bg-neutral-900 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-[#00D992]"></div>
+      </div>
+    );
   }
 
-  const data = await getProfileData(profileName);
-
-  if (!data) {
-    notFound();
-  }
-
-  const { profile, chartData, activityData } = data;
+  const { profile, chartData, activityData } = profileData;
   const accountCreatedText = formatAccountCreatedDate(
     profile.account_created_at
   );
 
   return (
     <div className="min-h-screen bg-neutral-900">
-      <div className="flex items-start">
+      <div className="flex flex-col lg:flex-row items-start w-full">
         {/* Main Content */}
-        <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
+        <div className="flex-1 py-4 lg:py-8 px-4 lg:pl-12 lg:pr-4 w-full">
           <div className="max-w-4xl mx-auto">
             {/* Search Bar */}
             <KOLSearch />
@@ -340,22 +283,36 @@ export default async function ProfilePage({
             />
 
             {/* Market Cap Distribution */}
-            <div className="mt-8">
+            <div className="mt-6 lg:mt-8">
               <MarketCapDistribution authorHandle={profile.author_handle} />
             </div>
 
             {/* Token Overview Section */}
-            <div className="mt-8">
+            <div className="mt-6 lg:mt-8">
               <TokenOverview authorHandle={profile.author_handle} />
             </div>
           </div>
         </div>
 
-        {/* Smart Feed Sidebar - Matches main content height */}
-        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-16 h-[calc(100vh-4rem)]">
-          <SmartFeed authorHandle={profile.author_handle} />
+        {/* Smart Feed Sidebar */}
+        <div className="w-full lg:w-[480px] py-4 lg:py-8 px-4 lg:pr-12 lg:h-[calc(100vh-4rem)] lg:sticky lg:top-16">
+          <div
+            ref={smartFeedContainerRef}
+            className="h-full lg:overflow-y-auto relative"
+          >
+            <SmartFeed authorHandle={profile.author_handle} />
+            {!isMobile && smartFeedContainerRef.current && (
+              <ScrollToTop
+                containerRef={
+                  smartFeedContainerRef as React.RefObject<HTMLDivElement>
+                }
+              />
+            )}
+          </div>
         </div>
       </div>
+      {/* Global scroll to top for mobile */}
+      {isMobile && <ScrollToTop />}
     </div>
   );
 }
