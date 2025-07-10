@@ -125,7 +125,7 @@ export default function KOLProfileHeader({
           )}
         </div>
         {/* Mobile Collaborate Button */}
-        <div className="block sm:hidden w-full">
+        <div className="flex justify-center w-full sm:hidden">
           {renderCollaborateButton()}
         </div>
       </div>
