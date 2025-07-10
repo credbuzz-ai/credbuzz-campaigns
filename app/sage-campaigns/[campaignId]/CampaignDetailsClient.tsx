@@ -968,7 +968,7 @@ function CampaignSkeleton() {
                           key={i}
                           className="bg-neutral-700/30 rounded-lg"
                           style={{
-                            height: `${Math.max(50, Math.random() * 100)}%`,
+                            height: "50%",
                           }}
                         />
                       ))}

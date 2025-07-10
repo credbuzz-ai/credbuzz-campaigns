@@ -1,7 +1,8 @@
 "use client";
 
+import { useIsMobile } from "@/hooks/use-mobile";
 import * as d3 from "d3";
-import { Coins, Hash, TrendingUp } from "lucide-react";
+import { Coins } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from "../../lib/constants";
 import type { TokenData, TokenOverviewResponse } from "../types";
@@ -48,7 +49,15 @@ interface HierarchyNode {
   total_tweets?: number;
 }
 
+// Constants for visualization
+const DESKTOP_WIDTH = 800;
+const DESKTOP_HEIGHT = 600;
+const MOBILE_WIDTH = 360;
+const MOBILE_HEIGHT = 400;
+const MOBILE_LEGEND_ITEMS = 5;
+
 export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
+  const isMobile = useIsMobile();
   const [retryCount, setRetryCount] = useState(0);
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000;
@@ -257,25 +266,34 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
     };
   };
 
+  // Update renderCircularPacking to be mobile-responsive
   const renderCircularPacking = () => {
-    if (!data || !svgRef.current) return;
+    if (!svgRef.current || !data) return;
+
+    const width = isMobile ? MOBILE_WIDTH : DESKTOP_WIDTH;
+    const height = isMobile ? MOBILE_HEIGHT : DESKTOP_HEIGHT;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    const width = 600;
-    const height = 400;
+    // Set new dimensions
+    svg
+      .attr("width", width)
+      .attr("height", height)
+      .attr("viewBox", `0 0 ${width} ${height}`);
+
     const margin = 10;
-
-    svg.attr("width", width).attr("height", height);
-
-    const hierarchyData = prepareHierarchyData();
 
     // Create hierarchy and calculate layout
     const root = d3
-      .hierarchy(hierarchyData)
+      .hierarchy(prepareHierarchyData())
       .sum((d) => d.value || 0)
       .sort((a, b) => (b.value || 0) - (a.value || 0));
+
+    // Adjust circle sizes for mobile
+    const size = isMobile
+      ? d3.scaleLinear().domain([0, 1]).range([3, 40])
+      : d3.scaleLinear().domain([0, 1]).range([5, 60]);
 
     const pack = d3
       .pack<HierarchyNode>()
@@ -625,10 +643,9 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
 
   useEffect(() => {
     if (data && !loading) {
-      const cleanup = renderCircularPacking();
-      return cleanup;
+      renderCircularPacking();
     }
-  }, [data, loading, selectedNarrative]);
+  }, [data, loading, selectedNarrative, hoveredToken, isMobile]);
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000000) return `$${(num / 1000000000).toFixed(1)}B`;
@@ -665,7 +682,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
   return (
     <div className="card-trendsage bg-neutral-900">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-0 mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-[#00D992]/20 rounded-xl">
             <Coins className="w-5 h-5 text-[#00D992]" />
@@ -676,12 +693,12 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         </div>
 
         {/* Interval Selector */}
-        <div className="flex bg-gray-700 rounded-lg p-1">
+        <div className="flex bg-gray-700 rounded-lg p-1 w-full md:w-auto justify-between md:justify-start">
           {intervalOptions.map((option) => (
             <button
               key={option.value}
               onClick={() => setInterval(option.value)}
-              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
+              className={`px-2 md:px-3 py-1 text-xs md:text-sm font-medium rounded-md transition-all duration-200 flex-1 md:flex-none ${
                 interval === option.value
                   ? "bg-[#00D992] text-gray-900"
                   : "text-gray-300 hover:text-gray-100"
@@ -693,170 +710,84 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
         </div>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        <div className="text-center p-2 bg-[#00D992]/20 rounded-lg border border-[#00D992]/30">
-          <Hash className="w-4 h-4 text-[#00D992] mx-auto mb-1" />
-          <div className="text-lg font-bold text-gray-100">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+          <div className="text-sm text-gray-400">Unique Tokens</div>
+          <div className="text-2xl font-bold text-[#00D992]">
             {data.unique_token_count}
           </div>
-          <div className="text-xs text-gray-400">Unique Tokens</div>
         </div>
-        <div className="text-center p-2 bg-green-500/20 rounded-lg border border-green-500/30">
-          <TrendingUp className="w-4 h-4 text-green-400 mx-auto mb-1" />
-          <div className="text-lg font-bold text-gray-100">
+        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+          <div className="text-sm text-gray-400">Total Mentions</div>
+          <div className="text-2xl font-bold text-[#00D992]">
             {data.total_mentions}
           </div>
-          <div className="text-xs text-gray-400">Total Mentions</div>
         </div>
-        <div className="text-center p-2 bg-orange-500/20 rounded-lg border border-orange-500/30">
-          <Coins className="w-4 h-4 text-orange-400 mx-auto mb-1" />
-          <div className="text-sm font-bold text-gray-100 uppercase">
-            {data.most_mentioned_token
-              ? `$${data.most_mentioned_token.symbol}`
-              : "N/A"}
-          </div>
-          <div className="text-xs text-gray-400">
-            {data.most_mentioned_token
-              ? `${data.most_mentioned_token.mention_count} mentions`
-              : "-"}
+        <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
+          <div className="text-sm text-gray-400">Most Mentioned</div>
+          <div className="text-2xl font-bold text-[#00D992]">
+            {data.most_mentioned_token?.symbol.toUpperCase() || "-"}
           </div>
         </div>
       </div>
 
-      {/* Circular Packing Visualization */}
-      <div className="mb-6">
-        <h4 className="text-md font-semibold text-gray-100 mb-3">
-          Token Narratives Map
-        </h4>
-        <div className="flex flex-col lg:flex-row gap-6 bg-neutral-800 rounded-xl p-4 border border-gray-700">
-          {/* Visualization Container */}
-          <div className="flex-1 overflow-x-auto">
-            <svg
-              ref={svgRef}
-              className="w-full"
-              style={{ minHeight: "400px" }}
-            ></svg>
-          </div>
-
-          {/* Legend on the right side */}
-          <div className="lg:w-48 lg:flex-shrink-0">
-            <div className="flex items-center justify-between mb-3">
-              <h5 className="text-sm font-semibold text-gray-100">
-                Narrative Legend
-              </h5>
-              {selectedNarrative && (
+      {/* Visualization Container */}
+      <div className="relative bg-gray-800/30 rounded-lg p-4 overflow-hidden">
+        {/* Legend */}
+        <div className="absolute top-4 right-4 z-10 bg-gray-900/90 rounded-lg p-3 backdrop-blur-sm border border-gray-700 max-h-[calc(100%-2rem)] overflow-y-auto">
+          <div className="flex flex-col gap-2">
+            {Object.entries(narrativeColors)
+              .slice(
+                0,
+                isMobile
+                  ? showAllLegends
+                    ? undefined
+                    : MOBILE_LEGEND_ITEMS
+                  : undefined
+              )
+              .map(([narrative, color]) => (
                 <button
-                  onClick={() => setSelectedNarrative(null)}
-                  className="text-xs text-[#00D992] hover:text-[#00C484] underline"
+                  key={narrative}
+                  onClick={() =>
+                    setSelectedNarrative(
+                      selectedNarrative === narrative ? null : narrative
+                    )
+                  }
+                  className={`flex items-center gap-2 text-xs transition-colors ${
+                    selectedNarrative === narrative
+                      ? "text-white"
+                      : "text-gray-400 hover:text-gray-200"
+                  }`}
                 >
-                  Show All
+                  <div
+                    className="w-3 h-3 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                  {narrative}
+                </button>
+              ))}
+            {isMobile &&
+              Object.keys(narrativeColors).length > MOBILE_LEGEND_ITEMS && (
+                <button
+                  onClick={() => setShowAllLegends(!showAllLegends)}
+                  className="text-xs text-[#00D992] hover:text-[#00D992]/80 mt-1"
+                >
+                  {showAllLegends ? "Show Less" : "Show More"}
                 </button>
               )}
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-1 lg:space-y-1 lg:gap-0">
-              {(() => {
-                // Sort narratives by mention count (descending)
-                const sortedNarratives = Object.entries(narrativeColors)
-                  .filter(([narrative]) => {
-                    return (
-                      data?.narrative_breakdown?.[narrative] > 0 ||
-                      (narrative === "other" &&
-                        data?.tokens?.some((t) => t.narratives.length === 0))
-                    );
-                  })
-                  .sort(([a], [b]) => {
-                    const countA = data?.narrative_breakdown?.[a] || 0;
-                    const countB = data?.narrative_breakdown?.[b] || 0;
-                    return countB - countA;
-                  });
-
-                // Show only top 6 if not expanded
-                const narrativesToShow = showAllLegends
-                  ? sortedNarratives
-                  : sortedNarratives.slice(0, 6);
-
-                return narrativesToShow.map(([narrative, color]) => {
-                  const isSelected = selectedNarrative === narrative;
-                  const hasTokens =
-                    data?.narrative_breakdown?.[narrative] > 0 ||
-                    (narrative === "other" &&
-                      data?.tokens?.some((t) => t.narratives.length === 0));
-
-                  return (
-                    <div
-                      key={narrative}
-                      className={`flex items-center gap-2 py-1 px-2 rounded-md cursor-pointer transition-all duration-200 ${
-                        isSelected
-                          ? "bg-gray-700 shadow-sm ring-2 ring-[#00D992]/50"
-                          : hasTokens
-                          ? "hover:bg-gray-700/50"
-                          : "opacity-50 cursor-not-allowed"
-                      }`}
-                      onClick={() => {
-                        if (hasTokens) {
-                          setSelectedNarrative(isSelected ? null : narrative);
-                        }
-                      }}
-                    >
-                      <div
-                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: color }}
-                      ></div>
-                      <span
-                        className={`text-xs capitalize leading-tight ${
-                          isSelected
-                            ? "text-gray-100 font-medium"
-                            : "text-gray-300"
-                        }`}
-                      >
-                        {narrative.replace("-", " ")}
-                      </span>
-                      {hasTokens && (
-                        <span className="text-xs text-gray-400 ml-auto">
-                          {data?.narrative_breakdown?.[narrative] || 0}
-                        </span>
-                      )}
-                    </div>
-                  );
-                });
-              })()}
-
-              {/* Show More/Less Button */}
-              {(() => {
-                const totalNarratives = Object.entries(narrativeColors).filter(
-                  ([narrative]) => {
-                    return (
-                      data?.narrative_breakdown?.[narrative] > 0 ||
-                      (narrative === "other" &&
-                        data?.tokens?.some((t) => t.narratives.length === 0))
-                    );
-                  }
-                ).length;
-
-                if (totalNarratives > 6) {
-                  return (
-                    <button
-                      onClick={() => setShowAllLegends(!showAllLegends)}
-                      className="flex items-center gap-1 py-1 px-2 text-xs text-[#00D992] hover:text-[#00C484] hover:bg-gray-700/50 rounded-md transition-colors duration-200 mt-1"
-                    >
-                      <span>
-                        {showAllLegends
-                          ? "Show less..."
-                          : `See more... (+${totalNarratives - 6})`}
-                      </span>
-                    </button>
-                  );
-                }
-                return null;
-              })()}
-            </div>
           </div>
         </div>
-        <div className="mt-2 text-xs text-gray-400 text-center">
-          Click on narrative bubbles to highlight • Hover over tokens for
-          details • Bubble size represents mentions
-        </div>
+
+        {/* Circular Packing Visualization */}
+        <svg
+          ref={svgRef}
+          className="w-full h-auto"
+          style={{
+            minHeight: isMobile ? MOBILE_HEIGHT : DESKTOP_HEIGHT,
+            maxHeight: isMobile ? MOBILE_HEIGHT : DESKTOP_HEIGHT,
+          }}
+        />
       </div>
     </div>
   );

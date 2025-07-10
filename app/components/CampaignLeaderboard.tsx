@@ -119,14 +119,10 @@ export default function CampaignLeaderboard({
               <TableRow className=" bg-neutral-700 border-none text-xs">
                 <TableHead className="text-gray-300 w-[40%]">Name</TableHead>
                 <TableHead className="text-gray-300 text-center">
-                  Invite to Earn
-                </TableHead>
-                <TableHead className="text-gray-300">
                   {selectedTimePeriod} Mindshare
                 </TableHead>
-                <TableHead className="text-gray-300 text-center">
-                  Smart Followers
-                </TableHead>
+                <TableHead className="text-gray-300">Smart Followers</TableHead>
+                <TableHead className="text-gray-300">Invite to Earn</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -182,7 +178,10 @@ export default function CampaignLeaderboard({
                               router.push(`/kols/${contributor.author_handle}`)
                             }
                           >
-                            {contributor.user_info.name}
+                            {contributor.user_info.name &&
+                            contributor.user_info.name.length > 10
+                              ? contributor.user_info.name.slice(0, 10) + "..."
+                              : contributor.user_info.name}
                           </div>
                           <div className="text-xs text-neutral-400">
                             @{contributor.author_handle}
@@ -190,25 +189,6 @@ export default function CampaignLeaderboard({
                         </div>
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {isProcessing ? (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300">
-                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-                        Connecting...
-                      </span>
-                    ) : contributor.user_info.user_joined ? (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-[#00D992]/10 text-[#00D992]">
-                        Joined
-                      </span>
-                    ) : (
-                      <span
-                        onClick={() => handleInvite(contributor.author_handle)}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-[#00D992]/10 text-[#00D992] cursor-pointer hover:bg-[#00D992]/20 transition-colors"
-                      >
-                        Invite for 10 SAGE <Send className="w-3.5 h-3.5 ml-1" />
-                      </span>
-                    )}
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="font-medium text-neutral-100 text-sm">
@@ -226,6 +206,25 @@ export default function CampaignLeaderboard({
                         maximumFractionDigits: 1,
                       }).format(contributor.user_info.smart_followers_count)}
                     </div>
+                  </TableCell>
+                  <TableCell className="text-left">
+                    {isProcessing ? (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300 whitespace-nowrap">
+                        <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+                        Connecting...
+                      </span>
+                    ) : contributor.user_info.user_joined ? (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-[#00D992]/10 text-[#00D992] whitespace-nowrap">
+                        Joined
+                      </span>
+                    ) : (
+                      <span
+                        onClick={() => handleInvite(contributor.author_handle)}
+                        className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-[#00D992]/10 text-[#00D992] cursor-pointer hover:bg-[#00D992]/20 transition-colors whitespace-nowrap"
+                      >
+                        Invite for 10 SAGE <Send className="w-3.5 h-3.5 ml-1" />
+                      </span>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

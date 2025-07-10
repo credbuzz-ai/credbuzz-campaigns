@@ -144,7 +144,10 @@ const config: Config = {
         "accordion-up": "accordion-up 0.2s ease-out",
       },
       fontFamily: {
-        season: ["Season"],
+        seasonVF: ["seasonVF"],
+        seasonMix: ["seasonMix"],
+        seasonSansMedium: ["seasonSansMedium"],
+        seasonSansSemiBold: ["seasonSansSemiBold"],
       },
     },
   },
