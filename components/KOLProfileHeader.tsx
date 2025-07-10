@@ -86,10 +86,10 @@ export default function KOLProfileHeader({
   };
 
   return (
-    <div className="card-trendsage group mb-8 bg-neutral-800">
-      <div className="flex flex-col sm:flex-row items-start gap-6 relative">
-        {/* Collaborate Button - Right top corner, with enhanced logic */}
-        <div className="absolute top-0 right-0">
+    <div className="card-trendsage group mb-6 lg:mb-8 bg-neutral-800 p-4 lg:p-6">
+      <div className="flex flex-col sm:flex-row items-start gap-4 lg:gap-6 relative">
+        {/* Collaborate Button - Responsive positioning */}
+        <div className="absolute top-0 right-0 hidden sm:block">
           {renderCollaborateButton()}
         </div>
 
@@ -97,7 +97,7 @@ export default function KOLProfileHeader({
           href={`https://twitter.com/${profile.author_handle}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="cursor-pointer hover:opacity-80 transition-opacity"
+          className="cursor-pointer hover:opacity-80 transition-opacity mx-auto sm:mx-0"
         >
           <img
             src={
@@ -105,22 +105,28 @@ export default function KOLProfileHeader({
               "/placeholder.svg?height=200&width=200"
             }
             alt={profile.name}
-            className="w-24 h-24 rounded-2xl object-cover ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
           />
         </Link>
-        <div className="flex-1 pr-32 sm:pr-36">
-          {" "}
-          {/* Add right padding to avoid button overlap */}
-          <h1 className="text-2xl font-bold text-gray-100 mb-1 group-hover:text-[#00D992] transition-colors">
+        <div className="flex-1 text-center sm:text-left sm:pr-36">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-100 mb-1 group-hover:text-[#00D992] transition-colors">
             {profile.name}
           </h1>
-          <p className="text-lg text-gray-400 mb-1">@{profile.author_handle}</p>
+          <p className="text-base sm:text-lg text-gray-400 mb-1">
+            @{profile.author_handle}
+          </p>
           {accountCreatedText && (
-            <p className="text-xs text-gray-500 mb-3">{accountCreatedText}</p>
+            <p className="text-xs text-gray-500 mb-2 sm:mb-3">
+              {accountCreatedText}
+            </p>
           )}
           {profile.bio && (
             <p className="text-sm text-gray-300 leading-snug">{profile.bio}</p>
           )}
+        </div>
+        {/* Mobile Collaborate Button */}
+        <div className="block sm:hidden w-full">
+          {renderCollaborateButton()}
         </div>
       </div>
     </div>

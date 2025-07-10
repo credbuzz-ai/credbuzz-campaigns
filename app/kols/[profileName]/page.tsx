@@ -1,3 +1,4 @@
+import ScrollToTop from "@/components/ScrollToTop";
 import { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import KOLProfileHeader from "../../../components/KOLProfileHeader";
@@ -319,9 +320,9 @@ export default async function ProfilePage({
 
   return (
     <div className="min-h-screen bg-neutral-900">
-      <div className="flex items-start">
+      <div className="flex flex-col lg:flex-row items-start w-full">
         {/* Main Content */}
-        <div className="flex-1 py-8 pl-8 lg:pl-12 pr-4">
+        <div className="flex-1 py-4 lg:py-8 px-4 lg:pl-12 lg:pr-4 w-full">
           <div className="max-w-4xl mx-auto">
             {/* Search Bar */}
             <KOLSearch />
@@ -340,22 +341,27 @@ export default async function ProfilePage({
             />
 
             {/* Market Cap Distribution */}
-            <div className="mt-8">
+            <div className="mt-6 lg:mt-8">
               <MarketCapDistribution authorHandle={profile.author_handle} />
             </div>
 
             {/* Token Overview Section */}
-            <div className="mt-8">
+            <div className="mt-6 lg:mt-8">
               <TokenOverview authorHandle={profile.author_handle} />
             </div>
           </div>
         </div>
 
-        {/* Smart Feed Sidebar - Matches main content height */}
-        <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-16 h-[calc(100vh-4rem)]">
-          <SmartFeed authorHandle={profile.author_handle} />
+        {/* Smart Feed Sidebar */}
+        <div className="w-full lg:w-[480px] py-4 lg:py-8 px-4 lg:pr-12 lg:h-[calc(100vh-4rem)] lg:sticky lg:top-16">
+          <div className="h-full lg:overflow-y-auto relative">
+            <SmartFeed authorHandle={profile.author_handle} />
+            <ScrollToTop />
+          </div>
         </div>
       </div>
+      {/* Global scroll to top for mobile */}
+      <ScrollToTop />
     </div>
   );
 }

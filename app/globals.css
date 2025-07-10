@@ -1,24 +1,24 @@
 @font-face {
   font-family: "seasonVF";
-  src: url("/fonts/SeasonVFTRIALVF.ttf") format("ttf");
+  src: url("/public/fonts/SeasonVFTRIALVF.ttf") format("ttf");
   font-display: swap;
 }
 
 @font-face {
   font-family: "seasonMix";
-  src: url("/fonts/SeasonMixTRIAL-Medium.ttf") format("ttf");
+  src: url("/public/fonts/SeasonMixTRIAL-Medium.ttf") format("ttf");
   font-display: swap;
 }
 
 @font-face {
   font-family: "seasonSansMedium";
-  src: url("/fonts/SeasonSansTRIAL-Medium.ttf") format("ttf");
+  src: url("/public/fonts/SeasonSansTRIAL-Medium.ttf") format("ttf");
   font-display: swap;
 }
 
 @font-face {
   font-family: "seasonSansSemiBold";
-  src: url("/fonts/SeasonSansTRIAL-SemiBold.ttf") format("ttf");
+  src: url("/public/fonts/SeasonSansTRIAL-SemiBold.ttf") format("ttf");
   font-display: swap;
 }
 

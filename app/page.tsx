@@ -6,7 +6,7 @@ import { Suspense } from "react";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen relative">
+    <div className="relative">
       {/* Background Image */}
       <div className="pointer-events-none select-none absolute inset-0 -z-10 bg-[url('/landingPageBg.png')] bg-cover bg-center opacity-40" />
 

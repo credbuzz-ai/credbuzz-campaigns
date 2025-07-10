@@ -15,6 +15,20 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { API_BASE_URL } from "../../lib/constants";
 import type { TopTweetsResponse, Tweet } from "../types";
 
+// Debounce helper
+function debounce<T extends (...args: any[]) => void>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: NodeJS.Timeout | null = null;
+  return (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      func(...args);
+    }, wait);
+  };
+}
+
 interface SmartFeedProps {
   authorHandle?: string;
 }
@@ -57,9 +71,17 @@ export default function SmartFeed({
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const observerTarget = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false); // Use ref to track loading state
   const LIMIT = 20;
 
   const fetchTweets = async (attempt = 0, loadMore = false) => {
+    // Check loading lock
+    if (loadingRef.current) {
+      return;
+    }
+
+    // Set loading locks
+    loadingRef.current = true;
     if (!loadMore) {
       setLoading(true);
     }
@@ -96,7 +118,6 @@ export default function SmartFeed({
             setTweets((prev) => [...prev, ...sanitizedTweets]);
           } else {
             setTweets(sanitizedTweets);
-            setOffset(0);
           }
 
           setHasMore(sanitizedTweets.length === LIMIT);
@@ -124,25 +145,33 @@ export default function SmartFeed({
       setError("Failed to fetch tweets");
       setRetryCount(0);
     } finally {
+      loadingRef.current = false; // Release loading lock
       setLoading(false);
     }
   };
 
-  const loadMore = useCallback(() => {
-    if (hasMore && !loading) {
-      setOffset((prev) => prev + LIMIT);
-      fetchTweets(0, true);
-    }
-  }, [hasMore, loading, offset]);
+  // Debounced version of loadMore
+  const debouncedLoadMore = useCallback(
+    debounce(() => {
+      if (hasMore && !loadingRef.current) {
+        setOffset((prev) => prev + LIMIT);
+        fetchTweets(0, true);
+      }
+    }, 300),
+    [hasMore]
+  );
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
+        if (entries[0].isIntersecting && !loadingRef.current && hasMore) {
+          debouncedLoadMore();
         }
       },
-      { threshold: 0.1 }
+      {
+        threshold: 0.1,
+        rootMargin: "100px",
+      }
     );
 
     const currentTarget = observerTarget.current;
@@ -155,9 +184,14 @@ export default function SmartFeed({
         observer.unobserve(currentTarget);
       }
     };
-  }, [loadMore]);
+  }, [debouncedLoadMore, hasMore]);
 
   useEffect(() => {
+    // Reset state when filters change
+    loadingRef.current = false; // Reset loading lock
+    setOffset(0);
+    setTweets([]);
+    setHasMore(true);
     fetchTweets();
   }, [interval, sortBy, authorHandle]);
 
@@ -299,21 +333,21 @@ export default function SmartFeed({
   };
 
   return (
-    <div className="card-trendsage sticky top-8 h-full bg-neutral-900 flex flex-col">
-      <div className="flex items-center justify-between mb-4">
+    <div className="card-trendsage h-full bg-neutral-900 flex flex-col">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-[#00D992]" />
           <h2 className="text-lg font-semibold text-gray-100">Smart Feed</h2>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
           {/* Interval Filter */}
-          <div className="flex bg-gray-700 rounded-lg p-1">
+          <div className="flex bg-gray-700 rounded-lg p-1 w-full md:w-auto">
             {intervalOptions.map(({ value, label }) => (
               <button
                 key={value}
                 onClick={() => setInterval(value)}
-                className={`px-2 py-1 text-xs rounded-md font-medium transition-colors ${
+                className={`flex-1 md:flex-initial px-2 py-1 text-xs rounded-md font-medium transition-colors ${
                   interval === value
                     ? "bg-[#00D992] text-gray-900"
                     : "text-gray-300 hover:text-[#00D992] hover:bg-gray-600"
@@ -325,17 +359,17 @@ export default function SmartFeed({
           </div>
 
           {/* Sort Dropdown */}
-          <div className="relative">
+          <div className="relative w-full md:w-auto">
             <button
               onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-700 border border-gray-600 rounded-lg text-gray-300 hover:text-[#00D992] hover:border-[#00D992]/50 transition-colors"
+              className="flex items-center justify-between w-full md:w-auto gap-1 px-3 py-1 text-xs bg-gray-700 border border-gray-600 rounded-lg text-gray-300 hover:text-[#00D992] hover:border-[#00D992]/50 transition-colors"
             >
               {getSortLabel()}
               <ChevronDown className="w-3 h-3" />
             </button>
 
             {showSortDropdown && (
-              <div className="absolute right-0 top-full mt-1 z-10 bg-gray-800 border border-gray-700 rounded-lg shadow-lg min-w-[150px]">
+              <div className="absolute right-0 top-full mt-1 z-10 bg-gray-800 border border-gray-700 rounded-lg shadow-lg w-full md:min-w-[150px]">
                 {sortOptions.map(({ value, label }) => (
                   <button
                     key={value}
@@ -360,36 +394,36 @@ export default function SmartFeed({
 
       {/* Error handling */}
       {error && retryCount === 0 && (
-        <div className="mb-4 p-3 bg-red-900/20 border border-red-600/30 rounded-lg">
-          <p className="text-red-400 text-xs">{error}</p>
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-red-900/20 border border-red-600/30 rounded-lg">
+          <p className="text-red-400 text-[10px] sm:text-xs">{error}</p>
         </div>
       )}
 
       {/* Retry status */}
       {retryCount > 0 && (
-        <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
-          <p className="text-yellow-400 text-xs">{error}</p>
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+          <p className="text-yellow-400 text-[10px] sm:text-xs">{error}</p>
         </div>
       )}
 
       {/* Loading state for initial load */}
       {loading && tweets.length === 0 && (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {[...Array(3)].map((_, i) => (
             <div
               key={i}
-              className="border border-gray-700 rounded-lg p-4 animate-pulse"
+              className="border border-gray-700 rounded-lg p-3 sm:p-4 animate-pulse"
             >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-700 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-700 rounded w-1/2"></div>
-                  <div className="h-3 bg-gray-700 rounded w-1/4"></div>
-                  <div className="flex gap-3 mt-3">
-                    <div className="h-2 bg-gray-700 rounded w-12"></div>
-                    <div className="h-2 bg-gray-700 rounded w-12"></div>
-                    <div className="h-2 bg-gray-700 rounded w-12"></div>
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gray-700 rounded-full"></div>
+                <div className="flex-1 space-y-1.5 sm:space-y-2">
+                  <div className="h-3 sm:h-4 bg-gray-700 rounded w-3/4"></div>
+                  <div className="h-2 sm:h-3 bg-gray-700 rounded w-1/2"></div>
+                  <div className="h-2 sm:h-3 bg-gray-700 rounded w-1/4"></div>
+                  <div className="flex gap-2 sm:gap-3 mt-2 sm:mt-3">
+                    <div className="h-2 bg-gray-700 rounded w-8 sm:w-12"></div>
+                    <div className="h-2 bg-gray-700 rounded w-8 sm:w-12"></div>
+                    <div className="h-2 bg-gray-700 rounded w-8 sm:w-12"></div>
                   </div>
                 </div>
               </div>
@@ -399,7 +433,7 @@ export default function SmartFeed({
       )}
 
       {/* Tweet list */}
-      <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar relative">
+      <div className="space-y-2 sm:space-y-3 flex-1 overflow-y-auto custom-scrollbar relative">
         {tweets.map((tweet, index) => {
           const isExpanded = expandedTweets.has(tweet.tweet_id);
           const shouldTruncate = tweet.body.length > 200;
@@ -411,41 +445,41 @@ export default function SmartFeed({
           return (
             <div
               key={`${tweet.tweet_id}-${index}`}
-              className="border border-gray-700 rounded-lg p-4 hover:border-[#00D992]/30 transition-colors"
+              className="border border-gray-700 rounded-lg p-3 sm:p-4 hover:border-[#00D992]/30 transition-colors"
             >
               {/* Tweet header */}
-              <div className="flex items-start gap-3 mb-3">
+              <div className="flex items-start gap-2 sm:gap-3 mb-2 sm:mb-3">
                 <img
                   src={tweet.profile_image_url}
                   alt={`@${tweet.author_handle}`}
-                  className="w-10 h-10 rounded-full ring-2 ring-transparent hover:ring-[#00D992]/50 transition-all"
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full ring-2 ring-transparent hover:ring-[#00D992]/50 transition-all"
                   onError={(e) => {
                     e.currentTarget.src = "/placeholder.svg?height=40&width=40";
                   }}
                 />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-gray-100 text-sm truncate">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 sm:mb-1">
+                    <span className="font-medium text-gray-100 text-xs sm:text-sm truncate">
                       {getDisplayHandle(tweet.author_handle)}
                     </span>
                     {tweet.sentiment !== null &&
                       getSentimentIcon(tweet.sentiment)}
                   </div>
-                  <div className="text-xs text-gray-400">
+                  <div className="text-[10px] sm:text-xs text-gray-400">
                     {formatDate(tweet.tweet_create_time)}
                   </div>
                 </div>
               </div>
 
               {/* Tweet content */}
-              <div className="mb-3">
-                <p className="text-gray-300 text-sm leading-relaxed break-words whitespace-pre-wrap">
+              <div className="mb-2 sm:mb-3">
+                <p className="text-xs sm:text-sm text-gray-300 leading-relaxed break-words whitespace-pre-wrap">
                   {highlightTokens(displayText)}
                 </p>
                 {shouldTruncate && (
                   <button
                     onClick={() => toggleTweetExpansion(tweet.tweet_id)}
-                    className="text-[#00D992] text-xs hover:text-[#00C484] transition-colors mt-1"
+                    className="text-[#00D992] text-[10px] sm:text-xs hover:text-[#00C484] transition-colors mt-1"
                   >
                     {isExpanded ? "Show less" : "Show more"}
                   </button>
@@ -454,39 +488,39 @@ export default function SmartFeed({
 
               {/* Tweet category */}
               {tweet.tweet_category && (
-                <div className="mb-3">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#00D992]/20 text-[#00D992] border border-[#00D992]/30">
-                    <Hash className="w-3 h-3 mr-1" />
+                <div className="mb-2 sm:mb-3">
+                  <span className="inline-flex items-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-[#00D992]/20 text-[#00D992] border border-[#00D992]/30">
+                    <Hash className="w-2.5 h-2.5 sm:w-3 sm:h-3 mr-0.5 sm:mr-1" />
                     {tweet.tweet_category}
                   </span>
                 </div>
               )}
 
               {/* Tweet metrics */}
-              <div className="flex items-center gap-6 text-sm text-gray-400">
-                <div className="flex items-center gap-1.5">
-                  <Eye className="w-4 h-4" />
+              <div className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm text-gray-400">
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>{formatNumber(tweet.view_count)}</span>
                 </div>
                 <button
-                  className="flex items-center gap-1.5 hover:text-red-500 transition-colors group"
+                  className="flex items-center gap-1 sm:gap-1.5 hover:text-red-500 transition-colors group"
                   onClick={() => likeTweet(tweet.tweet_id)}
                 >
-                  <Heart className="w-4 h-4 group-hover:fill-red-500 transition-colors" />
+                  <Heart className="w-3 h-3 sm:w-4 sm:h-4 group-hover:fill-red-500 transition-colors" />
                   <span>{formatNumber(tweet.like_count)}</span>
                 </button>
                 <button
-                  className="flex items-center gap-1.5 hover:text-blue-500 transition-colors group"
+                  className="flex items-center gap-1 sm:gap-1.5 hover:text-blue-500 transition-colors group"
                   onClick={() => replyTweet(tweet.tweet_id)}
                 >
-                  <MessageCircle className="w-4 h-4 group-hover:fill-blue-500 transition-colors" />
+                  <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4 group-hover:fill-blue-500 transition-colors" />
                   <span>{formatNumber(tweet.reply_count)}</span>
                 </button>
                 <button
-                  className="flex items-center gap-1.5 hover:text-green-500 transition-colors group"
+                  className="flex items-center gap-1 sm:gap-1.5 hover:text-green-500 transition-colors group"
                   onClick={() => retweetTweet(tweet.tweet_id)}
                 >
-                  <Repeat2 className="w-4 h-4 transition-colors" />
+                  <Repeat2 className="w-3 h-3 sm:w-4 sm:h-4 transition-colors" />
                   <span>{formatNumber(tweet.retweet_count)}</span>
                 </button>
               </div>
@@ -499,10 +533,10 @@ export default function SmartFeed({
 
         {/* Loading indicator at bottom */}
         {loading && tweets.length > 0 && (
-          <div className="sticky bottom-0 left-0 right-0 py-4 bg-gradient-to-t from-gray-900 to-transparent">
-            <div className="flex items-center justify-center gap-2">
-              <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#00D992] border-t-transparent"></div>
-              <span className="text-sm text-gray-400">
+          <div className="sticky bottom-0 left-0 right-0 py-3 sm:py-4 bg-gradient-to-t from-gray-900 to-transparent">
+            <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+              <div className="inline-block h-4 w-4 sm:h-5 sm:w-5 animate-spin rounded-full border-2 border-[#00D992] border-t-transparent"></div>
+              <span className="text-xs sm:text-sm text-gray-400">
                 Loading more tweets...
               </span>
             </div>
@@ -512,9 +546,9 @@ export default function SmartFeed({
 
       {/* Empty state */}
       {!loading && tweets.length === 0 && (
-        <div className="text-center py-8">
-          <Sparkles className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 text-sm">
+        <div className="text-center py-6 sm:py-8">
+          <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600 mx-auto mb-3 sm:mb-4" />
+          <p className="text-gray-400 text-xs sm:text-sm">
             No tweets found for this time period
           </p>
         </div>

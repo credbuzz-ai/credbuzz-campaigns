@@ -259,6 +259,7 @@ export default function Header() {
                   className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium text-2xl mt-0 py-6 px-4 border-b border-neutral-600 ${
                     pathname?.startsWith(item.href) ? "!text-[#00D992]" : ""
                   }`}
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   {item.label}
                 </Link>
