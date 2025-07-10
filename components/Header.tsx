@@ -77,7 +77,7 @@ export default function Header() {
     <header
       className={`absolute md:sticky top-0 left-0 w-full z-50 transition-all duration-300  ${
         scrolled
-          ? "bg-gray-900/70 backdrop-blur-lg shadow-lg border-b border-gray-800/60"
+          ? "bg-neutral-900 backdrop-blur-lg shadow-lg border-b border-gray-800/60"
           : "bg-transparent backdrop-blur-xl border-b border-gray-700/50"
       }`}
     >
