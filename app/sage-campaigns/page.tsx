@@ -1,8 +1,8 @@
 "use client";
 
 import CampaignCard from "@/components/CampaignCard";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import apiClient from "@/lib/api";
 import { Campaign } from "@/lib/types";
 import { useEffect, useState } from "react";
@@ -84,18 +84,18 @@ export default function BuzzBoard() {
             </div>
 
             {/* Filters */}
-            <div className="mb-8">
+            <div className="mb-4 md:mb-8">
               <Tabs
                 value={selectedStatus}
                 onValueChange={setSelectedStatus}
                 className="w-full"
               >
-                <TabsList className="bg-neutral-900 border border-neutral-600 p-0 h-auto">
+                <TabsList className="bg-neutral-900 border border-neutral-600 p-0 h-auto flex flex-wrap">
                   {statusOptions.map((status) => (
                     <TabsTrigger
                       key={status}
                       value={status}
-                      className="data-[state=active]:bg-neutral-700 hover:bg-neutral-700 px-3 py-2 rounded-none"
+                      className="data-[state=active]:bg-neutral-700 hover:bg-neutral-700 px-2 py-1.5 md:px-3 md:py-2 rounded-none text-sm md:text-base"
                     >
                       {status}
                     </TabsTrigger>
