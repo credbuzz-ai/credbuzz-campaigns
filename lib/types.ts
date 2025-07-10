@@ -45,6 +45,7 @@ export interface Campaign {
   };
   campaign_rules?: string;
   ignore_accounts?: string;
+  sub_campaigns?: Campaign[];
 }
 
 export type ReferralEntry = {

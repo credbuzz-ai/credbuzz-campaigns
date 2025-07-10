@@ -30,8 +30,6 @@ import { TgIcon } from "@/public/icons/TgIcon";
 import { XIcon } from "@/public/icons/XIcon";
 import Image from "next/image";
 import { useEffect, useState } from "react";
-import SubCampaignCard from "./SubCampaignCard";
-
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+?)(?=[.,;:!?\)\]\}]*(?:\s|$))/g;
   return text.split(urlRegex).map((part, index) => {
@@ -88,6 +86,7 @@ type TimePeriod = "30d" | "7d" | "1d";
 
 interface CampaignDetailsClientProps {
   campaignId: string;
+  subCampaignId: string;
 }
 
 // Social Link Component
@@ -134,14 +133,6 @@ function formatAmount(amount: number): string {
   return formatDecimal(amount);
 }
 
-function formatNumber(value: number): string {
-  if (value >= 1_000_000)
-    return (value / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-  if (value >= 1_000)
-    return (value / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
-  return value.toString();
-}
-
 function getPriceUsd(tokenSymbol: string): Promise<number | null> {
   // very lightweight fetch to Coingecko; falls back to null if error
   return fetch(
@@ -153,48 +144,9 @@ function getPriceUsd(tokenSymbol: string): Promise<number | null> {
     .catch(() => null);
 }
 
-// Helper function to calculate sub-campaign time remaining
-const getSubCampaignTimeRemaining = (endDate: string) => {
-  const end = new Date(endDate);
-  const now = new Date();
-
-  if (end <= now) {
-    return "Ended";
-  }
-
-  const diffInMs = end.getTime() - now.getTime();
-  const seconds = Math.floor((diffInMs % (1000 * 60)) / 1000);
-  const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
-  const hours = Math.floor(
-    (diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-  );
-  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-  const months = Math.floor(days / 30);
-
-  const parts = [];
-
-  if (days >= 30) {
-    parts.push(`${months} ${months === 1 ? "month" : "months"}`);
-    const remainingDays = days % 30;
-    if (remainingDays > 0) {
-      parts.push(`${remainingDays} ${remainingDays === 1 ? "day" : "days"}`);
-    }
-  } else if (hours >= 1) {
-    if (days > 0) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
-    if (hours > 0) parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
-    if (minutes > 0)
-      parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
-  } else {
-    if (minutes > 0)
-      parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
-    parts.push(`${seconds} ${seconds === 1 ? "second" : "seconds"}`);
-  }
-
-  return parts.join(" ");
-};
-
-export default function CampaignDetailsClient({
+export default function SubCampaignDetails({
   campaignId,
+  subCampaignId,
 }: CampaignDetailsClientProps) {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(false);
@@ -214,13 +166,10 @@ export default function CampaignDetailsClient({
   const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(50);
   const pageSize = 100;
   const [tokenUsdPrice, setTokenUsdPrice] = useState<number | null>(null);
-  const [selectedSubCampaign, setSelectedSubCampaign] = useState<string | null>(
-    null
-  );
 
   useEffect(() => {
     const fetchCampaignDetails = async () => {
-      if (!campaignId) return;
+      if (!campaignId || !subCampaignId) return;
 
       try {
         setIsLoading(true);
@@ -229,7 +178,32 @@ export default function CampaignDetailsClient({
         });
 
         if (response.data?.result?.[0]) {
-          setCampaign(response.data.result[0]);
+          const mainCampaign = response.data.result[0];
+          // Find the specific sub-campaign
+          const subCampaign = mainCampaign.sub_campaigns?.find(
+            (sub: Campaign) => sub.campaign_id === subCampaignId
+          );
+
+          if (subCampaign) {
+            // Merge the sub-campaign with any inherited properties from the main campaign
+            setCampaign({
+              ...mainCampaign,
+              ...subCampaign,
+              // Keep parent campaign's social links if not specified in sub-campaign
+              project_telegram:
+                subCampaign.project_telegram || mainCampaign.project_telegram,
+              project_discord:
+                subCampaign.project_discord || mainCampaign.project_discord,
+              project_website:
+                subCampaign.project_website || mainCampaign.project_website,
+              project_categories:
+                subCampaign.project_categories ||
+                mainCampaign.project_categories,
+              owner_info: subCampaign.owner_info || mainCampaign.owner_info,
+            });
+          } else {
+            setError("Sub-campaign not found");
+          }
         } else {
           setError("Campaign not found");
         }
@@ -242,7 +216,7 @@ export default function CampaignDetailsClient({
     };
 
     fetchCampaignDetails();
-  }, [campaignId]);
+  }, [campaignId, subCampaignId]);
 
   useEffect(() => {
     const fetchMindshare = async (period: TimePeriod) => {
@@ -834,266 +808,12 @@ export default function CampaignDetailsClient({
             </div>
           </div>
         </div>
+
+        {/* Smart Feed Sidebar */}
+        {/* <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-16 h-[calc(100vh-4rem)]">
+          <MentionsFeed authorHandle={smartFeedHandle} />
+        </div> */}
       </div>
-
-      {/* Sub Campaigns Section */}
-      {campaign?.sub_campaigns && campaign.sub_campaigns.length > 0 && (
-        <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 mt-8 pb-8">
-          <h2 className="text-xl font-semibold text-neutral-100 mb-4">
-            Sub Campaigns
-          </h2>
-          {/* Cards Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {campaign.sub_campaigns.map((subCampaign) => {
-              const isSelected =
-                selectedSubCampaign === subCampaign.campaign_id;
-              return (
-                <SubCampaignCard
-                  key={subCampaign.campaign_id}
-                  subCampaign={subCampaign}
-                  isSelected={isSelected}
-                  onSelect={(id) =>
-                    setSelectedSubCampaign(isSelected ? null : id)
-                  }
-                  ownerProfileImage={campaign.owner_info?.profile_image_url}
-                />
-              );
-            })}
-          </div>
-
-          {/* Expanded Details Section - Appears below all cards */}
-          {selectedSubCampaign &&
-            campaign.sub_campaigns
-              .filter((sc) => sc.campaign_id === selectedSubCampaign)
-              .map((subCampaign) => (
-                <div
-                  key={subCampaign.campaign_id}
-                  className="mt-8 p-8 bg-neutral-900/30 backdrop-blur-sm border border-neutral-700/50 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300"
-                >
-                  {/* Header with button */}
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-semibold text-neutral-100">
-                      {subCampaign.campaign_name}
-                    </h3>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button className="px-3 py-1 rounded-md bg-[#00D992] hover:bg-[#00F5A8] text-gray-900 text-sm font-semibold">
-                          How can I participate?
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-[calc(100vw-2rem)] md:max-w-lg">
-                        <DialogHeader className="text-center">
-                          <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
-                            How can I participate?
-                          </DialogTitle>
-                        </DialogHeader>
-
-                        <Accordion
-                          type="single"
-                          collapsible
-                          defaultValue="item-1"
-                          className="mt-4"
-                        >
-                          <AccordionItem
-                            value="item-1"
-                            className="border-none max-h-[500px] overflow-y-auto"
-                          >
-                            <AccordionTrigger className="text-[#DFFCF6] text-xl">
-                              About campaign
-                            </AccordionTrigger>
-                            <AccordionContent className="text-[#CFCFCF] text-sm">
-                              <ExpandableDescription
-                                description={subCampaign.description}
-                              />
-                            </AccordionContent>
-                          </AccordionItem>
-
-                          {subCampaign.campaign_rules && (
-                            <AccordionItem
-                              value="item-2"
-                              className="border-none"
-                            >
-                              <AccordionTrigger className="text-[#DFFCF6] text-xl">
-                                Campaign rules
-                              </AccordionTrigger>
-                              <AccordionContent className="text-[#CFCFCF] text-sm">
-                                <ul className="list-disc list-inside space-y-2">
-                                  {subCampaign.campaign_rules
-                                    .split("\n")
-                                    .map((rule, index) => (
-                                      <li key={index}>{linkifyText(rule)}</li>
-                                    ))}
-                                </ul>
-                              </AccordionContent>
-                            </AccordionItem>
-                          )}
-                        </Accordion>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-
-                  {/* Campaign Description */}
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold text-neutral-100 mb-4">
-                      About Campaign
-                    </h3>
-                    <ExpandableDescription
-                      description={subCampaign.description}
-                    />
-                  </div>
-
-                  {/* Tabs Section */}
-                  <div className="flex flex-col md:flex-row h-full items-stretch gap-8">
-                    {/* Mindshare and Followers */}
-                    <div className="w-full md:w-[56%]">
-                      <Tabs defaultValue="mindshare" className="w-full">
-                        <TabsList className="w-full bg-transparent space-x-4 border-b border-neutral-700/50 rounded-none p-0">
-                          <TabsTrigger
-                            value="mindshare"
-                            className="flex-1 border-b-2 border-transparent py-4 rounded-none data-[state=active]:border-[#00D992] data-[state=active]:text-[#00D992]"
-                          >
-                            Mindshare
-                          </TabsTrigger>
-                          <TabsTrigger
-                            value="followers"
-                            className="flex-1 border-b-2 border-transparent py-4 rounded-none data-[state=active]:border-[#00D992] data-[state=active]:text-[#00D992]"
-                          >
-                            Followers Overview
-                          </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="mindshare" className="mt-6">
-                          <MindshareVisualization
-                            data={
-                              visualizationData?.result?.mindshare_data || []
-                            }
-                            selectedTimePeriod={selectedTimePeriod}
-                            onTimePeriodChange={(period) => {
-                              setSelectedTimePeriod(period as TimePeriod);
-                              setCurrentPage(1);
-                            }}
-                            loading={loading}
-                            setLoading={setLoading}
-                            projectName={subCampaign.campaign_id}
-                            projectHandle={subCampaign.target_x_handle || ""}
-                          />
-                        </TabsContent>
-
-                        <TabsContent value="followers" className="mt-6">
-                          {subCampaign.target_x_handle && (
-                            <FollowersOverview
-                              authorHandle={subCampaign.target_x_handle.replace(
-                                "@",
-                                ""
-                              )}
-                            />
-                          )}
-                        </TabsContent>
-                      </Tabs>
-                    </div>
-
-                    {/* Feed Section */}
-                    <div className="w-full md:w-[44%]">
-                      <div className="flex flex-col gap-6">
-                        {/* Filter Controls */}
-                        <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                          <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
-                            {[20, 50, 100].map((num) => (
-                              <button
-                                key={num}
-                                onClick={() =>
-                                  setFollowersLimit(num as 20 | 50 | 100)
-                                }
-                                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                  followersLimit === num
-                                    ? "bg-neutral-700 text-neutral-100"
-                                    : "text-neutral-300 hover:text-neutral-100"
-                                }`}
-                              >
-                                Top {num}
-                              </button>
-                            ))}
-                          </div>
-                          <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
-                            {["30d", "7d", "1d"].map((period) => (
-                              <button
-                                key={period}
-                                onClick={() => {
-                                  setSelectedTimePeriod(period as TimePeriod);
-                                  setCurrentPage(1);
-                                }}
-                                className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-                                  selectedTimePeriod === period
-                                    ? "bg-neutral-700 text-neutral-100"
-                                    : "text-neutral-300 hover:text-neutral-100"
-                                }`}
-                              >
-                                {period === "1d" ? "24H" : period.toUpperCase()}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Feed Content */}
-                        <Tabs defaultValue="accounts" className="w-full">
-                          <TabsList className="w-full bg-transparent space-x-4 border-b border-neutral-700/50 rounded-none p-0">
-                            <TabsTrigger
-                              value="accounts"
-                              className="flex-1 border-b-2 border-transparent py-4 rounded-none data-[state=active]:border-[#00D992] data-[state=active]:text-[#00D992]"
-                            >
-                              Accounts
-                            </TabsTrigger>
-                            <TabsTrigger
-                              value="mentions"
-                              className="flex-1 border-b-2 border-transparent py-4 rounded-none data-[state=active]:border-[#00D992] data-[state=active]:text-[#00D992]"
-                            >
-                              Mentions
-                            </TabsTrigger>
-                          </TabsList>
-
-                          <TabsContent value="accounts" className="mt-6">
-                            {mindshareData?.result?.mindshare_data &&
-                              mindshareData.result.mindshare_data.length >
-                                0 && (
-                                <CampaignLeaderboard
-                                  data={mindshareData.result.mindshare_data}
-                                  totalResults={
-                                    mindshareData.result.total_results
-                                  }
-                                  campaignId={subCampaign.campaign_id}
-                                  selectedTimePeriod={selectedTimePeriod}
-                                  currentPage={currentPage}
-                                  followersLimit={followersLimit}
-                                  onPageChange={handlePageChange}
-                                />
-                              )}
-                          </TabsContent>
-
-                          <TabsContent value="mentions" className="mt-6">
-                            <MentionsFeed
-                              authorHandle={
-                                subCampaign.project_handle
-                                  ? subCampaign.project_handle
-                                      .replace("@", "")
-                                      .toLowerCase()
-                                  : subCampaign.target_x_handle
-                                  ? subCampaign.target_x_handle
-                                      .replace("@", "")
-                                      .toLowerCase()
-                                  : subCampaign.owner_x_handle
-                                      .replace("@", "")
-                                      .toLowerCase()
-                              }
-                            />
-                          </TabsContent>
-                        </Tabs>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-        </div>
-      )}
     </div>
   );
 }
