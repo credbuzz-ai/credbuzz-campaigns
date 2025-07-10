@@ -82,12 +82,14 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
                 width={32}
                 height={32}
               />
-              <span className="text-xl font-semibold text-gray-100 group-hover:text-[#00D992] transition-colors">
-                {campaign.campaign_name?.trim()}
-              </span>
-              <span className="text-gray-400 text-sm font-medium">
-                ${campaign.target_token_symbol?.trim()}
-              </span>
+              <div className="flex flex-col items-start gap-1 ml-2">
+                <span className="text-xl font-semibold text-gray-100 group-hover:text-[#00D992] transition-colors">
+                  {campaign.campaign_name}
+                </span>
+                <span className="text-gray-400 text-sm font-medium">
+                  ${campaign.target_token_symbol}
+                </span>
+              </div>
             </div>
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${getStatusColor(
