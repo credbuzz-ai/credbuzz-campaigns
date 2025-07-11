@@ -244,193 +244,224 @@ export default function MindshareVisualization({
           setIsLoading(false);
 
           const renderCells = () => {
-            const allCells = chart.el.querySelectorAll(
-              ".apexcharts-treemap-rect"
-            );
-            const series = chart.el.querySelector(".apexcharts-treemap-series");
-
-            if (!series || allCells.length === 0) return;
-
-            // Clear existing labels
-            chart.el
-              .querySelectorAll(".custom-cell-content")
-              .forEach((el: Element) => el.remove());
-
-            allCells.forEach((cell: Element, index: number) => {
-              const dataPoint = chartData[0].data[index];
-              if (!dataPoint) return;
-
-              const rect = cell as SVGGraphicsElement;
-              const bbox = rect.getBBox();
-
-              // Check if cell is small
-              const isSmallCell = bbox.width < 65 || bbox.height < 65;
-
-              const group = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "g"
+            try {
+              const allCells = chart.el.querySelectorAll(
+                ".apexcharts-treemap-rect"
               );
-              group.setAttribute("class", "custom-cell-content");
-              group.setAttribute("style", "pointer-events: none;");
-
-              // Create clip path for the image and overlay
-              const clipPathId = `clip-${index}`;
-              const clipPath = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "clipPath"
-              );
-              clipPath.setAttribute("id", clipPathId);
-              const clipRect = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "rect"
-              );
-              clipRect.setAttribute("x", String(bbox.x));
-              clipRect.setAttribute("y", String(bbox.y));
-              clipRect.setAttribute("width", String(bbox.width));
-              clipRect.setAttribute("height", String(bbox.height));
-              clipPath.appendChild(clipRect);
-              group.appendChild(clipPath);
-
-              // Add profile image
-              const image = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "image"
-              );
-              image.setAttribute("x", String(bbox.x));
-              image.setAttribute("y", String(bbox.y));
-              image.setAttribute("width", String(bbox.width));
-              image.setAttribute("height", String(bbox.height));
-              image.setAttribute("clip-path", `url(#${clipPathId})`);
-              image.setAttribute(
-                "href",
-                dataPoint.profile_image_url || "/placeholder-user.jpg"
-              );
-              image.setAttribute("preserveAspectRatio", "xMidYMid slice");
-              image.setAttribute(
-                "style",
-                "pointer-events: none; cursor: pointer;"
+              const series = chart.el.querySelector(
+                ".apexcharts-treemap-series"
               );
 
-              // Add semi-transparent overlay
-              const overlay = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "rect"
-              );
-              overlay.setAttribute("x", String(bbox.x));
-              overlay.setAttribute("y", String(bbox.y));
-              overlay.setAttribute("width", String(bbox.width));
-              overlay.setAttribute("height", String(bbox.height));
-              overlay.setAttribute("clip-path", `url(#${clipPathId})`);
-              overlay.setAttribute("fill", "rgba(0, 0, 0, 0.3)");
-              overlay.setAttribute("style", "pointer-events: none;");
+              if (!series || allCells.length === 0) {
+                // Retry after a short delay if elements aren't ready
+                setTimeout(renderCells, 100);
+                return;
+              }
 
-              // Add text elements
-              const textGroup = document.createElementNS(
-                "http://www.w3.org/2000/svg",
-                "g"
-              );
-              textGroup.setAttribute("style", "pointer-events: none;");
+              // Clear existing labels
+              chart.el
+                .querySelectorAll(".custom-cell-content")
+                .forEach((el: Element) => el.remove());
 
-              if (isSmallCell) {
-                // For small cells, only show percentage in top left
-                const mindshareText = document.createElementNS(
+              allCells.forEach((cell: Element, index: number) => {
+                const dataPoint = chartData[0].data[index];
+                if (!dataPoint) return;
+
+                const rect = cell as SVGGraphicsElement;
+                const bbox = rect.getBBox();
+
+                // Check if cell is small
+                const isSmallCell = bbox.width < 65 || bbox.height < 65;
+
+                const group = document.createElementNS(
                   "http://www.w3.org/2000/svg",
-                  "text"
+                  "g"
                 );
-                mindshareText.setAttribute("x", String(bbox.x + 5));
-                mindshareText.setAttribute("y", String(bbox.y + 15));
-                mindshareText.setAttribute("text-anchor", "start");
-                mindshareText.setAttribute("fill", "#00D992");
-                mindshareText.setAttribute(
-                  "style",
-                  `font-size: ${Math.min(
-                    11,
-                    bbox.width / 6
-                  )}px; font-weight: bold; pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);`
+                group.setAttribute("class", "custom-cell-content");
+                group.setAttribute("style", "pointer-events: none;");
+
+                // Create clip path for the image and overlay
+                const clipPathId = `clip-${index}-${Date.now()}`; // Add timestamp to ensure uniqueness
+                const clipPath = document.createElementNS(
+                  "http://www.w3.org/2000/svg",
+                  "clipPath"
                 );
-                mindshareText.textContent = `${dataPoint.y.toFixed(2)}%`;
-                textGroup.appendChild(mindshareText);
-              } else {
-                // Background for percentage in top left
-                const percentBg = document.createElementNS(
+                clipPath.setAttribute("id", clipPathId);
+                const clipRect = document.createElementNS(
                   "http://www.w3.org/2000/svg",
                   "rect"
                 );
-                percentBg.setAttribute("x", String(bbox.x + 5));
-                percentBg.setAttribute("y", String(bbox.y + 5));
-                percentBg.setAttribute("width", "60");
-                percentBg.setAttribute("height", "22");
-                percentBg.setAttribute("rx", "4");
-                percentBg.setAttribute("fill", "rgba(0, 0, 0, 0.6)");
+                clipRect.setAttribute("x", String(bbox.x));
+                clipRect.setAttribute("y", String(bbox.y));
+                clipRect.setAttribute("width", String(bbox.width));
+                clipRect.setAttribute("height", String(bbox.height));
+                clipPath.appendChild(clipRect);
+                group.appendChild(clipPath);
 
-                // Mindshare percentage text
-                const mindshareText = document.createElementNS(
+                // Add profile image
+                const image = document.createElementNS(
                   "http://www.w3.org/2000/svg",
-                  "text"
+                  "image"
                 );
-                mindshareText.setAttribute("x", String(bbox.x + 8));
-                mindshareText.setAttribute("y", String(bbox.y + 21));
-                mindshareText.setAttribute("text-anchor", "start");
-                mindshareText.setAttribute("fill", "#00D992");
-                mindshareText.setAttribute(
+                image.setAttribute("x", String(bbox.x));
+                image.setAttribute("y", String(bbox.y));
+                image.setAttribute("width", String(bbox.width));
+                image.setAttribute("height", String(bbox.height));
+                image.setAttribute("clip-path", `url(#${clipPathId})`);
+                image.setAttribute(
+                  "href",
+                  dataPoint.profile_image_url || "/placeholder-user.jpg"
+                );
+                image.setAttribute("preserveAspectRatio", "xMidYMid slice");
+                image.setAttribute(
                   "style",
-                  "font-size: 15px; font-weight: bold; pointer-events: none;"
+                  "pointer-events: none; cursor: pointer;"
                 );
-                mindshareText.textContent = `${dataPoint.y.toFixed(2)}%`;
 
-                // Author handle text
-                const handleText = document.createElementNS(
+                // Add error handling for image loading
+                image.addEventListener("error", function () {
+                  // If image fails to load, remove it and show fallback
+                  this.remove();
+                  const fallbackRect = document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "rect"
+                  );
+                  fallbackRect.setAttribute("x", String(bbox.x));
+                  fallbackRect.setAttribute("y", String(bbox.y));
+                  fallbackRect.setAttribute("width", String(bbox.width));
+                  fallbackRect.setAttribute("height", String(bbox.height));
+                  fallbackRect.setAttribute("clip-path", `url(#${clipPathId})`);
+                  fallbackRect.setAttribute("fill", "#374151");
+                  group.appendChild(fallbackRect);
+                });
+
+                // Add semi-transparent overlay
+                const overlay = document.createElementNS(
                   "http://www.w3.org/2000/svg",
-                  "text"
+                  "rect"
                 );
-                handleText.setAttribute("x", String(bbox.x + 8));
-                handleText.setAttribute("y", String(bbox.y + 42));
-                handleText.setAttribute("text-anchor", "start");
-                handleText.setAttribute("fill", "white");
-                handleText.setAttribute(
-                  "style",
-                  "font-size: 12px; pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);"
+                overlay.setAttribute("x", String(bbox.x));
+                overlay.setAttribute("y", String(bbox.y));
+                overlay.setAttribute("width", String(bbox.width));
+                overlay.setAttribute("height", String(bbox.height));
+                overlay.setAttribute("clip-path", `url(#${clipPathId})`);
+                overlay.setAttribute("fill", "rgba(0, 0, 0, 0.3)");
+                overlay.setAttribute("style", "pointer-events: none;");
+
+                // Add text elements
+                const textGroup = document.createElementNS(
+                  "http://www.w3.org/2000/svg",
+                  "g"
                 );
-                handleText.textContent = dataPoint.author_handle;
+                textGroup.setAttribute("style", "pointer-events: none;");
 
-                textGroup.appendChild(percentBg);
-                textGroup.appendChild(mindshareText);
-                textGroup.appendChild(handleText);
-              }
+                if (isSmallCell) {
+                  // For small cells, only show percentage in top left
+                  const mindshareText = document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "text"
+                  );
+                  mindshareText.setAttribute("x", String(bbox.x + 5));
+                  mindshareText.setAttribute("y", String(bbox.y + 15));
+                  mindshareText.setAttribute("text-anchor", "start");
+                  mindshareText.setAttribute("fill", "#00D992");
+                  mindshareText.setAttribute(
+                    "style",
+                    `font-size: ${Math.min(
+                      11,
+                      bbox.width / 6
+                    )}px; font-weight: bold; pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);`
+                  );
+                  mindshareText.textContent = `${dataPoint.y.toFixed(2)}%`;
+                  textGroup.appendChild(mindshareText);
+                } else {
+                  // Background for percentage in top left
+                  const percentBg = document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "rect"
+                  );
+                  percentBg.setAttribute("x", String(bbox.x + 5));
+                  percentBg.setAttribute("y", String(bbox.y + 5));
+                  percentBg.setAttribute("width", "60");
+                  percentBg.setAttribute("height", "22");
+                  percentBg.setAttribute("rx", "4");
+                  percentBg.setAttribute("fill", "rgba(0, 0, 0, 0.6)");
 
-              // Append elements in the correct order
-              group.appendChild(image); // Image first
-              group.appendChild(overlay); // Overlay on top of image
-              group.appendChild(textGroup); // Text on top of overlay
-              series.appendChild(group);
+                  // Mindshare percentage text
+                  const mindshareText = document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "text"
+                  );
+                  mindshareText.setAttribute("x", String(bbox.x + 8));
+                  mindshareText.setAttribute("y", String(bbox.y + 21));
+                  mindshareText.setAttribute("text-anchor", "start");
+                  mindshareText.setAttribute("fill", "#00D992");
+                  mindshareText.setAttribute(
+                    "style",
+                    "font-size: 15px; font-weight: bold; pointer-events: none;"
+                  );
+                  mindshareText.textContent = `${dataPoint.y.toFixed(2)}%`;
 
-              // Add click handler to the rect element
-              cell.addEventListener("click", async (event) => {
-                // Prevent click if user is scrolling on mobile
-                if (isMobile && isScrolling) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  return;
+                  // Author handle text
+                  const handleText = document.createElementNS(
+                    "http://www.w3.org/2000/svg",
+                    "text"
+                  );
+                  handleText.setAttribute("x", String(bbox.x + 8));
+                  handleText.setAttribute("y", String(bbox.y + 42));
+                  handleText.setAttribute("text-anchor", "start");
+                  handleText.setAttribute("fill", "white");
+                  handleText.setAttribute(
+                    "style",
+                    "font-size: 12px; pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);"
+                  );
+                  handleText.textContent = dataPoint.author_handle;
+
+                  textGroup.appendChild(percentBg);
+                  textGroup.appendChild(mindshareText);
+                  textGroup.appendChild(handleText);
                 }
 
-                if (dataPoint?.author_handle) {
-                  try {
-                    router.push(`/kols/${dataPoint.author_handle}`);
-                    // setSelectedAuthor(dataPoint.author_handle);
-                    // await fetchMindshareHistory(dataPoint.author_handle);
-                  } catch (error) {
-                    console.error("Error handling cell click:", error);
+                // Append elements in the correct order
+                group.appendChild(image); // Image first
+                group.appendChild(overlay); // Overlay on top of image
+                group.appendChild(textGroup); // Text on top of overlay
+                series.appendChild(group);
+
+                // Add click handler to the rect element
+                cell.addEventListener("click", async (event) => {
+                  // Prevent click if user is scrolling on mobile
+                  if (isMobile && isScrolling) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return;
                   }
-                }
+
+                  if (dataPoint?.author_handle) {
+                    try {
+                      router.push(`/kols/${dataPoint.author_handle}`);
+                      // setSelectedAuthor(dataPoint.author_handle);
+                      // await fetchMindshareHistory(dataPoint.author_handle);
+                    } catch (error) {
+                      console.error("Error handling cell click:", error);
+                    }
+                  }
+                });
               });
-            });
+            } catch (error) {
+              console.error("Error rendering treemap cells:", error);
+              // Retry after a delay if there's an error
+              setTimeout(renderCells, 200);
+            }
           };
 
-          // Initial render
-          renderCells();
+          // Initial render with a small delay to ensure chart is fully ready
+          setTimeout(renderCells, 50);
 
           // Re-render on resize or updates
-          chart.addEventListener("updated", renderCells);
+          chart.addEventListener("updated", () => {
+            setTimeout(renderCells, 50);
+          });
         },
         click: function (event: any, chartContext: any, config: any) {
           // Prevent click if user is scrolling on mobile
