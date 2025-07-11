@@ -194,6 +194,68 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      {/* Backed b¥ */}
+      <section className="pb-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+            <div
+              className="bg-neutral-700 rounded-lg text-center relative overflow-hidden min-h-[120px] md:min-h-[160px]"
+              style={{
+                backgroundImage: "url('/decor.png')",
+                backgroundSize: "cover",
+                backgroundPosition: "center top",
+                backgroundRepeat: "no-repeat",
+              }}
+            >
+              <div className="relative z-10 p-6 md:p-8 flex flex-col items-center justify-center h-full">
+                <p className="text-neutral-200 text-xl md:text-2xl font-medium mb-4">
+                  Winners of
+                </p>
+                <div className="flex items-center justify-center gap-4 md:gap-6">
+                  <img
+                    src="/ethSf.png"
+                    alt="ETH San Francisco"
+                    className="h-8 md:h-10 lg:h-12 w-auto object-contain"
+                  />
+                  <img
+                    src="/baseBatch.png"
+                    alt="Base Batch"
+                    className="h-8 md:h-10 lg:h-12 w-auto object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="bg-neutral-700 rounded-lg text-center relative overflow-hidden min-h-[120px] md:min-h-[160px]"
+              style={{
+                backgroundImage: "url('/decor.png')",
+                backgroundSize: "cover",
+                backgroundPosition: "center top",
+                backgroundRepeat: "no-repeat",
+              }}
+            >
+              <div className="relative z-10 p-6 md:p-8 flex flex-col items-center justify-center h-full">
+                <p className="text-neutral-200 text-xl md:text-2xl font-medium mb-4">
+                  Incubased at
+                </p>
+                <div className="flex items-center justify-center gap-4 md:gap-6">
+                  <img
+                    src="/base.png"
+                    alt="Base"
+                    className="h-8 md:h-10 lg:h-12 w-auto object-contain"
+                  />
+                  <img
+                    src="/odisea.png"
+                    alt="Odisea"
+                    className="h-8 md:h-10 lg:h-12 w-auto object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
