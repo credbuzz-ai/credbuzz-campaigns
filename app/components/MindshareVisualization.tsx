@@ -96,6 +96,10 @@ export default function MindshareVisualization({
     "30d": [],
   });
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [isScrolling, setIsScrolling] = useState<boolean>(false);
 
   // Reset loading state when data changes
   useEffect(() => {
@@ -110,6 +114,63 @@ export default function MindshareVisualization({
       setIsLoading(false);
     }
   }, [externalLoading, isLoading]);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Handle touch events for mobile scrolling detection
+  useEffect(() => {
+    const handleTouchStart = (e: TouchEvent) => {
+      setTouchStartY(e.touches[0].clientY);
+      setTouchStartX(e.touches[0].clientX);
+      setIsScrolling(false);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (touchStartY !== null && touchStartX !== null) {
+        const touchEndY = e.touches[0].clientY;
+        const touchEndX = e.touches[0].clientX;
+        const deltaY = Math.abs(touchEndY - touchStartY);
+        const deltaX = Math.abs(touchEndX - touchStartX);
+
+        // If vertical movement is greater than horizontal and significant, consider it scrolling
+        if (deltaY > deltaX && deltaY > 10) {
+          setIsScrolling(true);
+        }
+      }
+    };
+
+    const handleTouchEnd = () => {
+      // Reset scrolling state after a short delay
+      setTimeout(() => {
+        setIsScrolling(false);
+      }, 150);
+
+      setTouchStartY(null);
+      setTouchStartX(null);
+    };
+
+    document.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    document.addEventListener("touchmove", handleTouchMove, { passive: true });
+    document.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
+    };
+  }, [touchStartY, touchStartX]);
 
   // Validate and clean data
   const validData = React.useMemo<MindshareData[]>(() => {
@@ -344,7 +405,14 @@ export default function MindshareVisualization({
               series.appendChild(group);
 
               // Add click handler to the rect element
-              cell.addEventListener("click", async () => {
+              cell.addEventListener("click", async (event) => {
+                // Prevent click if user is scrolling on mobile
+                if (isMobile && isScrolling) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  return;
+                }
+
                 if (dataPoint?.author_handle) {
                   try {
                     router.push(`/kols/${dataPoint.author_handle}`);
@@ -365,6 +433,13 @@ export default function MindshareVisualization({
           chart.addEventListener("updated", renderCells);
         },
         click: function (event: any, chartContext: any, config: any) {
+          // Prevent click if user is scrolling on mobile
+          if (isMobile && isScrolling) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+
           if (config.dataPointIndex !== -1) {
             const dataPoint = chartData[0].data[config.dataPointIndex];
             if (dataPoint?.author_handle) {
@@ -411,6 +486,7 @@ export default function MindshareVisualization({
       },
     },
     tooltip: {
+      enabled: !isMobile, // Disable tooltip on mobile
       theme: "dark",
       custom: function ({ seriesIndex, dataPointIndex, w }: any) {
         if (!w?.config?.series?.[seriesIndex]?.data?.[dataPointIndex]) {
@@ -723,6 +799,9 @@ export default function MindshareVisualization({
 
       cellGroup
         .on("mouseenter", function (event: any) {
+          // Only show tooltip on desktop
+          if (isMobile) return;
+
           polygon
             .transition()
             .duration(200)
@@ -749,6 +828,9 @@ export default function MindshareVisualization({
           }
         })
         .on("mouseleave", function () {
+          // Only hide tooltip on desktop
+          if (isMobile) return;
+
           polygon
             .transition()
             .duration(200)
@@ -759,7 +841,14 @@ export default function MindshareVisualization({
             d3.select(tooltipRef.current).style("opacity", 0);
           }
         })
-        .on("click", function () {
+        .on("click", function (event: any) {
+          // Prevent click if user is scrolling on mobile
+          if (isMobile && isScrolling) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+          }
+
           router.push(`/kols/${site.data.author_handle}`);
           // setSelectedAuthor(site.data.author_handle);
           // fetchMindshareHistory(site.data.author_handle);
@@ -966,7 +1055,7 @@ export default function MindshareVisualization({
         )}
 
         {/* Voronoi Tooltip */}
-        {currentView === "voronoi" && hasData && (
+        {currentView === "voronoi" && hasData && !isMobile && (
           <div
             ref={tooltipRef}
             className="absolute pointer-events-none z-50 p-4 bg-gray-900/95 border border-[#00D992]/20 rounded-lg shadow-lg backdrop-blur-sm opacity-0 transition-opacity duration-200"

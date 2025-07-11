@@ -145,28 +145,37 @@ export const SubCampaignCard = ({
               />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="text-lg font-semibold text-neutral-100 truncate group-hover:text-[#00D992] transition-colors">
-                  {subCampaign.campaign_name}
-                </h3>
-                <span className="text-sm text-neutral-200 whitespace-nowrap">
-                  {formatTimeRemainingDisplay(
-                    getSubCampaignTimeRemaining(subCampaign.offer_end_date)
-                  )}
-                </span>
+              {/* Campaign Name - Full Width */}
+              <h3 className="text-lg font-semibold text-neutral-100 group-hover:text-[#00D992] transition-colors mb-2">
+                {subCampaign.campaign_name}
+              </h3>
+
+              {/* Time Remaining - Prominent Display */}
+              <div className="mb-3">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-neutral-800/50 rounded-lg border border-neutral-700/50">
+                  <div className="w-2 h-2 bg-[#00D992] rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-neutral-200">
+                    {formatTimeRemainingDisplay(
+                      getSubCampaignTimeRemaining(subCampaign.offer_end_date)
+                    )}
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 mt-1">
+
+              {/* Token Symbol and Campaign Type */}
+              <div className="flex items-center gap-2 mb-3">
                 {subCampaign.target_token_symbol && (
-                  <span className="text-sm font-medium text-[#00D992]">
+                  <span className="text-sm font-medium text-[#00D992] bg-[#00D992]/10 px-2 py-1 rounded-md">
                     ${subCampaign.target_token_symbol}
                   </span>
                 )}
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#00D992]/10 text-[#00D992] border border-[#00D992]/20">
+                <span className="text-xs font-medium px-2 py-1 rounded-md bg-neutral-800/50 text-neutral-300 border border-neutral-700/50">
                   {subCampaign.campaign_type}
                 </span>
               </div>
+
               {/* Social Links */}
-              <div className="flex items-center gap-3 mt-2">
+              <div className="flex items-center gap-3">
                 {(subCampaign.project_handle ||
                   subCampaign.target_x_handle ||
                   subCampaign.owner_x_handle) && (
