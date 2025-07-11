@@ -229,6 +229,59 @@ export default function CampaignDetailsClient({
   const [subCampaignLoading, setSubCampaignLoading] = useState<{
     [campaignId: string]: boolean;
   }>({});
+  // Add comprehensive loading state for sub-campaign data
+  const [subCampaignDataReady, setSubCampaignDataReady] = useState<{
+    [campaignId: string]: boolean;
+  }>({});
+  // Add data ready state for main campaign
+  const [mainCampaignDataReady, setMainCampaignDataReady] =
+    useState<boolean>(false);
+
+  // Add separate filter states for sub-campaigns
+  const [subCampaignTimePeriod, setSubCampaignTimePeriod] =
+    useState<TimePeriod>("30d");
+  const [subCampaignFollowersLimit, setSubCampaignFollowersLimit] = useState<
+    20 | 50 | 100
+  >(50);
+  const [subCampaignCurrentPage, setSubCampaignCurrentPage] = useState(1);
+
+  // Add safety timeout to prevent infinite loading
+  useEffect(() => {
+    if (loading && !mainCampaignDataReady) {
+      const timeout = setTimeout(() => {
+        console.warn(
+          "Loading timeout reached, marking main campaign data as ready"
+        );
+        setMainCampaignDataReady(true);
+        setLoading(false);
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [loading, mainCampaignDataReady]);
+
+  // Add safety timeout for sub-campaigns
+  useEffect(() => {
+    Object.keys(subCampaignLoading).forEach((campaignId) => {
+      if (subCampaignLoading[campaignId] && !subCampaignDataReady[campaignId]) {
+        const timeout = setTimeout(() => {
+          console.warn(
+            `Loading timeout reached for sub-campaign ${campaignId}, marking data as ready`
+          );
+          setSubCampaignDataReady((prev) => ({
+            ...prev,
+            [campaignId]: true,
+          }));
+          setSubCampaignLoading((prev) => ({
+            ...prev,
+            [campaignId]: false,
+          }));
+        }, 10000); // 10 second timeout
+
+        return () => clearTimeout(timeout);
+      }
+    });
+  }, [subCampaignLoading, subCampaignDataReady]);
 
   useEffect(() => {
     const fetchCampaignDetails = async () => {
@@ -262,6 +315,7 @@ export default function CampaignDetailsClient({
 
       try {
         setLoading(true);
+        setMainCampaignDataReady(false);
         const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
         const offset = (currentPage - 1) * followersLimit;
 
@@ -280,10 +334,14 @@ export default function CampaignDetailsClient({
           `/mindshare?project_name=${handle}&limit=${followersLimit}&period=${period}`
         );
         setVisualizationData(visualizationResponse.data);
+
+        // Mark data as ready - even if data is empty
+        setMainCampaignDataReady(true);
       } catch (err) {
         console.error(`Error fetching mindshare for ${period}:`, err);
         setMindshareData(null);
         setVisualizationData(null);
+        setMainCampaignDataReady(true); // Mark as ready even on error
       } finally {
         setLoading(false);
       }
@@ -343,15 +401,26 @@ export default function CampaignDetailsClient({
     setCurrentPage(page);
   };
 
+  // Add separate page change handler for sub-campaigns
+  const handleSubCampaignPageChange = (page: number) => {
+    setSubCampaignCurrentPage(page);
+  };
+
   // Function to fetch mindshare data for a specific sub-campaign
   const fetchSubCampaignMindshare = async (
     subCampaign: Campaign,
     period: TimePeriod
   ) => {
     if (!subCampaign.target_x_handle) {
-      console.log(
-        `No target_x_handle for sub-campaign ${subCampaign.campaign_id}`
-      );
+      // If no target handle, mark as ready immediately
+      setSubCampaignDataReady((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: true,
+      }));
+      setSubCampaignLoading((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: false,
+      }));
       return;
     }
 
@@ -362,19 +431,18 @@ export default function CampaignDetailsClient({
         [subCampaign.campaign_id]: true,
       }));
 
+      // Reset data ready state
+      setSubCampaignDataReady((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: false,
+      }));
+
       const handle = subCampaign.target_x_handle.replace("@", "").toLowerCase();
-      console.log(
-        `Fetching mindshare data for sub-campaign ${subCampaign.campaign_id} with handle: ${handle}`
-      );
+      const offset = (subCampaignCurrentPage - 1) * subCampaignFollowersLimit;
 
       // Fetch visualization data for the sub-campaign
       const visualizationResponse = await apiClient.get(
-        `/mindshare?project_name=${handle}&limit=${followersLimit}&period=${period}`
-      );
-
-      console.log(
-        `Visualization response for ${subCampaign.campaign_id}:`,
-        visualizationResponse.data
+        `/mindshare?project_name=${handle}&limit=${subCampaignFollowersLimit}&period=${period}`
       );
 
       setSubCampaignVisualizationData((prev) => ({
@@ -384,17 +452,18 @@ export default function CampaignDetailsClient({
 
       // Fetch paginated data for the leaderboard
       const paginatedResponse = await apiClient.get(
-        `/mindshare?project_name=${handle}&limit=${followersLimit}&offset=0&period=${period}`
-      );
-
-      console.log(
-        `Paginated response for ${subCampaign.campaign_id}:`,
-        paginatedResponse.data
+        `/mindshare?project_name=${handle}&limit=${subCampaignFollowersLimit}&offset=${offset}&period=${period}`
       );
 
       setSubCampaignMindshareData((prev) => ({
         ...prev,
         [subCampaign.campaign_id]: paginatedResponse.data,
+      }));
+
+      // Mark data as ready after both requests complete - even if data is empty
+      setSubCampaignDataReady((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: true,
       }));
     } catch (err) {
       console.error(
@@ -409,6 +478,11 @@ export default function CampaignDetailsClient({
         ...prev,
         [subCampaign.campaign_id]: null,
       }));
+      // Mark data as ready even on error to show error state
+      setSubCampaignDataReady((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: true,
+      }));
     } finally {
       // Clear loading state for this sub-campaign
       setSubCampaignLoading((prev) => ({
@@ -418,14 +492,26 @@ export default function CampaignDetailsClient({
     }
   };
 
-  // Fetch mindshare data for all sub-campaigns when campaign or time period changes
+  // Fetch mindshare data for selected sub-campaign when it changes
   useEffect(() => {
-    if (campaign?.sub_campaigns && campaign.sub_campaigns.length > 0) {
-      campaign.sub_campaigns.forEach((subCampaign) => {
-        fetchSubCampaignMindshare(subCampaign, selectedTimePeriod);
-      });
+    if (selectedSubCampaign && campaign?.sub_campaigns) {
+      const selectedSubCampaignData = campaign.sub_campaigns.find(
+        (sc) => sc.campaign_id === selectedSubCampaign
+      );
+
+      if (selectedSubCampaignData) {
+        fetchSubCampaignMindshare(
+          selectedSubCampaignData,
+          subCampaignTimePeriod
+        );
+      }
     }
-  }, [campaign?.sub_campaigns, selectedTimePeriod, followersLimit]);
+  }, [
+    selectedSubCampaign,
+    subCampaignTimePeriod,
+    subCampaignFollowersLimit,
+    subCampaignCurrentPage,
+  ]);
 
   if (isLoading || !campaign) {
     return <CampaignSkeleton />;
@@ -819,18 +905,62 @@ export default function CampaignDetailsClient({
                   <TabsContent value="mindshare" className="space-y-8 mt-2">
                     {/* Community Mindshare */}
                     <div>
-                      <MindshareVisualization
-                        data={visualizationData?.result?.mindshare_data || []}
-                        selectedTimePeriod={selectedTimePeriod}
-                        onTimePeriodChange={(period) => {
-                          setSelectedTimePeriod(period as TimePeriod);
-                          setCurrentPage(1); // Reset to first page when changing period
-                        }}
-                        loading={loading}
-                        setLoading={setLoading}
-                        projectName={campaignId}
-                        projectHandle={campaign?.target_x_handle || ""}
-                      />
+                      {(() => {
+                        const isDataReady = mainCampaignDataReady;
+                        const isLoading = loading;
+                        const mindshareData =
+                          visualizationData?.result?.mindshare_data || [];
+
+                        // Show loading state while data is being fetched
+                        if (isLoading || !isDataReady) {
+                          return (
+                            <div className="w-full h-[513px] bg-neutral-900/30 rounded-lg flex items-center justify-center">
+                              <div className="flex items-center gap-3">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
+                                <span className="text-neutral-400">
+                                  Loading mindshare data...
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Show no data message if data is ready but empty
+                        if (mindshareData.length === 0) {
+                          return (
+                            <div className="w-full h-[513px] bg-neutral-900/30 rounded-lg flex items-center justify-center">
+                              <div className="text-center text-neutral-400">
+                                <div className="text-lg mb-2">
+                                  No mindshare data available
+                                </div>
+                                <div className="text-sm">
+                                  for{" "}
+                                  {selectedTimePeriod === "1d"
+                                    ? "24H"
+                                    : selectedTimePeriod || "this period"}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Show visualization only when data is ready and not empty
+                        return (
+                          <MindshareVisualization
+                            key={`main-${campaignId}-${selectedTimePeriod}`}
+                            data={mindshareData}
+                            selectedTimePeriod={selectedTimePeriod}
+                            onTimePeriodChange={(period) => {
+                              setSelectedTimePeriod(period as TimePeriod);
+                              setCurrentPage(1); // Reset to first page when changing period
+                            }}
+                            loading={false}
+                            setLoading={setLoading}
+                            projectName={campaignId}
+                            projectHandle={campaign?.target_x_handle || ""}
+                          />
+                        );
+                      })()}
                     </div>
 
                     {/* Leaderboard moved to Accounts tab in Feed */}
@@ -949,7 +1079,11 @@ export default function CampaignDetailsClient({
                   subCampaign={subCampaign}
                   isSelected={isSelected}
                   onSelect={(id) => {
-                    console.log(subCampaign);
+                    console.log("SubCampaign selected:", subCampaign);
+                    console.log(
+                      "Setting selectedSubCampaign to:",
+                      isSelected ? null : id
+                    );
                     setSelectedSubCampaign(isSelected ? null : id);
                   }}
                   ownerProfileImage={campaign.owner_info?.profile_image_url}
@@ -1060,30 +1194,78 @@ export default function CampaignDetailsClient({
                         </TabsList>
 
                         <TabsContent value="mindshare" className="mt-6">
-                          <MindshareVisualization
-                            data={
+                          {(() => {
+                            const isDataReady =
+                              subCampaignDataReady[subCampaign.campaign_id];
+                            const isLoading =
+                              subCampaignLoading[subCampaign.campaign_id];
+                            const visualizationData =
                               subCampaignVisualizationData[
                                 subCampaign.campaign_id
-                              ]?.result?.mindshare_data || []
+                              ];
+                            const mindshareData =
+                              visualizationData?.result?.mindshare_data || [];
+
+                            // Show loading state while data is being fetched
+                            if (isLoading || !isDataReady) {
+                              return (
+                                <div className="w-full h-[513px] bg-neutral-900/30 rounded-lg flex items-center justify-center">
+                                  <div className="flex items-center gap-3">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
+                                    <span className="text-neutral-400">
+                                      Loading mindshare data...
+                                    </span>
+                                  </div>
+                                </div>
+                              );
                             }
-                            selectedTimePeriod={selectedTimePeriod}
-                            onTimePeriodChange={(period) => {
-                              setSelectedTimePeriod(period as TimePeriod);
-                              setCurrentPage(1);
-                            }}
-                            loading={
-                              subCampaignLoading[subCampaign.campaign_id] ||
-                              false
+
+                            // Show no data message if data is ready but empty
+                            if (mindshareData.length === 0) {
+                              return (
+                                <div className="w-full h-[513px] bg-neutral-900/30 rounded-lg flex items-center justify-center">
+                                  <div className="text-center text-neutral-400">
+                                    <div className="text-lg mb-2">
+                                      No mindshare data available
+                                    </div>
+                                    <div className="text-sm">
+                                      for{" "}
+                                      {subCampaignTimePeriod === "1d"
+                                        ? "24H"
+                                        : subCampaignTimePeriod ||
+                                          "this period"}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
                             }
-                            setLoading={(loading) => {
-                              setSubCampaignLoading((prev) => ({
-                                ...prev,
-                                [subCampaign.campaign_id]: loading,
-                              }));
-                            }}
-                            projectName={subCampaign.campaign_id}
-                            projectHandle={subCampaign.target_x_handle || ""}
-                          />
+
+                            // Show visualization only when data is ready and not empty
+                            return (
+                              <MindshareVisualization
+                                key={`sub-${subCampaign.campaign_id}-${subCampaignTimePeriod}`}
+                                data={mindshareData}
+                                selectedTimePeriod={subCampaignTimePeriod}
+                                onTimePeriodChange={(period) => {
+                                  setSubCampaignTimePeriod(
+                                    period as TimePeriod
+                                  );
+                                  setSubCampaignCurrentPage(1);
+                                }}
+                                loading={false}
+                                setLoading={(loading) => {
+                                  setSubCampaignLoading((prev) => ({
+                                    ...prev,
+                                    [subCampaign.campaign_id]: loading,
+                                  }));
+                                }}
+                                projectName={subCampaign.campaign_id}
+                                projectHandle={
+                                  subCampaign.target_x_handle || ""
+                                }
+                              />
+                            );
+                          })()}
                         </TabsContent>
 
                         <TabsContent value="followers" className="mt-6">
@@ -1109,10 +1291,12 @@ export default function CampaignDetailsClient({
                               <button
                                 key={num}
                                 onClick={() =>
-                                  setFollowersLimit(num as 20 | 50 | 100)
+                                  setSubCampaignFollowersLimit(
+                                    num as 20 | 50 | 100
+                                  )
                                 }
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                  followersLimit === num
+                                  subCampaignFollowersLimit === num
                                     ? "bg-neutral-700 text-neutral-100"
                                     : "text-neutral-300 hover:text-neutral-100"
                                 }`}
@@ -1126,11 +1310,13 @@ export default function CampaignDetailsClient({
                               <button
                                 key={period}
                                 onClick={() => {
-                                  setSelectedTimePeriod(period as TimePeriod);
-                                  setCurrentPage(1);
+                                  setSubCampaignTimePeriod(
+                                    period as TimePeriod
+                                  );
+                                  setSubCampaignCurrentPage(1);
                                 }}
                                 className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-                                  selectedTimePeriod === period
+                                  subCampaignTimePeriod === period
                                     ? "bg-neutral-700 text-neutral-100"
                                     : "text-neutral-300 hover:text-neutral-100"
                                 }`}
@@ -1159,28 +1345,79 @@ export default function CampaignDetailsClient({
                           </TabsList>
 
                           <TabsContent value="accounts" className="mt-6">
-                            {subCampaignMindshareData[subCampaign.campaign_id]
-                              ?.result?.mindshare_data &&
-                              subCampaignMindshareData[subCampaign.campaign_id]
-                                ?.result?.mindshare_data?.length > 0 && (
-                                <CampaignLeaderboard
-                                  data={
-                                    subCampaignMindshareData[
-                                      subCampaign.campaign_id
-                                    ]?.result?.mindshare_data || []
-                                  }
-                                  totalResults={
-                                    subCampaignMindshareData[
-                                      subCampaign.campaign_id
-                                    ]?.result?.total_results || 0
-                                  }
-                                  campaignId={subCampaign.campaign_id}
-                                  selectedTimePeriod={selectedTimePeriod}
-                                  currentPage={currentPage}
-                                  followersLimit={followersLimit}
-                                  onPageChange={handlePageChange}
-                                />
-                              )}
+                            {(() => {
+                              const mindshareData =
+                                subCampaignMindshareData[
+                                  subCampaign.campaign_id
+                                ];
+                              const mindshareDataArray =
+                                mindshareData?.result?.mindshare_data;
+                              const isDataReady =
+                                subCampaignDataReady[subCampaign.campaign_id];
+                              const isLoading =
+                                subCampaignLoading[subCampaign.campaign_id];
+
+                              console.log(
+                                `Rendering accounts tab for ${subCampaign.campaign_id}:`,
+                                {
+                                  mindshareData,
+                                  mindshareDataArray,
+                                  isLoading,
+                                  isDataReady,
+                                }
+                              );
+
+                              // Show loading state if data is being fetched
+                              if (isLoading || !isDataReady) {
+                                return (
+                                  <div className="flex items-center justify-center py-8">
+                                    <div className="flex items-center gap-3">
+                                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#00D992]"></div>
+                                      <span className="text-neutral-400">
+                                        Loading mindshare data...
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              }
+
+                              if (
+                                mindshareDataArray &&
+                                mindshareDataArray.length > 0
+                              ) {
+                                return (
+                                  <CampaignLeaderboard
+                                    data={mindshareDataArray}
+                                    totalResults={
+                                      mindshareData?.result?.total_results || 0
+                                    }
+                                    campaignId={subCampaign.campaign_id}
+                                    selectedTimePeriod={subCampaignTimePeriod}
+                                    currentPage={subCampaignCurrentPage}
+                                    followersLimit={subCampaignFollowersLimit}
+                                    onPageChange={handleSubCampaignPageChange}
+                                  />
+                                );
+                              }
+
+                              // Show empty state if no data
+                              return (
+                                <div className="flex items-center justify-center py-8">
+                                  <div className="text-center text-neutral-400">
+                                    <div className="text-sm mb-1">
+                                      No mindshare data available
+                                    </div>
+                                    <div className="text-xs">
+                                      for{" "}
+                                      {subCampaignTimePeriod === "1d"
+                                        ? "24H"
+                                        : subCampaignTimePeriod ||
+                                          "this period"}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </TabsContent>
 
                           <TabsContent value="mentions" className="mt-6">
