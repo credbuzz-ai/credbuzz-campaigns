@@ -1,31 +1,50 @@
-import { ArrowLeft, Users } from "lucide-react";
-import Link from "next/link";
+"use client";
+
+import { CircleAlert } from "lucide-react";
+import { useEffect, useState } from "react";
 
 export default function NotFound() {
+  const [countdown, setCountdown] = useState(10);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          window.location.href = "https://trendsage.xyz";
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-neutral-900 flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
-        <div className="bg-gray-800 border border-gray-700 rounded-xl p-8">
-          <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Users className="w-8 h-8 text-gray-300" />
+        <div className="bg-neutral-800 border border-neutral-700 rounded-xl p-8">
+          <div className="w-16 h-16 bg-neutral-700 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CircleAlert className="w-8 h-8 text-neutral-300" />
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-100 mb-4">
+          <h1 className="text-2xl font-bold text-neutral-100 mb-4">
             Page Not Found
           </h1>
-          <p className="text-gray-400 mb-8">
-            The Page you're looking for doesn't exist or may have been removed.
+          <p className="text-neutral-400 mb-4">
+            The page you&apos;re looking for doesn&apos;t exist or may have been
+            moved.
           </p>
-
-          <div className="space-y-4">
-            <Link
-              href="/sage-campaigns"
-              className="btn-secondary w-full inline-flex items-center justify-center bg-[#00D992] text-gray-900 hover:bg-[#00D992]/90"
+          <p className="text-sm text-neutral-500">
+            You are being redirected to{" "}
+            <a
+              href="https://trendsage.xyz"
+              className="text-primary-400 font-semibold"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Browse Campaigns
-            </Link>
-          </div>
+              trendsage.xyz
+            </a>{" "}
+            in {countdown} second{countdown !== 1 ? "s" : ""}...
+          </p>
         </div>
       </div>
     </div>
