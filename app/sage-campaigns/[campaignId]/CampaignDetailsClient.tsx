@@ -211,7 +211,7 @@ export default function CampaignDetailsClient({
   >(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(50);
+  const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(100);
   const pageSize = 100;
   const [tokenUsdPrice, setTokenUsdPrice] = useState<number | null>(null);
   const [selectedSubCampaign, setSelectedSubCampaign] = useState<string | null>(
@@ -242,7 +242,7 @@ export default function CampaignDetailsClient({
     useState<TimePeriod>("30d");
   const [subCampaignFollowersLimit, setSubCampaignFollowersLimit] = useState<
     20 | 50 | 100
-  >(50);
+  >(100);
   const [subCampaignCurrentPage, setSubCampaignCurrentPage] = useState(1);
 
   // Add safety timeout to prevent infinite loading
@@ -1099,79 +1099,200 @@ export default function CampaignDetailsClient({
               .map((subCampaign) => (
                 <div
                   key={subCampaign.campaign_id}
-                  className="mt-8 p-8 bg-neutral-900/30 backdrop-blur-sm border border-neutral-700/50 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300"
+                  className="mt-8 bg-neutral-900/30 backdrop-blur-sm border border-neutral-700/50 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-300 p-4"
                 >
-                  {/* Header with button */}
-                  <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-semibold text-neutral-100">
-                      {subCampaign.campaign_name}
-                    </h3>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button className="px-3 py-1 rounded-md bg-[#00D992] hover:bg-[#00F5A8] text-gray-900 text-sm font-semibold">
-                          How can I participate?
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-[calc(100vw-2rem)] md:max-w-lg">
-                        <DialogHeader className="text-center">
-                          <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
-                            How can I participate?
-                          </DialogTitle>
-                        </DialogHeader>
-
-                        <Accordion
-                          type="single"
-                          collapsible
-                          defaultValue="item-1"
-                          className="mt-4"
-                        >
-                          <AccordionItem
-                            value="item-1"
-                            className="border-none max-h-[500px] overflow-y-auto"
-                          >
-                            <AccordionTrigger className="text-[#DFFCF6] text-xl">
-                              About campaign
-                            </AccordionTrigger>
-                            <AccordionContent className="text-[#CFCFCF] text-sm">
-                              <ExpandableDescription
-                                description={subCampaign.description}
+                  {/* Campaign Header - Matching main campaign design */}
+                  <Card className="bg-neutral-900 border-none mb-2">
+                    <div className="p-4 md:p-6 md:px-0">
+                      <div className="flex flex-col gap-6">
+                        {/* Top section */}
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                          {/* Left – logo & basic info */}
+                          <div className="flex items-start gap-4 flex-1">
+                            <div className="shrink-0">
+                              <Image
+                                src={
+                                  campaign?.owner_info?.profile_image_url ||
+                                  "/placeholder-logo.png"
+                                }
+                                alt={subCampaign.campaign_name}
+                                width={56}
+                                height={56}
+                                className="rounded-lg object-cover"
                               />
-                            </AccordionContent>
-                          </AccordionItem>
+                            </div>
+                            <div className="flex flex-col gap-2 flex-1">
+                              <div className="flex items-center flex-wrap gap-2">
+                                <h1 className="text-2xl font-bold text-gray-100">
+                                  {subCampaign.campaign_name}
+                                </h1>
+                                {subCampaign.target_token_symbol && (
+                                  <span className="text-sm font-medium text-gray-400">
+                                    ${subCampaign.target_token_symbol}
+                                  </span>
+                                )}
 
-                          {subCampaign.campaign_rules && (
-                            <AccordionItem
-                              value="item-2"
-                              className="border-none"
-                            >
-                              <AccordionTrigger className="text-[#DFFCF6] text-xl">
-                                Campaign rules
-                              </AccordionTrigger>
-                              <AccordionContent className="text-[#CFCFCF] text-sm">
-                                <ul className="list-disc list-inside space-y-2">
-                                  {subCampaign.campaign_rules
-                                    .split("\n")
-                                    .map((rule, index) => (
-                                      <li key={index}>{linkifyText(rule)}</li>
-                                    ))}
-                                </ul>
-                              </AccordionContent>
-                            </AccordionItem>
-                          )}
-                        </Accordion>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
+                                {/* Social links */}
+                                <div className="flex items-center gap-2 ml-2">
+                                  {(subCampaign.project_handle ||
+                                    subCampaign.target_x_handle ||
+                                    subCampaign.owner_x_handle) && (
+                                    <SocialLink
+                                      href={`https://x.com/${(
+                                        subCampaign.project_handle ||
+                                        subCampaign.target_x_handle ||
+                                        subCampaign.owner_x_handle
+                                      )?.replace("@", "")}`}
+                                      icon={<XIcon />}
+                                      label="Twitter"
+                                    />
+                                  )}
+                                  {subCampaign.project_telegram && (
+                                    <SocialLink
+                                      href={subCampaign.project_telegram}
+                                      icon={<TgIcon />}
+                                      label="Telegram"
+                                    />
+                                  )}
+                                  {subCampaign.project_discord && (
+                                    <SocialLink
+                                      href={subCampaign.project_discord}
+                                      icon={<DiscordIcon />}
+                                      label="Discord"
+                                    />
+                                  )}
+                                  {subCampaign.project_website && (
+                                    <SocialLink
+                                      href={subCampaign.project_website}
+                                      icon={<BrowserIcon />}
+                                      label="Website"
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                              {/* Categories */}
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-support-sand text-xs font-semibold">
+                                  {subCampaign.campaign_type}
+                                </span>
+                                {subCampaign.project_categories
+                                  ?.split(",")
+                                  .map((category) => (
+                                    <CategoryTag
+                                      key={category}
+                                      label={category}
+                                    />
+                                  ))}
+                              </div>
+                            </div>
+                          </div>
 
-                  {/* Campaign Description */}
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold text-neutral-100 mb-4">
-                      About Campaign
-                    </h3>
-                    <ExpandableDescription
-                      description={subCampaign.description}
-                    />
-                  </div>
+                          {/* Metrics */}
+                          <div className="flex flex-row flex-wrap gap-8 sm:gap-12">
+                            <div className="flex flex-col gap-2">
+                              <span className="text-sm text-neutral-200">
+                                Reward pool
+                              </span>
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-[20px] font-semibold text-neutral-100">
+                                  {formatAmount(subCampaign.amount)}{" "}
+                                  {subCampaign.payment_token}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex flex-col gap-3">
+                              <span className="text-sm text-neutral-200">
+                                {(
+                                  subCampaign.status || "ongoing"
+                                ).toLowerCase() === "ongoing"
+                                  ? "Campaign ends in"
+                                  : (
+                                      subCampaign.status || "ongoing"
+                                    ).toLowerCase() === "upcoming"
+                                  ? "Starts in"
+                                  : "Campaign has"}
+                              </span>
+                              <span className="text-sm">
+                                {formatTimeRemainingDisplay(
+                                  getSubCampaignTimeRemaining(
+                                    subCampaign.offer_end_date
+                                  )
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        <div className="max-w-3xl">
+                          <ExpandableDescription
+                            description={subCampaign.description}
+                          />
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex flex-wrap items-center gap-3">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button className="px-3 py-1 rounded-md bg-[#00D992] hover:bg-[#00F5A8] text-gray-900 text-sm font-semibold">
+                                How can I participate?
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="bg-[#1A1D1CA6] backdrop-blur-sm border-gray-800 max-w-[calc(100vw-2rem)] md:max-w-lg">
+                              <DialogHeader className="text-center">
+                                <DialogTitle className="text-[#DFFCF6] text-lg md:text-2xl font-semibold text-center">
+                                  How can I participate?
+                                </DialogTitle>
+                              </DialogHeader>
+
+                              <Accordion
+                                type="single"
+                                collapsible
+                                defaultValue="item-1"
+                                className="mt-4"
+                              >
+                                <AccordionItem
+                                  value="item-1"
+                                  className="border-none max-h-[500px] overflow-y-auto"
+                                >
+                                  <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                                    About campaign
+                                  </AccordionTrigger>
+                                  <AccordionContent className="text-[#CFCFCF] text-sm">
+                                    <ExpandableDescription
+                                      description={subCampaign.description}
+                                    />
+                                  </AccordionContent>
+                                </AccordionItem>
+
+                                {subCampaign.campaign_rules && (
+                                  <AccordionItem
+                                    value="item-2"
+                                    className="border-none"
+                                  >
+                                    <AccordionTrigger className="text-[#DFFCF6] text-xl">
+                                      Campaign rules
+                                    </AccordionTrigger>
+                                    <AccordionContent className="text-[#CFCFCF] text-sm">
+                                      <ul className="list-disc list-inside space-y-2">
+                                        {subCampaign.campaign_rules
+                                          .split("\n")
+                                          .map((rule, index) => (
+                                            <li key={index}>
+                                              {linkifyText(rule)}
+                                            </li>
+                                          ))}
+                                      </ul>
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                )}
+                              </Accordion>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
 
                   {/* Tabs Section */}
                   <div className="flex flex-col md:flex-row h-full items-stretch gap-8">
