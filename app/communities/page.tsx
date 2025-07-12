@@ -64,7 +64,7 @@ export default function Communities() {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-0 md:mb-8">
-          <div className="flex flex-col gap-8 md:flex-row justify-between items-start mb-0 md:mb-4">
+          <div className="flex flex-col gap-8 md:flex-row justify-between items-start mb-6">
             <div>
               <h1 className="text-4xl font-bold text-gray-100 mb-4">
                 Explore Communities
