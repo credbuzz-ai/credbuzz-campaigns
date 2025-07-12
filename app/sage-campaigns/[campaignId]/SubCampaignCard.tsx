@@ -1,35 +1,41 @@
-import { Card } from "@/components/ui/card";
 import { Campaign } from "@/lib/types";
-import { BrowserIcon } from "@/public/icons/BrowserIcon";
-import { DiscordIcon } from "@/public/icons/DiscordIcon";
-import { TgIcon } from "@/public/icons/TgIcon";
-import { XIcon } from "@/public/icons/XIcon";
 import Image from "next/image";
 
 // Helper function to format amounts
 function formatAmount(amount: number): string {
   const formatDecimal = (value: number) => {
     const fixed = value.toFixed(4);
-    return fixed.replace(/\.?0+$/, "");
+    return fixed.replace(/\.?0+$/, ""); // Remove trailing zeros and decimal point if no decimals
   };
 
-  if (amount >= 1_000_000_000)
-    return formatDecimal(amount / 1_000_000_000) + "B";
-  if (amount >= 1_000_000) return formatDecimal(amount / 1_000_000) + "M";
-  if (amount >= 1_000) return formatDecimal(amount / 1_000) + "K";
+  if (amount >= 1000000000) return formatDecimal(amount / 1000000000) + "B";
+  if (amount >= 1000000) return formatDecimal(amount / 1000000) + "M";
+  if (amount >= 1000) return formatDecimal(amount / 1000) + "K";
   return formatDecimal(amount);
 }
 
-// Helper function to calculate sub-campaign time remaining
-const getSubCampaignTimeRemaining = (endDate: string) => {
-  const end = new Date(endDate);
-  const now = new Date();
+function getStatusColor(status: string) {
+  switch (status.toLowerCase()) {
+    case "ongoing":
+      return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+    case "completed":
+      return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+    case "upcoming":
+      return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+    default:
+      return "bg-gray-500/10 text-gray-400 border-gray-500/20";
+  }
+}
 
-  if (end <= now) {
+function getTimeRemaining(endDateString: string): string {
+  const now = new Date();
+  const endDate = new Date(endDateString);
+  const diffInMs = endDate.getTime() - now.getTime();
+
+  if (diffInMs <= 0) {
     return "Ended";
   }
 
-  const diffInMs = end.getTime() - now.getTime();
   const seconds = Math.floor((diffInMs % (1000 * 60)) / 1000);
   const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
   const hours = Math.floor(
@@ -41,71 +47,25 @@ const getSubCampaignTimeRemaining = (endDate: string) => {
   const parts = [];
 
   if (days >= 30) {
-    parts.push(`${months} ${months === 1 ? "month" : "months"}`);
+    // If more than 30 days, show months and remaining days
+    parts.push(`${months} month${months !== 1 ? "s" : ""}`);
     const remainingDays = days % 30;
     if (remainingDays > 0) {
-      parts.push(`${remainingDays} ${remainingDays === 1 ? "day" : "days"}`);
+      parts.push(`${remainingDays} day${remainingDays !== 1 ? "s" : ""}`);
     }
   } else if (hours >= 1) {
-    if (days > 0) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
-    if (hours > 0) parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
-    if (minutes > 0)
-      parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+    // If less than 30 days but more than 1 hour
+    if (days > 0) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+    if (hours > 0) parts.push(`${hours} hr${hours !== 1 ? "s" : ""}`);
+    if (minutes > 0) parts.push(`${minutes} min${minutes !== 1 ? "s" : ""}`);
   } else {
-    if (minutes > 0)
-      parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
-    parts.push(`${seconds} ${seconds === 1 ? "second" : "seconds"}`);
+    // If less than 1 hour, show minutes and seconds
+    if (minutes > 0) parts.push(`${minutes} min${minutes !== 1 ? "s" : ""}`);
+    parts.push(`${seconds} sec${seconds !== 1 ? "s" : ""}`);
   }
 
   return parts.join(" ");
-};
-
-// Helper to format time remaining string with different styles for numbers and labels
-const formatTimeRemainingDisplay = (timeStr: string) => {
-  const tokens = timeStr.split(/\s+/);
-  return tokens.map((token, idx) => {
-    const isNumber = /^\d+$/.test(token);
-    const className = isNumber
-      ? "text-neutral-100 text-[20px] font-semibold"
-      : "text-neutral-300 text-sm";
-    return (
-      <span key={idx} className={className}>
-        {token}
-        &nbsp;{!isNumber && " "}
-      </span>
-    );
-  });
-};
-
-// Social Link Component
-const SocialLink = ({
-  href,
-  icon,
-  label,
-}: {
-  href: string;
-  icon: React.ReactNode;
-  label: string;
-}) => (
-  <a
-    href={href}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="rounded-full"
-    title={label}
-  >
-    <div className="w-5 h-5 text-neutral-400 group-hover:text-white transition-colors">
-      {icon}
-    </div>
-  </a>
-);
-
-// Category Tag Component
-const CategoryTag = ({ label }: { label: string }) => (
-  <span className="px-3 py-1 bg-[#00D992]/10 text-[#00D992] rounded-full text-xs font-medium">
-    {label}
-  </span>
-);
+}
 
 interface SubCampaignCardProps {
   subCampaign: Campaign;
@@ -121,123 +81,73 @@ export const SubCampaignCard = ({
   ownerProfileImage,
 }: SubCampaignCardProps) => {
   return (
-    <Card
-      className={`max-w-[400px] bg-neutral-900/50 backdrop-blur-sm border transition-all duration-300 rounded-2xl overflow-hidden group cursor-pointer
+    <div
+      className={`max-w-sm bg-cardBackground hover:bg-cardBackground2 p-6 rounded-md border-2 h-full transition-all duration-200 cursor-pointer
         ${
           isSelected
             ? "border-[#00D992] shadow-[0_0_15px_-3px_rgba(0,217,146,0.3)]"
-            : "border-neutral-700/50 hover:border-[#00D992]/20"
+            : "border-gray-700/30 hover:border-[#00D992]/30"
         }`}
       onClick={() => onSelect(subCampaign.campaign_id)}
     >
-      <div className="p-6">
-        <div className="flex flex-col gap-4">
-          {/* Header with Image and Title */}
-          <div className="flex items-start gap-4">
-            <div className="shrink-0 relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-br from-[#00D992]/20 to-neutral-700/20 rounded-xl blur-sm group-hover:blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
-              <Image
-                src={ownerProfileImage || "/placeholder-logo.png"}
-                alt={subCampaign.campaign_name}
-                width={48}
-                height={48}
-                className="rounded-xl object-cover relative ring-1 ring-neutral-700/50 group-hover:ring-[#00D992]/20 transition duration-300"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              {/* Campaign Name - Full Width */}
-              <h3 className="text-lg font-semibold text-neutral-100 group-hover:text-[#00D992] transition-colors mb-2">
+      <div className="flex flex-col justify-between items-start mb-4 border-b border-gray-700/30">
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <Image
+              src={ownerProfileImage || "/logo-green.svg"}
+              alt={subCampaign.campaign_name}
+              width={32}
+              height={32}
+            />
+            <div className="flex flex-col items-start gap-1 ml-2">
+              <span className="text-xl font-semibold text-gray-100 group-hover:text-[#00D992] transition-colors">
                 {subCampaign.campaign_name}
-              </h3>
-
-              {/* Time Remaining - Prominent Display */}
-              <div className="mb-3">
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-neutral-800/50 rounded-lg border border-neutral-700/50">
-                  <div className="w-2 h-2 bg-[#00D992] rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-neutral-200">
-                    {formatTimeRemainingDisplay(
-                      getSubCampaignTimeRemaining(subCampaign.offer_end_date)
-                    )}
-                  </span>
-                </div>
-              </div>
-
-              {/* Token Symbol and Campaign Type */}
-              <div className="flex items-center gap-2 mb-3">
-                {subCampaign.target_token_symbol && (
-                  <span className="text-sm font-medium text-[#00D992] bg-[#00D992]/10 px-2 py-1 rounded-md">
-                    ${subCampaign.target_token_symbol}
-                  </span>
-                )}
-                <span className="text-xs font-medium px-2 py-1 rounded-md bg-neutral-800/50 text-neutral-300 border border-neutral-700/50">
-                  {subCampaign.campaign_type}
-                </span>
-              </div>
-
-              {/* Social Links */}
-              <div className="flex items-center gap-3">
-                {(subCampaign.project_handle ||
-                  subCampaign.target_x_handle ||
-                  subCampaign.owner_x_handle) && (
-                  <SocialLink
-                    href={`https://x.com/${(
-                      subCampaign.project_handle ||
-                      subCampaign.target_x_handle ||
-                      subCampaign.owner_x_handle
-                    )?.replace("@", "")}`}
-                    icon={<XIcon />}
-                    label="Twitter"
-                  />
-                )}
-                {subCampaign.project_telegram && (
-                  <SocialLink
-                    href={subCampaign.project_telegram}
-                    icon={<TgIcon />}
-                    label="Telegram"
-                  />
-                )}
-                {subCampaign.project_discord && (
-                  <SocialLink
-                    href={subCampaign.project_discord}
-                    icon={<DiscordIcon />}
-                    label="Discord"
-                  />
-                )}
-                {subCampaign.project_website && (
-                  <SocialLink
-                    href={subCampaign.project_website}
-                    icon={<BrowserIcon />}
-                    label="Website"
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Reward Pool - More Prominent */}
-          <div className="bg-[#00D992]/5 rounded-xl p-4 border border-[#00D992]/10">
-            <span className="text-sm text-[#00D992] font-medium block mb-1">
-              Reward pool
-            </span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-xl font-semibold text-[#00D992]">
-                {formatAmount(subCampaign.amount)}
               </span>
-              <span className="text-sm text-[#00D992]/80">
-                {subCampaign.payment_token}
+              <span className="text-gray-400 text-sm font-medium">
+                ${subCampaign.target_token_symbol}
               </span>
             </div>
           </div>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${getStatusColor(
+              subCampaign.status || "ongoing"
+            )}`}
+          >
+            {subCampaign.status || "ongoing"}
+          </span>
+        </div>
 
-          {/* Categories */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            {subCampaign.project_categories?.split(",").map((category) => (
-              <CategoryTag key={category} label={category} />
-            ))}
-          </div>
+        {/* Description section */}
+        <div className="flex items-center justify-center gap-2 text-sm my-6">
+          <span className="text-gray-400 text-left">
+            {subCampaign.description?.slice(0, 100) ||
+              "No description available"}
+            ...
+          </span>
         </div>
       </div>
-    </Card>
+
+      <div className="flex justify-between items-center text-sm">
+        <div className="flex flex-col gap-2">
+          <span className="text-gray-400">Rewards Pool</span>
+          <span className="text-lg">
+            {formatAmount(subCampaign.amount)} {subCampaign.payment_token}
+          </span>
+        </div>
+        <div className="flex flex-col gap-2">
+          <span className="text-gray-400">
+            {(subCampaign.status || "ongoing").toLowerCase() === "ongoing"
+              ? "Ends in"
+              : (subCampaign.status || "ongoing").toLowerCase() === "upcoming"
+              ? "Starts in"
+              : "Campaign has"}
+          </span>
+          <span className="text-lg">
+            {getTimeRemaining(subCampaign.offer_end_date)}
+          </span>
+        </div>
+      </div>
+    </div>
   );
 };
 

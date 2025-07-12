@@ -65,9 +65,8 @@ export default function LandingPage() {
           </div>
 
           {/* Key Metrics */}
-          <div className="mt-16 max-w-5xl mx-auto">
+          {/* <div className="mt-16 max-w-5xl mx-auto">
             <div className="grid grid-cols-2 md:grid-cols-4 text-center border border-neutral-600 border-dashed divide-x divide-y divide-neutral-600 divide-dashed">
-              {/* 10K+ */}
               <div className="py-4 md:py-8 px-6 flex flex-col gap-1">
                 <span className="text-lg md:text-xl font-semibold text-brand-50">
                   10K+
@@ -76,7 +75,6 @@ export default function LandingPage() {
                   Reward pool
                 </span>
               </div>
-              {/* 500+ */}
               <div className="py-4 md:py-8 px-6 flex flex-col gap-1">
                 <span className="text-lg md:text-xl font-semibold text-brand-50">
                   3+
@@ -85,7 +83,6 @@ export default function LandingPage() {
                   Active Campaigns
                 </span>
               </div>
-              {/* $50M+ */}
               <div className="py-4 md:py-8 px-6 flex flex-col gap-1">
                 <span className="text-lg md:text-xl font-semibold text-brand-50">
                   $50M+
@@ -94,7 +91,6 @@ export default function LandingPage() {
                   Campaign value
                 </span>
               </div>
-              {/* 98% */}
               <div className="py-4 md:py-8 px-6 flex flex-col gap-1">
                 <span className="text-lg md:text-xl font-semibold text-brand-50">
                   98%
@@ -104,7 +100,7 @@ export default function LandingPage() {
                 </span>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </section>
       {/* Open Campaigns Section */}
@@ -180,6 +176,13 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
+              href="https://t.me/basetillmoon"
+              target="_blank"
+              className="btn-primarynew inline-flex items-center justify-center "
+            >
+              Contact Us <ArrowRight className="ml-2 w-4 h-4" />
+            </Link>
+            {/* <Link
               href="/sage-campaigns"
               className="btn-primarynew inline-flex items-center justify-center "
             >
@@ -190,7 +193,7 @@ export default function LandingPage() {
               className="btn-secondarynew inline-flex items-center justify-center"
             >
               Find top KOLs
-            </Link>
+            </Link> */}
           </div>
         </div>
       </section>
@@ -241,12 +244,12 @@ export default function LandingPage() {
                 </p>
                 <div className="flex items-center justify-center gap-4 md:gap-6">
                   <img
-                    src="/base.png"
+                    src="/base.svg"
                     alt="Base"
                     className="h-8 md:h-10 lg:h-12 w-auto object-contain"
                   />
                   <img
-                    src="/odisea.png"
+                    src="/odisea.svg"
                     alt="Odisea"
                     className="h-8 md:h-10 lg:h-12 w-auto object-contain"
                   />
