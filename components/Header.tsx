@@ -15,10 +15,10 @@ const navItems = [
     label: "Find KOLs",
     href: "/kols",
   },
-  // {
-  //   label: "Projects",
-  //   href: "/projects",
-  // },
+  {
+    label: "Communities",
+    href: "/communities",
+  },
 ];
 
 export default function Header() {

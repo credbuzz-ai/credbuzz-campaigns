@@ -29,7 +29,9 @@ import { DiscordIcon } from "@/public/icons/DiscordIcon";
 import { TgIcon } from "@/public/icons/TgIcon";
 import { XIcon } from "@/public/icons/XIcon";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
 function linkifyText(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+?)(?=[.,;:!?\)\]\}]*(?:\s|$))/g;
   return text.split(urlRegex).map((part, index) => {
@@ -84,9 +86,8 @@ const ExpandableDescription = ({ description }: { description: string }) => {
 
 type TimePeriod = "30d" | "7d" | "1d";
 
-interface CampaignDetailsClientProps {
+interface CommunityDetailsProps {
   campaignId: string;
-  subCampaignId: string;
 }
 
 // Social Link Component
@@ -133,6 +134,14 @@ function formatAmount(amount: number): string {
   return formatDecimal(amount);
 }
 
+function formatNumber(value: number): string {
+  if (value >= 1_000_000)
+    return (value / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+  if (value >= 1_000)
+    return (value / 1_000).toFixed(1).replace(/\.0$/, "") + "K";
+  return value.toString();
+}
+
 function getPriceUsd(tokenSymbol: string): Promise<number | null> {
   // very lightweight fetch to Coingecko; falls back to null if error
   return fetch(
@@ -144,13 +153,54 @@ function getPriceUsd(tokenSymbol: string): Promise<number | null> {
     .catch(() => null);
 }
 
-export default function SubCampaignDetails({
+// Helper function to calculate sub-campaign time remaining
+const getSubCampaignTimeRemaining = (endDate: string) => {
+  const end = new Date(endDate);
+  const now = new Date();
+
+  if (end <= now) {
+    return "Ended";
+  }
+
+  const diffInMs = end.getTime() - now.getTime();
+  const seconds = Math.floor((diffInMs % (1000 * 60)) / 1000);
+  const minutes = Math.floor((diffInMs % (1000 * 60 * 60)) / (1000 * 60));
+  const hours = Math.floor(
+    (diffInMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+  );
+  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  const months = Math.floor(days / 30);
+
+  const parts = [];
+
+  if (days >= 30) {
+    parts.push(`${months} ${months === 1 ? "month" : "months"}`);
+    const remainingDays = days % 30;
+    if (remainingDays > 0) {
+      parts.push(`${remainingDays} ${remainingDays === 1 ? "day" : "days"}`);
+    }
+  } else if (hours >= 1) {
+    if (days > 0) parts.push(`${days} ${days === 1 ? "day" : "days"}`);
+    if (hours > 0) parts.push(`${hours} ${hours === 1 ? "hour" : "hours"}`);
+    if (minutes > 0)
+      parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+  } else {
+    if (minutes > 0)
+      parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"}`);
+    parts.push(`${seconds} ${seconds === 1 ? "second" : "seconds"}`);
+  }
+
+  return parts.join(" ");
+};
+
+export default function CommunityDetails({
   campaignId,
-  subCampaignId,
-}: CampaignDetailsClientProps) {
+}: CommunityDetailsProps) {
+  const router = useRouter();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [shouldRedirectToNotFound, setShouldRedirectToNotFound] =
+    useState(false);
   const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
     null
   );
@@ -163,13 +213,88 @@ export default function SubCampaignDetails({
   >(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(50);
+  const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(100);
   const pageSize = 100;
   const [tokenUsdPrice, setTokenUsdPrice] = useState<number | null>(null);
+  const [selectedSubCampaign, setSelectedSubCampaign] = useState<string | null>(
+    null
+  );
+  // Add separate state for sub-campaign mindshare data
+  const [subCampaignMindshareData, setSubCampaignMindshareData] = useState<{
+    [campaignId: string]: MindshareResponse | null;
+  }>({});
+  const [subCampaignVisualizationData, setSubCampaignVisualizationData] =
+    useState<{
+      [campaignId: string]: MindshareResponse | null;
+    }>({});
+  // Add loading state for sub-campaigns
+  const [subCampaignLoading, setSubCampaignLoading] = useState<{
+    [campaignId: string]: boolean;
+  }>({});
+  // Add comprehensive loading state for sub-campaign data
+  const [subCampaignDataReady, setSubCampaignDataReady] = useState<{
+    [campaignId: string]: boolean;
+  }>({});
+  // Add data ready state for main campaign
+  const [mainCampaignDataReady, setMainCampaignDataReady] =
+    useState<boolean>(false);
+
+  // Add separate filter states for sub-campaigns
+  const [subCampaignTimePeriod, setSubCampaignTimePeriod] =
+    useState<TimePeriod>("30d");
+  const [subCampaignFollowersLimit, setSubCampaignFollowersLimit] = useState<
+    20 | 50 | 100
+  >(100);
+  const [subCampaignCurrentPage, setSubCampaignCurrentPage] = useState(1);
+
+  // Add safety timeout to prevent infinite loading
+  useEffect(() => {
+    if (loading && !mainCampaignDataReady) {
+      const timeout = setTimeout(() => {
+        console.warn(
+          "Loading timeout reached, marking main campaign data as ready"
+        );
+        setMainCampaignDataReady(true);
+        setLoading(false);
+      }, 10000); // 10 second timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [loading, mainCampaignDataReady]);
+
+  // Handle redirect to not-found page
+  useEffect(() => {
+    if (shouldRedirectToNotFound) {
+      router.push("/not-found");
+    }
+  }, [shouldRedirectToNotFound, router]);
+
+  // Add safety timeout for sub-campaigns
+  useEffect(() => {
+    Object.keys(subCampaignLoading).forEach((campaignId) => {
+      if (subCampaignLoading[campaignId] && !subCampaignDataReady[campaignId]) {
+        const timeout = setTimeout(() => {
+          console.warn(
+            `Loading timeout reached for sub-campaign ${campaignId}, marking data as ready`
+          );
+          setSubCampaignDataReady((prev) => ({
+            ...prev,
+            [campaignId]: true,
+          }));
+          setSubCampaignLoading((prev) => ({
+            ...prev,
+            [campaignId]: false,
+          }));
+        }, 10000); // 10 second timeout
+
+        return () => clearTimeout(timeout);
+      }
+    });
+  }, [subCampaignLoading, subCampaignDataReady]);
 
   useEffect(() => {
     const fetchCampaignDetails = async () => {
-      if (!campaignId || !subCampaignId) return;
+      if (!campaignId) return;
 
       try {
         setIsLoading(true);
@@ -177,46 +302,23 @@ export default function SubCampaignDetails({
           campaign_id: campaignId,
         });
 
-        if (response.data?.result?.[0]) {
-          const mainCampaign = response.data.result[0];
-          // Find the specific sub-campaign
-          const subCampaign = mainCampaign.sub_campaigns?.find(
-            (sub: Campaign) => sub.campaign_id === subCampaignId
-          );
+        const result = response.data.result[0];
 
-          if (subCampaign) {
-            // Merge the sub-campaign with any inherited properties from the main campaign
-            setCampaign({
-              ...mainCampaign,
-              ...subCampaign,
-              // Keep parent campaign's social links if not specified in sub-campaign
-              project_telegram:
-                subCampaign.project_telegram || mainCampaign.project_telegram,
-              project_discord:
-                subCampaign.project_discord || mainCampaign.project_discord,
-              project_website:
-                subCampaign.project_website || mainCampaign.project_website,
-              project_categories:
-                subCampaign.project_categories ||
-                mainCampaign.project_categories,
-              owner_info: subCampaign.owner_info || mainCampaign.owner_info,
-            });
-          } else {
-            setError("Sub-campaign not found");
-          }
+        if (result) {
+          setCampaign(result);
         } else {
-          setError("Campaign not found");
+          setShouldRedirectToNotFound(true);
         }
       } catch (err) {
         console.error("Error fetching campaign details:", err);
-        setError("Failed to load campaign details");
+        setShouldRedirectToNotFound(true);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCampaignDetails();
-  }, [campaignId, subCampaignId]);
+  }, [campaignId]);
 
   useEffect(() => {
     const fetchMindshare = async (period: TimePeriod) => {
@@ -224,6 +326,7 @@ export default function SubCampaignDetails({
 
       try {
         setLoading(true);
+        setMainCampaignDataReady(false);
         const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
         const offset = (currentPage - 1) * followersLimit;
 
@@ -242,10 +345,14 @@ export default function SubCampaignDetails({
           `/mindshare?project_name=${handle}&limit=${followersLimit}&period=${period}`
         );
         setVisualizationData(visualizationResponse.data);
+
+        // Mark data as ready - even if data is empty
+        setMainCampaignDataReady(true);
       } catch (err) {
         console.error(`Error fetching mindshare for ${period}:`, err);
         setMindshareData(null);
         setVisualizationData(null);
+        setMainCampaignDataReady(true); // Mark as ready even on error
       } finally {
         setLoading(false);
       }
@@ -305,19 +412,120 @@ export default function SubCampaignDetails({
     setCurrentPage(page);
   };
 
+  // Add separate page change handler for sub-campaigns
+  const handleSubCampaignPageChange = (page: number) => {
+    setSubCampaignCurrentPage(page);
+  };
+
+  // Function to fetch mindshare data for a specific sub-campaign
+  const fetchSubCampaignMindshare = async (
+    subCampaign: Campaign,
+    period: TimePeriod
+  ) => {
+    if (!subCampaign.target_x_handle) {
+      // If no target handle, mark as ready immediately
+      setSubCampaignDataReady((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: true,
+      }));
+      setSubCampaignLoading((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: false,
+      }));
+      return;
+    }
+
+    try {
+      // Set loading state for this sub-campaign
+      setSubCampaignLoading((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: true,
+      }));
+
+      // Reset data ready state
+      setSubCampaignDataReady((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: false,
+      }));
+
+      const handle = subCampaign.target_x_handle.replace("@", "").toLowerCase();
+      const offset = (subCampaignCurrentPage - 1) * subCampaignFollowersLimit;
+
+      // Fetch visualization data for the sub-campaign
+      const visualizationResponse = await apiClient.get(
+        `/mindshare?project_name=${handle}&limit=${subCampaignFollowersLimit}&period=${period}`
+      );
+
+      setSubCampaignVisualizationData((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: visualizationResponse.data,
+      }));
+
+      // Fetch paginated data for the leaderboard
+      const paginatedResponse = await apiClient.get(
+        `/mindshare?project_name=${handle}&limit=${subCampaignFollowersLimit}&offset=${offset}&period=${period}`
+      );
+
+      setSubCampaignMindshareData((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: paginatedResponse.data,
+      }));
+
+      // Mark data as ready after both requests complete - even if data is empty
+      setSubCampaignDataReady((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: true,
+      }));
+    } catch (err) {
+      console.error(
+        `Error fetching mindshare for sub-campaign ${subCampaign.campaign_id}:`,
+        err
+      );
+      setSubCampaignVisualizationData((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: null,
+      }));
+      setSubCampaignMindshareData((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: null,
+      }));
+      // Mark data as ready even on error to show error state
+      setSubCampaignDataReady((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: true,
+      }));
+    } finally {
+      // Clear loading state for this sub-campaign
+      setSubCampaignLoading((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: false,
+      }));
+    }
+  };
+
+  // Fetch mindshare data for selected sub-campaign when it changes
+  useEffect(() => {
+    if (selectedSubCampaign && campaign?.sub_campaigns) {
+      const selectedSubCampaignData = campaign.sub_campaigns.find(
+        (sc) => sc.campaign_id === selectedSubCampaign
+      );
+
+      if (selectedSubCampaignData) {
+        fetchSubCampaignMindshare(
+          selectedSubCampaignData,
+          subCampaignTimePeriod
+        );
+      }
+    }
+  }, [
+    selectedSubCampaign,
+    subCampaignTimePeriod,
+    subCampaignFollowersLimit,
+    subCampaignCurrentPage,
+  ]);
+
   if (isLoading || !campaign) {
     return <CampaignSkeleton />;
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-400 mb-2">Error</h2>
-          <p className="text-gray-400">{error}</p>
-        </div>
-      </div>
-    );
   }
 
   // Helper function to calculate campaign time remaining
@@ -477,65 +685,12 @@ export default function SubCampaignDetails({
                         </div>
                       </div>
                     </div>
-
-                    {/* Metrics */}
-                    <div className="flex flex-row flex-wrap gap-8 sm:gap-12">
-                      <div className="flex flex-col gap-2">
-                        <span className="text-sm text-neutral-200">
-                          Reward pool
-                        </span>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-[20px] font-semibold text-neutral-100">
-                            {formatAmount(campaign?.amount)}{" "}
-                            {campaign?.payment_token}
-                          </span>
-                          {tokenUsdPrice !== null && (
-                            <span className="text-xs text-brand-400">
-                              $
-                              {(
-                                campaign?.amount * tokenUsdPrice
-                              ).toLocaleString(undefined, {
-                                maximumFractionDigits: 2,
-                              })}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col gap-3">
-                        <span className="text-sm text-neutral-200">
-                          {campaign.status === "Ongoing"
-                            ? "Campaign ends in"
-                            : "Campaign has"}
-                        </span>
-                        <span className="text-sm">
-                          {formatTimeRemainingDisplay(
-                            getCampaignTimeRemaining()
-                          )}
-                        </span>
-                      </div>
-                      {/* <div className="flex flex-col">
-                        <span className="text-sm text-gray-400">
-                          Participants
-                        </span>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-semibold text-gray-100">
-                            {formatNumber(campaign?.counter || 0)}
-                          </span>
-                          {Boolean((campaign as any).sage_distributed) && (
-                            <span className="text-xs text-teal-400">
-                              {formatNumber((campaign as any).sage_distributed)}{" "}
-                              SAGE distributed
-                            </span>
-                          )}
-                        </div>
-                      </div> */}
-                    </div>
                   </div>
 
                   {/* Description */}
-                  {/* <div className="max-w-3xl">
+                  <div className="max-w-3xl">
                     <ExpandableDescription description={campaign.description} />
-                  </div> */}
+                  </div>
 
                   {/* Action buttons */}
                   <div className="flex flex-wrap items-center gap-3">
@@ -697,18 +852,62 @@ export default function SubCampaignDetails({
                   <TabsContent value="mindshare" className="space-y-8 mt-2">
                     {/* Community Mindshare */}
                     <div>
-                      <MindshareVisualization
-                        data={visualizationData?.result?.mindshare_data || []}
-                        selectedTimePeriod={selectedTimePeriod}
-                        onTimePeriodChange={(period) => {
-                          setSelectedTimePeriod(period as TimePeriod);
-                          setCurrentPage(1); // Reset to first page when changing period
-                        }}
-                        loading={loading}
-                        setLoading={setLoading}
-                        projectName={campaignId}
-                        projectHandle={campaign?.target_x_handle || ""}
-                      />
+                      {(() => {
+                        const isDataReady = mainCampaignDataReady;
+                        const isLoading = loading;
+                        const mindshareData =
+                          visualizationData?.result?.mindshare_data || [];
+
+                        // Show loading state while data is being fetched
+                        if (isLoading || !isDataReady) {
+                          return (
+                            <div className="w-full h-[513px] bg-neutral-900/30 rounded-lg flex items-center justify-center">
+                              <div className="flex items-center gap-3">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00D992]"></div>
+                                <span className="text-neutral-400">
+                                  Loading mindshare data...
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Show no data message if data is ready but empty
+                        if (mindshareData.length === 0) {
+                          return (
+                            <div className="w-full h-[513px] bg-neutral-900/30 rounded-lg flex items-center justify-center">
+                              <div className="text-center text-neutral-400">
+                                <div className="text-lg mb-2">
+                                  No mindshare data available
+                                </div>
+                                <div className="text-sm">
+                                  for{" "}
+                                  {selectedTimePeriod === "1d"
+                                    ? "24H"
+                                    : selectedTimePeriod || "this period"}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Show visualization only when data is ready and not empty
+                        return (
+                          <MindshareVisualization
+                            key={`main-${campaignId}-${selectedTimePeriod}`}
+                            data={mindshareData}
+                            selectedTimePeriod={selectedTimePeriod}
+                            onTimePeriodChange={(period) => {
+                              setSelectedTimePeriod(period as TimePeriod);
+                              setCurrentPage(1); // Reset to first page when changing period
+                            }}
+                            loading={false}
+                            setLoading={setLoading}
+                            projectName={campaignId}
+                            projectHandle={campaign?.target_x_handle || ""}
+                          />
+                        );
+                      })()}
                     </div>
 
                     {/* Leaderboard moved to Accounts tab in Feed */}
@@ -767,52 +966,30 @@ export default function SubCampaignDetails({
                   defaultValue="accounts"
                   className="max-w-[100vw] w-full h-full mt-0 p-4 border border-neutral-600 border-dashed border-t-0  flex flex-col"
                 >
-                  <div className="flex items-center justify-between">
-                    <TabsList className="inline-flex p-0 items-center bg-transparent rounded-md border border-neutral-600">
-                      {[
-                        { label: "Accounts", value: "accounts" },
-                        { label: "Mentions", value: "mentions" },
-                      ].map((tab) => (
-                        <TabsTrigger
-                          key={tab.value}
-                          value={tab.value}
-                          className="px-4 py-2 text-sm font-medium text-neutral-100 hover:text-white rounded-md transition-colors data-[state=active]:bg-neutral-700 data-[state=active]:text-neutral-100"
-                        >
-                          {tab.label}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                  </div>
-                  {/* Accounts Tab - Campaign Leaderboard */}
-                  <TabsContent value="accounts" className="space-y-4">
-                    {mindshareData?.result?.mindshare_data &&
-                      mindshareData.result.mindshare_data.length > 0 && (
-                        <CampaignLeaderboard
-                          data={mindshareData.result.mindshare_data}
-                          totalResults={mindshareData.result.total_results}
-                          campaignId={campaignId}
-                          selectedTimePeriod={selectedTimePeriod}
-                          currentPage={currentPage}
-                          followersLimit={followersLimit}
-                          onPageChange={handlePageChange}
-                        />
-                      )}
-                  </TabsContent>
-
-                  {/* Mentions Tab - Mentions Feed */}
-                  <TabsContent value="mentions" className="space-y-4">
-                    <MentionsFeed authorHandle={smartFeedHandle} />
-                  </TabsContent>
+                  {mindshareData?.result?.mindshare_data &&
+                    mindshareData.result.mindshare_data.length > 0 && (
+                      <CampaignLeaderboard
+                        data={mindshareData.result.mindshare_data}
+                        totalResults={mindshareData.result.total_results}
+                        campaignId={campaignId}
+                        selectedTimePeriod={selectedTimePeriod}
+                        currentPage={currentPage}
+                        followersLimit={followersLimit}
+                        onPageChange={handlePageChange}
+                      />
+                    )}
                 </Tabs>
               </div>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Smart Feed Sidebar */}
-        {/* <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-16 h-[calc(100vh-4rem)]">
-          <MentionsFeed authorHandle={smartFeedHandle} />
-        </div> */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 mt-8 pb-8">
+        <h2 className="py-4 text-3xl font-semibold text-neutral-100 mb-4">
+          Mentions feed:
+        </h2>
+        <MentionsFeed authorHandle={smartFeedHandle} />
       </div>
     </div>
   );

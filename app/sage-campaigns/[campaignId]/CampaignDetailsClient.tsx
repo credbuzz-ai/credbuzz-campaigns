@@ -615,7 +615,7 @@ export default function CampaignDetailsClient({
                         <Image
                           src={
                             campaign?.owner_info?.profile_image_url ||
-                            "/placeholder-logo.png"
+                            "/demoUser.png.png"
                           }
                           alt={campaign?.campaign_name}
                           width={56}
@@ -1097,7 +1097,7 @@ export default function CampaignDetailsClient({
                               <Image
                                 src={
                                   campaign?.owner_info?.profile_image_url ||
-                                  "/placeholder-logo.png"
+                                  "/demoUser.png.png"
                                 }
                                 alt={subCampaign.campaign_name}
                                 width={56}
