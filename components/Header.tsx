@@ -15,10 +15,10 @@ const navItems = [
     label: "Find KOLs",
     href: "/kols",
   },
-  // {
-  //   label: "Projects",
-  //   href: "/projects",
-  // },
+  {
+    label: "Communities",
+    href: "/communities",
+  },
 ];
 
 export default function Header() {
@@ -168,16 +168,7 @@ export default function Header() {
 
           {/* Mobile controls */}
           <div className="flex items-center gap-3 md:hidden">
-            {ready && !authenticated && (
-              <button
-                className="btn-primarynew inline-flex items-center justify-center min-w-[160px]"
-                onClick={login}
-                disabled={isProcessing}
-              >
-                {isProcessing ? "Connecting..." : "Login with X"}
-              </button>
-            )}
-            {/* Mobile Avatar */}
+            {/* Mobile Avatar - only show when authenticated */}
             {ready && authenticated && (
               <div className="relative" ref={mobileDropdownRef}>
                 <button
@@ -227,19 +218,17 @@ export default function Header() {
                 )}
               </div>
             )}
-            {/* Hamburger */}
-            {authenticated && (
-              <button
-                className="text-neutral-100 hover:text-brand-600 transition-colors duration-300 focus:outline-none"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-              >
-                {isMenuOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
-                )}
-              </button>
-            )}
+            {/* Hamburger - always show in mobile */}
+            <button
+              className="text-neutral-100 hover:text-brand-600 transition-colors duration-300 focus:outline-none"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -266,8 +255,11 @@ export default function Header() {
               ))}
               {ready && !authenticated && (
                 <button
-                  className="btn-primary w-full"
-                  onClick={login}
+                  className="btn-primarynew w-full mx-4 mt-4"
+                  onClick={() => {
+                    login();
+                    setIsMenuOpen(false);
+                  }}
                   disabled={isProcessing}
                 >
                   {isProcessing ? "Connecting..." : "Login with X"}

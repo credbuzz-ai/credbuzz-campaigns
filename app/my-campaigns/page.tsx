@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/contexts/UserContext";
 import { useToast } from "@/hooks/use-toast";
 import apiClient from "@/lib/api";
@@ -33,7 +34,6 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import UpdateWalletDialog from "../components/UpdateWalletDialog";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function MyCampaigns() {
   const router = useRouter();
@@ -444,7 +444,7 @@ export default function MyCampaigns() {
               <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
                 <div className="relative">
                   <img
-                    src={user.profile_image_url || "/placeholder-user.jpg"}
+                    src={user.profile_image_url || "/demoUser.png.jpg"}
                     alt={user.name || user.x_handle}
                     className="w-16 sm:w-20 h-16 sm:h-20 rounded-[8px] object-cover border-2 border-[#00D992]/30"
                   />

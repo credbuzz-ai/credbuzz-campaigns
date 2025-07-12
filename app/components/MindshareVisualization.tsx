@@ -369,7 +369,7 @@ export default function MindshareVisualization({
                   image.setAttribute("clip-path", `url(#${clipPathId})`);
                   image.setAttribute(
                     "href",
-                    dataPoint.profile_image_url || "/placeholder-user.jpg"
+                    dataPoint.profile_image_url || "/demoUser.png.jpg"
                   );
                   image.setAttribute("preserveAspectRatio", "xMidYMid slice");
                   image.setAttribute(
