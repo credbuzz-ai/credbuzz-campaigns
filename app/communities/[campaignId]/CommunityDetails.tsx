@@ -674,9 +674,6 @@ export default function CommunityDetails({
                         </div>
                         {/* Categories */}
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-support-sand text-xs font-semibold">
-                            {campaign?.campaign_type}
-                          </span>
                           {campaign?.project_categories
                             ?.split(",")
                             .map((category) => (
