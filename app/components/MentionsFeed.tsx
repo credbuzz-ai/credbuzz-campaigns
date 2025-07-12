@@ -293,7 +293,7 @@ export default function MentionsFeed({
   };
 
   return (
-    <div className=" sticky top-8 bg-neutral-900 flex flex-col h-[500px]">
+    <div className="sticky top-8 bg-neutral-900 flex flex-col h-[500px] border border-neutral-600 rounded-lg">
       <div className="flex items-center justify-between mb-4">
         {/* <div className="flex items-center gap-2">
           <AtSign className="w-5 h-5 text-[#00D992]" />
