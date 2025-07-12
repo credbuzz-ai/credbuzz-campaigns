@@ -1019,47 +1019,30 @@ export default function CampaignDetailsClient({
                   defaultValue="accounts"
                   className="max-w-[100vw] w-full h-full mt-0 p-4 border border-neutral-600 border-dashed border-t-0  flex flex-col"
                 >
-                  <div className="flex items-center justify-between">
-                    <TabsList className="inline-flex p-0 items-center bg-transparent rounded-md border border-neutral-600">
-                      {[
-                        { label: "Accounts", value: "accounts" },
-                        { label: "Mentions", value: "mentions" },
-                      ].map((tab) => (
-                        <TabsTrigger
-                          key={tab.value}
-                          value={tab.value}
-                          className="px-4 py-2 text-sm font-medium text-neutral-100 hover:text-white rounded-md transition-colors data-[state=active]:bg-neutral-700 data-[state=active]:text-neutral-100"
-                        >
-                          {tab.label}
-                        </TabsTrigger>
-                      ))}
-                    </TabsList>
-                  </div>
-                  {/* Accounts Tab - Campaign Leaderboard */}
-                  <TabsContent value="accounts" className="space-y-4">
-                    {mindshareData?.result?.mindshare_data &&
-                      mindshareData.result.mindshare_data.length > 0 && (
-                        <CampaignLeaderboard
-                          data={mindshareData.result.mindshare_data}
-                          totalResults={mindshareData.result.total_results}
-                          campaignId={campaignId}
-                          selectedTimePeriod={selectedTimePeriod}
-                          currentPage={currentPage}
-                          followersLimit={followersLimit}
-                          onPageChange={handlePageChange}
-                        />
-                      )}
-                  </TabsContent>
-
-                  {/* Mentions Tab - Mentions Feed */}
-                  <TabsContent value="mentions" className="space-y-4">
-                    <MentionsFeed authorHandle={smartFeedHandle} />
-                  </TabsContent>
+                  {mindshareData?.result?.mindshare_data &&
+                    mindshareData.result.mindshare_data.length > 0 && (
+                      <CampaignLeaderboard
+                        data={mindshareData.result.mindshare_data}
+                        totalResults={mindshareData.result.total_results}
+                        campaignId={campaignId}
+                        selectedTimePeriod={selectedTimePeriod}
+                        currentPage={currentPage}
+                        followersLimit={followersLimit}
+                        onPageChange={handlePageChange}
+                      />
+                    )}
                 </Tabs>
               </div>
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 mt-8 pb-8">
+        <h2 className="py-4 text-3xl font-semibold text-neutral-100 mb-4">
+          Mentions
+        </h2>
+        <MentionsFeed authorHandle={smartFeedHandle} />
       </div>
 
       {/* Sub Campaigns Section */}
