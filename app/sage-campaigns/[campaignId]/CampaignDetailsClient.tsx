@@ -29,6 +29,7 @@ import { DiscordIcon } from "@/public/icons/DiscordIcon";
 import { TgIcon } from "@/public/icons/TgIcon";
 import { XIcon } from "@/public/icons/XIcon";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import SubCampaignCard from "./SubCampaignCard";
 
@@ -196,9 +197,11 @@ const getSubCampaignTimeRemaining = (endDate: string) => {
 export default function CampaignDetailsClient({
   campaignId,
 }: CampaignDetailsClientProps) {
+  const router = useRouter();
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [shouldRedirectToNotFound, setShouldRedirectToNotFound] =
+    useState(false);
   const [mindshareData, setMindshareData] = useState<MindshareResponse | null>(
     null
   );
@@ -260,6 +263,13 @@ export default function CampaignDetailsClient({
     }
   }, [loading, mainCampaignDataReady]);
 
+  // Handle redirect to not-found page
+  useEffect(() => {
+    if (shouldRedirectToNotFound) {
+      router.push("/not-found");
+    }
+  }, [shouldRedirectToNotFound, router]);
+
   // Add safety timeout for sub-campaigns
   useEffect(() => {
     Object.keys(subCampaignLoading).forEach((campaignId) => {
@@ -293,14 +303,16 @@ export default function CampaignDetailsClient({
           campaign_id: campaignId,
         });
 
-        if (response.data?.result?.[0]) {
-          setCampaign(response.data.result[0]);
+        const result = response.data.result[0];
+
+        if (result) {
+          setCampaign(result);
         } else {
-          setError("Campaign not found");
+          setShouldRedirectToNotFound(true);
         }
       } catch (err) {
         console.error("Error fetching campaign details:", err);
-        setError("Failed to load campaign details");
+        setShouldRedirectToNotFound(true);
       } finally {
         setIsLoading(false);
       }
@@ -515,17 +527,6 @@ export default function CampaignDetailsClient({
 
   if (isLoading || !campaign) {
     return <CampaignSkeleton />;
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-400 mb-2">Error</h2>
-          <p className="text-gray-400">{error}</p>
-        </div>
-      </div>
-    );
   }
 
   // Helper function to calculate campaign time remaining
