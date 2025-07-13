@@ -42,8 +42,10 @@ export default function Communities() {
     setLoading(true);
     const campaigns = await apiClient.post("/campaign/get-campaigns", {
       campaign_type: "Public",
-      is_visible: true,
+      is_visible: false,
+      campaign_status: "Upcoming",
     });
+
     const uniqueCampaigns = campaigns.data.result.filter(
       (campaign: Campaign, index: number, self: Campaign[]) =>
         index ===
@@ -84,15 +86,9 @@ export default function Communities() {
           </div>
         ) : campaigns.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {campaigns.map(
-              (campaign) =>
-                campaign.is_visible && (
-                  <CommunityCard
-                    key={campaign.campaign_id}
-                    campaign={campaign}
-                  />
-                )
-            )}
+            {campaigns.map((campaign) => (
+              <CommunityCard key={campaign.campaign_id} campaign={campaign} />
+            ))}
           </div>
         ) : (
           <div className="text-center py-12">
