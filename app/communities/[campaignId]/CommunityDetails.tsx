@@ -317,6 +317,7 @@ export default function CommunityDetails({
       }
     };
 
+    console.log("fetching campaign details");
     fetchCampaignDetails();
   }, [campaignId]);
 
