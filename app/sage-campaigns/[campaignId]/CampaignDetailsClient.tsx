@@ -339,13 +339,8 @@ export default function CampaignDetailsClient({
         const paginatedResponse = await apiClient.get(
           `/mindshare?project_name=${handle}&limit=${followersLimit}&offset=${offset}&period=${period}`
         );
+        setVisualizationData(paginatedResponse.data);
         setMindshareData(paginatedResponse.data);
-
-        // Use the same limit for visualization data to maintain consistency
-        const visualizationResponse = await apiClient.get(
-          `/mindshare?project_name=${handle}&limit=${followersLimit}&period=${period}`
-        );
-        setVisualizationData(visualizationResponse.data);
 
         // Mark data as ready - even if data is empty
         setMainCampaignDataReady(true);
@@ -449,23 +444,16 @@ export default function CampaignDetailsClient({
         [subCampaign.campaign_id]: false,
       }));
 
-      const handle = subCampaign.target_x_handle.replace("@", "").toLowerCase();
       const offset = (subCampaignCurrentPage - 1) * subCampaignFollowersLimit;
-
-      // Fetch visualization data for the sub-campaign
-      const visualizationResponse = await apiClient.get(
-        `/mindshare?project_name=${handle}&limit=${subCampaignFollowersLimit}&period=${period}`
-      );
-
-      setSubCampaignVisualizationData((prev) => ({
-        ...prev,
-        [subCampaign.campaign_id]: visualizationResponse.data,
-      }));
 
       // Fetch paginated data for the leaderboard
       const paginatedResponse = await apiClient.get(
-        `/mindshare?project_name=${handle}&limit=${subCampaignFollowersLimit}&offset=${offset}&period=${period}`
+        `/mindshare?project_name=${subCampaign.campaign_name}&limit=${subCampaignFollowersLimit}&offset=${offset}&period=${period}`
       );
+      setSubCampaignVisualizationData((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: paginatedResponse.data,
+      }));
 
       setSubCampaignMindshareData((prev) => ({
         ...prev,
