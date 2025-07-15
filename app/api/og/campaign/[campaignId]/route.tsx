@@ -206,8 +206,7 @@ function Treemap({
             border: "2px solid #333",
             boxSizing: "border-box",
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            flexDirection: "column",
             overflow: "hidden",
           }}
         >
@@ -219,9 +218,66 @@ function Treemap({
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
+                position: "absolute",
+                top: 0,
+                left: 0,
+                opacity: 0.7,
               }}
             />
           )}
+
+          {/* Mindshare Percentage Overlay */}
+          <div
+            style={{
+              position: "absolute",
+              top: "4px",
+              left: "4px",
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              padding: "2px 6px",
+              borderRadius: "4px",
+              zIndex: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span
+              style={{
+                fontSize: Math.max(10, Math.min(16, item.width * 0.15)),
+                fontWeight: "800",
+                color: "#00D992",
+                lineHeight: 1,
+              }}
+            >
+              {item.mindshare_percent.toFixed(2)}%
+            </span>
+          </div>
+
+          {/* Handle Overlay */}
+          <div
+            style={{
+              position: "absolute",
+              top: "4px",
+              left: "4px",
+              marginTop: Math.max(20, Math.min(30, item.height * 0.15)),
+              zIndex: 2,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <span
+              style={{
+                fontSize: Math.max(8, Math.min(14, item.width * 0.12)),
+                fontWeight: "600",
+                color: "#FFFFFF",
+                lineHeight: 1,
+                textShadow: "1px 1px 2px rgba(0, 0, 0, 0.8)",
+              }}
+            >
+              {item.author_handle}
+            </span>
+          </div>
         </div>
       ))}
     </div>
