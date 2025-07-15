@@ -39,7 +39,7 @@ function Treemap({
     return (mindshare / totalMindshare) * totalSize;
   }
 
-  // Squarified treemap layout algorithm
+  // Column-wise treemap layout algorithm
   function layoutTreemap(
     items: any[],
     x: number,
@@ -51,131 +51,61 @@ function Treemap({
 
     const result: any[] = [];
 
-    function squarify(
-      items: any[],
-      x: number,
-      y: number,
-      w: number,
-      h: number
-    ): any[] {
-      if (items.length === 0) return [];
+    // Calculate total mindshare for proportional sizing
+    const totalMindshare = items.reduce(
+      (sum, item) => sum + item.mindshare_percent,
+      0
+    );
 
-      const totalArea = w * h;
-      const totalValue = items.reduce(
-        (sum, item) => sum + item.mindshare_percent,
-        0
-      );
+    // Determine number of columns (aim for roughly square-ish columns)
+    const numColumns = Math.ceil(Math.sqrt(items.length));
+    const columnWidth = w / numColumns;
 
-      // Find the best row/column to add
-      let bestRow = [];
-      let bestRatio = Infinity;
-
-      for (let i = 1; i <= items.length; i++) {
-        const row = items.slice(0, i);
-        const rowValue = row.reduce(
-          (sum, item) => sum + item.mindshare_percent,
-          0
-        );
-        const rowArea = (rowValue / totalValue) * totalArea;
-
-        // Calculate aspect ratio for this row
-        let ratio;
-        if (w > h) {
-          // Horizontal layout
-          const rowHeight = rowArea / w;
-          const maxWidth = Math.max(
-            ...row.map((item) => (item.mindshare_percent / rowValue) * w)
-          );
-          ratio = Math.max(maxWidth / rowHeight, rowHeight / maxWidth);
-        } else {
-          // Vertical layout
-          const rowWidth = rowArea / h;
-          const maxHeight = Math.max(
-            ...row.map((item) => (item.mindshare_percent / rowValue) * h)
-          );
-          ratio = Math.max(rowWidth / maxHeight, maxHeight / rowWidth);
-        }
-
-        if (ratio < bestRatio) {
-          bestRatio = ratio;
-          bestRow = row;
-        }
-      }
-
-      if (bestRow.length === 0) return [];
-
-      const rowValue = bestRow.reduce(
-        (sum, item) => sum + item.mindshare_percent,
-        0
-      );
-      const rowArea = (rowValue / totalValue) * totalArea;
-
-      // Layout the best row
-      const rowResult: any[] = [];
-      if (w > h) {
-        // Horizontal layout
-        const rowHeight = rowArea / w;
-        let currentX = x;
-
-        bestRow.forEach((item) => {
-          const itemArea = (item.mindshare_percent / rowValue) * rowArea;
-          const itemWidth = itemArea / rowHeight;
-
-          rowResult.push({
-            ...item,
-            x: currentX,
-            y: y,
-            width: itemWidth,
-            height: rowHeight,
-          });
-
-          currentX += itemWidth;
-        });
-
-        // Recursively layout remaining items
-        const remainingItems = items.slice(bestRow.length);
-        const remainingResult = squarify(
-          remainingItems,
-          x,
-          y + rowHeight,
-          w,
-          h - rowHeight
-        );
-        return [...rowResult, ...remainingResult];
-      } else {
-        // Vertical layout
-        const rowWidth = rowArea / h;
-        let currentY = y;
-
-        bestRow.forEach((item) => {
-          const itemArea = (item.mindshare_percent / rowValue) * rowArea;
-          const itemHeight = itemArea / rowWidth;
-
-          rowResult.push({
-            ...item,
-            x: x,
-            y: currentY,
-            width: rowWidth,
-            height: itemHeight,
-          });
-
-          currentY += itemHeight;
-        });
-
-        // Recursively layout remaining items
-        const remainingItems = items.slice(bestRow.length);
-        const remainingResult = squarify(
-          remainingItems,
-          x + rowWidth,
-          y,
-          w - rowWidth,
-          h
-        );
-        return [...rowResult, ...remainingResult];
-      }
+    // Group items into columns
+    const columns: any[][] = [];
+    for (let i = 0; i < numColumns; i++) {
+      columns[i] = [];
     }
 
-    return squarify(items, x, y, w, h);
+    // Distribute items across columns - fill one column completely before moving to next
+    const itemsPerColumn = Math.ceil(items.length / numColumns);
+    items.forEach((item, index) => {
+      const columnIndex = Math.floor(index / itemsPerColumn);
+      if (columnIndex < numColumns) {
+        columns[columnIndex].push(item);
+      }
+    });
+
+    // Layout each column
+    columns.forEach((columnItems, columnIndex) => {
+      if (columnItems.length === 0) return;
+
+      const columnX = x + columnIndex * columnWidth;
+
+      // Calculate total mindshare for this column
+      const columnMindshare = columnItems.reduce(
+        (sum, item) => sum + item.mindshare_percent,
+        0
+      );
+
+      // Layout items vertically within the column
+      let currentY = y;
+      columnItems.forEach((item) => {
+        const itemHeight = (item.mindshare_percent / columnMindshare) * h;
+
+        result.push({
+          ...item,
+          x: columnX,
+          y: currentY,
+          width: columnWidth,
+          height: itemHeight,
+        });
+
+        currentY += itemHeight;
+      });
+    });
+
+    return result;
   }
 
   // Layout the treemap
