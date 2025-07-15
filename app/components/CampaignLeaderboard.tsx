@@ -222,7 +222,7 @@ export default function CampaignLeaderboard({
                         onClick={() => handleInvite(contributor.author_handle)}
                         className="inline-flex items-center px-3 py-1 rounded-full text-xs bg-[#00D992]/10 text-[#00D992] cursor-pointer hover:bg-[#00D992]/20 transition-colors whitespace-nowrap"
                       >
-                        Invite for 10 SAGE <Send className="w-3.5 h-3.5 ml-1" />
+                        Invite <Send className="w-3.5 h-3.5 ml-1" />
                       </span>
                     )}
                   </TableCell>

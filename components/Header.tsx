@@ -81,7 +81,7 @@ export default function Header() {
           : "bg-transparent backdrop-blur-xl border-b border-gray-700/50"
       }`}
     >
-      <div className="max-w-6xl mx-auto px-4 md:px-0">
+      <div className="w-full max-w-none px-4 md:px-8 lg:px-12 xl:px-16 2xl:px-20">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2 group">
             <img
