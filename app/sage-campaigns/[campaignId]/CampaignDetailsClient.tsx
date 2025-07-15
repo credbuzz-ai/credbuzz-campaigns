@@ -213,7 +213,8 @@ export default function CampaignDetailsClient({
     UserProfileResponse["result"]["activity_data"] | null
   >(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(100);
+  const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(20);
+  const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 100;
   const [tokenUsdPrice, setTokenUsdPrice] = useState<number | null>(null);
   const [selectedSubCampaign, setSelectedSubCampaign] = useState<string | null>(
@@ -244,8 +245,10 @@ export default function CampaignDetailsClient({
     useState<TimePeriod>("30d");
   const [subCampaignFollowersLimit, setSubCampaignFollowersLimit] = useState<
     20 | 50 | 100
-  >(100);
+  >(20);
   const [subCampaignCurrentPage, setSubCampaignCurrentPage] = useState(1);
+  const [subCampaignFollowersOffset, setSubCampaignFollowersOffset] =
+    useState(0);
 
   // Add safety timeout to prevent infinite loading
   useEffect(() => {
@@ -329,17 +332,17 @@ export default function CampaignDetailsClient({
         setMainCampaignDataReady(false);
         const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
 
-        // Calculate the correct limit and offset based on the selected range
+        // Calculate the correct limit and offset based on the selected range and current page
         let limit, offset;
         if (followersLimit === 20) {
           limit = 20;
-          offset = 0;
+          offset = (currentPage - 1) * 20;
         } else if (followersLimit === 50) {
           limit = 30;
-          offset = 20;
+          offset = 20 + (currentPage - 1) * 30;
         } else if (followersLimit === 100) {
           limit = 50;
-          offset = 50;
+          offset = 50 + (currentPage - 1) * 50;
         }
 
         // Reset states before fetching new data
@@ -368,7 +371,12 @@ export default function CampaignDetailsClient({
     if (campaign?.target_x_handle) {
       fetchMindshare(selectedTimePeriod);
     }
-  }, [campaign?.target_x_handle, selectedTimePeriod, followersLimit]);
+  }, [
+    campaign?.target_x_handle,
+    selectedTimePeriod,
+    followersLimit,
+    currentPage,
+  ]);
 
   useEffect(() => {
     const fetchActivityData = async () => {
@@ -409,6 +417,32 @@ export default function CampaignDetailsClient({
     }
   }, [campaign?.payment_token, campaign?.amount]);
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleSubCampaignPageChange = (page: number) => {
+    setSubCampaignCurrentPage(page);
+  };
+
+  // Function to get range label based on followersLimit and currentPage
+  const getRangeLabel = (limit: number, page: number) => {
+    if (limit === 20) {
+      const start = (page - 1) * 20 + 1;
+      const end = page * 20;
+      return `${start}-${end}`;
+    } else if (limit === 50) {
+      const start = 20 + (page - 1) * 30 + 1;
+      const end = 20 + page * 30;
+      return `${start}-${end}`;
+    } else if (limit === 100) {
+      const start = 50 + (page - 1) * 50 + 1;
+      const end = 50 + page * 50;
+      return `${start}-${end}`;
+    }
+    return "";
+  };
+
   // Function to fetch mindshare data for a specific sub-campaign
   const fetchSubCampaignMindshare = async (
     subCampaign: Campaign,
@@ -440,17 +474,17 @@ export default function CampaignDetailsClient({
         [subCampaign.campaign_id]: false,
       }));
 
-      // Calculate the correct limit and offset based on the selected range
+      // Calculate the correct limit and offset based on the selected range and current page
       let limit, offset;
       if (subCampaignFollowersLimit === 20) {
         limit = 20;
-        offset = 0;
+        offset = (subCampaignCurrentPage - 1) * 20;
       } else if (subCampaignFollowersLimit === 50) {
         limit = 30;
-        offset = 20;
+        offset = 20 + (subCampaignCurrentPage - 1) * 30;
       } else if (subCampaignFollowersLimit === 100) {
         limit = 50;
-        offset = 50;
+        offset = 50 + (subCampaignCurrentPage - 1) * 50;
       }
 
       // Fetch paginated data for the leaderboard
@@ -513,7 +547,12 @@ export default function CampaignDetailsClient({
         );
       }
     }
-  }, [selectedSubCampaign, subCampaignTimePeriod, subCampaignFollowersLimit]);
+  }, [
+    selectedSubCampaign,
+    subCampaignTimePeriod,
+    subCampaignFollowersLimit,
+    subCampaignCurrentPage,
+  ]);
 
   if (isLoading || !campaign) {
     return <CampaignSkeleton />;
@@ -943,7 +982,6 @@ export default function CampaignDetailsClient({
                             selectedTimePeriod={selectedTimePeriod}
                             onTimePeriodChange={(period) => {
                               setSelectedTimePeriod(period as TimePeriod);
-                              setCurrentPage(1); // Reset to first page when changing period
                             }}
                             loading={false}
                             setLoading={setLoading}
@@ -982,6 +1020,7 @@ export default function CampaignDetailsClient({
                         key={value}
                         onClick={() => {
                           setFollowersLimit(value as 20 | 50 | 100);
+                          setCurrentPage(1); // Reset to first page when changing range
                         }}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                           followersLimit === value
@@ -999,6 +1038,7 @@ export default function CampaignDetailsClient({
                         key={period}
                         onClick={() => {
                           setSelectedTimePeriod(period as TimePeriod);
+                          setCurrentPage(1);
                         }}
                         className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
                           selectedTimePeriod === period
@@ -1022,11 +1062,10 @@ export default function CampaignDetailsClient({
                         totalResults={mindshareData.result.total_results}
                         campaignId={campaignId}
                         selectedTimePeriod={selectedTimePeriod}
-                        currentPage={1}
-                        followersLimit={
-                          mindshareData.result.mindshare_data.length
-                        }
-                        onPageChange={() => {}} // Disable pagination for range-based filtering
+                        currentPage={currentPage}
+                        followersLimit={followersLimit}
+                        onPageChange={handlePageChange}
+                        rangeLabel={getRangeLabel(followersLimit, currentPage)}
                       />
                     )}
                 </Tabs>
@@ -1060,11 +1099,6 @@ export default function CampaignDetailsClient({
                   subCampaign={subCampaign}
                   isSelected={isSelected}
                   onSelect={(id) => {
-                    console.log("SubCampaign selected:", subCampaign);
-                    console.log(
-                      "Setting selectedSubCampaign to:",
-                      isSelected ? null : id
-                    );
                     setSelectedSubCampaign(isSelected ? null : id);
                   }}
                   ownerProfileImage={campaign.owner_info?.profile_image_url}
@@ -1352,6 +1386,7 @@ export default function CampaignDetailsClient({
                                   setSubCampaignTimePeriod(
                                     period as TimePeriod
                                   );
+                                  setSubCampaignCurrentPage(1);
                                 }}
                                 loading={false}
                                 setLoading={(loading) => {
@@ -1399,6 +1434,7 @@ export default function CampaignDetailsClient({
                                   setSubCampaignFollowersLimit(
                                     value as 20 | 50 | 100
                                   );
+                                  setSubCampaignCurrentPage(1); // Reset to first page when changing range
                                 }}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                                   subCampaignFollowersLimit === value
@@ -1418,6 +1454,7 @@ export default function CampaignDetailsClient({
                                   setSubCampaignTimePeriod(
                                     period as TimePeriod
                                   );
+                                  setSubCampaignCurrentPage(1);
                                 }}
                                 className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
                                   subCampaignTimePeriod === period
@@ -1461,16 +1498,6 @@ export default function CampaignDetailsClient({
                               const isLoading =
                                 subCampaignLoading[subCampaign.campaign_id];
 
-                              console.log(
-                                `Rendering accounts tab for ${subCampaign.campaign_id}:`,
-                                {
-                                  mindshareData,
-                                  mindshareDataArray,
-                                  isLoading,
-                                  isDataReady,
-                                }
-                              );
-
                               // Show loading state if data is being fetched
                               if (isLoading || !isDataReady) {
                                 return (
@@ -1497,9 +1524,13 @@ export default function CampaignDetailsClient({
                                     }
                                     campaignId={subCampaign.campaign_id}
                                     selectedTimePeriod={subCampaignTimePeriod}
-                                    currentPage={1}
-                                    followersLimit={mindshareDataArray.length}
-                                    onPageChange={() => {}} // Disable pagination for range-based filtering
+                                    currentPage={subCampaignCurrentPage}
+                                    followersLimit={subCampaignFollowersLimit}
+                                    onPageChange={handleSubCampaignPageChange}
+                                    rangeLabel={getRangeLabel(
+                                      subCampaignFollowersLimit,
+                                      subCampaignCurrentPage
+                                    )}
                                   />
                                 );
                               }

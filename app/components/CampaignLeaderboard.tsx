@@ -33,6 +33,7 @@ interface CampaignLeaderboardProps {
   onPageChange?: (page: number) => void;
   currentPage?: number;
   followersLimit?: number;
+  rangeLabel?: string; // New prop for range label
 }
 
 export default function CampaignLeaderboard({
@@ -42,6 +43,7 @@ export default function CampaignLeaderboard({
   onPageChange,
   currentPage = 1,
   followersLimit = 100,
+  rangeLabel,
 }: CampaignLeaderboardProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -234,9 +236,17 @@ export default function CampaignLeaderboard({
           {totalPages > 1 && (
             <div className="flex items-center justify-between px-2 py-4">
               <div className="text-sm text-gray-400">
-                Showing {(currentPage - 1) * followersLimit + 1} to{" "}
-                {Math.min(currentPage * followersLimit, totalResults)} of{" "}
-                {totalResults} results
+                {rangeLabel ? (
+                  <>
+                    Showing {rangeLabel} of {totalResults} results
+                  </>
+                ) : (
+                  <>
+                    Showing {(currentPage - 1) * followersLimit + 1} to{" "}
+                    {Math.min(currentPage * followersLimit, totalResults)} of{" "}
+                    {totalResults} results
+                  </>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button
