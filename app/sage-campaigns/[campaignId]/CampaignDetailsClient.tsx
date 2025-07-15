@@ -212,7 +212,6 @@ export default function CampaignDetailsClient({
   const [activityData, setActivityData] = useState<
     UserProfileResponse["result"]["activity_data"] | null
   >(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(100);
   const pageSize = 100;
@@ -329,7 +328,19 @@ export default function CampaignDetailsClient({
         setLoading(true);
         setMainCampaignDataReady(false);
         const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
-        const offset = (currentPage - 1) * followersLimit;
+
+        // Calculate the correct limit and offset based on the selected range
+        let limit, offset;
+        if (followersLimit === 20) {
+          limit = 20;
+          offset = 0;
+        } else if (followersLimit === 50) {
+          limit = 30;
+          offset = 20;
+        } else if (followersLimit === 100) {
+          limit = 50;
+          offset = 50;
+        }
 
         // Reset states before fetching new data
         setMindshareData(null);
@@ -337,7 +348,7 @@ export default function CampaignDetailsClient({
 
         // Fetch paginated data for the leaderboard
         const paginatedResponse = await apiClient.get(
-          `/mindshare?project_name=${handle}&limit=${followersLimit}&offset=${offset}&period=${period}`
+          `/mindshare?project_name=${handle}&limit=${limit}&offset=${offset}&period=${period}`
         );
         setVisualizationData(paginatedResponse.data);
         setMindshareData(paginatedResponse.data);
@@ -357,13 +368,7 @@ export default function CampaignDetailsClient({
     if (campaign?.target_x_handle) {
       fetchMindshare(selectedTimePeriod);
     }
-  }, [
-    campaign?.target_x_handle,
-    selectedTimePeriod,
-    currentPage,
-    followersLimit,
-    pageSize,
-  ]);
+  }, [campaign?.target_x_handle, selectedTimePeriod, followersLimit]);
 
   useEffect(() => {
     const fetchActivityData = async () => {
@@ -404,15 +409,6 @@ export default function CampaignDetailsClient({
     }
   }, [campaign?.payment_token, campaign?.amount]);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  // Add separate page change handler for sub-campaigns
-  const handleSubCampaignPageChange = (page: number) => {
-    setSubCampaignCurrentPage(page);
-  };
-
   // Function to fetch mindshare data for a specific sub-campaign
   const fetchSubCampaignMindshare = async (
     subCampaign: Campaign,
@@ -444,11 +440,22 @@ export default function CampaignDetailsClient({
         [subCampaign.campaign_id]: false,
       }));
 
-      const offset = (subCampaignCurrentPage - 1) * subCampaignFollowersLimit;
+      // Calculate the correct limit and offset based on the selected range
+      let limit, offset;
+      if (subCampaignFollowersLimit === 20) {
+        limit = 20;
+        offset = 0;
+      } else if (subCampaignFollowersLimit === 50) {
+        limit = 30;
+        offset = 20;
+      } else if (subCampaignFollowersLimit === 100) {
+        limit = 50;
+        offset = 50;
+      }
 
       // Fetch paginated data for the leaderboard
       const paginatedResponse = await apiClient.get(
-        `/mindshare?project_name=${subCampaign.campaign_name}&limit=${subCampaignFollowersLimit}&offset=${offset}&period=${period}`
+        `/mindshare?project_name=${subCampaign.campaign_name}&limit=${limit}&offset=${offset}&period=${period}`
       );
       setSubCampaignVisualizationData((prev) => ({
         ...prev,
@@ -506,12 +513,7 @@ export default function CampaignDetailsClient({
         );
       }
     }
-  }, [
-    selectedSubCampaign,
-    subCampaignTimePeriod,
-    subCampaignFollowersLimit,
-    subCampaignCurrentPage,
-  ]);
+  }, [selectedSubCampaign, subCampaignTimePeriod, subCampaignFollowersLimit]);
 
   if (isLoading || !campaign) {
     return <CampaignSkeleton />;
@@ -590,7 +592,7 @@ export default function CampaignDetailsClient({
       <div className="flex items-start">
         {/* Main Content */}
         <div className="flex-1 py-4 md:py-8 px-0 md:px-8 lg:px-12">
-          <div className="max-w-6xl px-0 md:px-0 mx-auto">
+          <div className="max-w-7xl px-0 md:px-0 mx-auto">
             {/* Campaign Header */}
             <Card className="bg-neutral-900 border-none mb-2">
               <div className="p-4 md:p-6 md:px-0">
@@ -971,17 +973,23 @@ export default function CampaignDetailsClient({
                 <div className="justify-center md:justify-between  pt-4 border-b border-neutral-600 pb-4 flex flex-col md:flex-row items-center md:items-center gap-4">
                   {/* Limit buttons */}
                   <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
-                    {[20, 50, 100].map((num) => (
+                    {[
+                      { value: 20, label: "Top 20" },
+                      { value: 50, label: "21-50" },
+                      { value: 100, label: "51-100" },
+                    ].map(({ value, label }) => (
                       <button
-                        key={num}
-                        onClick={() => setFollowersLimit(num as 20 | 50 | 100)}
+                        key={value}
+                        onClick={() => {
+                          setFollowersLimit(value as 20 | 50 | 100);
+                        }}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                          followersLimit === num
+                          followersLimit === value
                             ? "bg-neutral-700 text-neutral-100"
                             : "text-neutral-300 hover:text-neutral-100"
                         }`}
                       >
-                        Top {num}
+                        {label}
                       </button>
                     ))}
                   </div>
@@ -991,7 +999,6 @@ export default function CampaignDetailsClient({
                         key={period}
                         onClick={() => {
                           setSelectedTimePeriod(period as TimePeriod);
-                          setCurrentPage(1);
                         }}
                         className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
                           selectedTimePeriod === period
@@ -1015,9 +1022,11 @@ export default function CampaignDetailsClient({
                         totalResults={mindshareData.result.total_results}
                         campaignId={campaignId}
                         selectedTimePeriod={selectedTimePeriod}
-                        currentPage={currentPage}
-                        followersLimit={followersLimit}
-                        onPageChange={handlePageChange}
+                        currentPage={1}
+                        followersLimit={
+                          mindshareData.result.mindshare_data.length
+                        }
+                        onPageChange={() => {}} // Disable pagination for range-based filtering
                       />
                     )}
                 </Tabs>
@@ -1027,7 +1036,7 @@ export default function CampaignDetailsClient({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 mt-8 pb-8">
+      <div className="max-w-7xl mx-auto md:px-8 lg:px-0 mt-8 pb-8">
         <h2 className="py-4 text-3xl font-semibold text-neutral-100 mb-4">
           Mentions
         </h2>
@@ -1343,7 +1352,6 @@ export default function CampaignDetailsClient({
                                   setSubCampaignTimePeriod(
                                     period as TimePeriod
                                   );
-                                  setSubCampaignCurrentPage(1);
                                 }}
                                 loading={false}
                                 setLoading={(loading) => {
@@ -1380,21 +1388,25 @@ export default function CampaignDetailsClient({
                         {/* Filter Controls */}
                         <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                           <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
-                            {[20, 50, 100].map((num) => (
+                            {[
+                              { value: 20, label: "Top 20" },
+                              { value: 50, label: "21-50" },
+                              { value: 100, label: "51-100" },
+                            ].map(({ value, label }) => (
                               <button
-                                key={num}
-                                onClick={() =>
+                                key={value}
+                                onClick={() => {
                                   setSubCampaignFollowersLimit(
-                                    num as 20 | 50 | 100
-                                  )
-                                }
+                                    value as 20 | 50 | 100
+                                  );
+                                }}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                                  subCampaignFollowersLimit === num
+                                  subCampaignFollowersLimit === value
                                     ? "bg-neutral-700 text-neutral-100"
                                     : "text-neutral-300 hover:text-neutral-100"
                                 }`}
                               >
-                                Top {num}
+                                {label}
                               </button>
                             ))}
                           </div>
@@ -1406,7 +1418,6 @@ export default function CampaignDetailsClient({
                                   setSubCampaignTimePeriod(
                                     period as TimePeriod
                                   );
-                                  setSubCampaignCurrentPage(1);
                                 }}
                                 className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
                                   subCampaignTimePeriod === period
@@ -1486,9 +1497,9 @@ export default function CampaignDetailsClient({
                                     }
                                     campaignId={subCampaign.campaign_id}
                                     selectedTimePeriod={subCampaignTimePeriod}
-                                    currentPage={subCampaignCurrentPage}
-                                    followersLimit={subCampaignFollowersLimit}
-                                    onPageChange={handleSubCampaignPageChange}
+                                    currentPage={1}
+                                    followersLimit={mindshareDataArray.length}
+                                    onPageChange={() => {}} // Disable pagination for range-based filtering
                                   />
                                 );
                               }
