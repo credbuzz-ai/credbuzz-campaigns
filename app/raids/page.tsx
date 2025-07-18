@@ -166,11 +166,20 @@ export default function RaidsPage() {
   const [llmIntentUrl, setLlmIntentUrl] = useState<string>("");
 
   // Chain filter state
-  const [selectedChains, setSelectedChains] = useState<string[]>([]);
-  const [availableChains, setAvailableChains] = useState<string[]>([]);
+  const [selectedChains, setSelectedChains] = useState<string[]>(['solana','base','eth','bsc']);
+  const [availableChains, setAvailableChains] = useState<string[]>(['solana','base','eth','bsc']);
 
   // Mobile responsive state
   const [mobileView, setMobileView] = useState<'tokens' | 'detail'>('tokens');
+
+  // Pagination state for lazy loading tweets
+  const [tweetPagination, setTweetPagination] = useState({
+    start: 0,
+    limit: 20,
+    hasMore: true,
+    nextStart: 0
+  });
+  const [loadingMoreTweets, setLoadingMoreTweets] = useState(false);
 
   // Pinned community - GrokSolanaCTO/GROK
   const pinnedCommunity: TrendingToken = {
@@ -311,6 +320,14 @@ export default function RaidsPage() {
       setLlmResponse("");
       setEditedResponse("");
       setLlmIntentUrl("");
+      
+      // Reset pagination for new item
+      setTweetPagination({
+        start: 0,
+        limit: 20,
+        hasMore: true,
+        nextStart: 0
+      });
     } else {
       // Clear everything when no item is selected
       setOriginalTweets([]);
@@ -353,22 +370,9 @@ export default function RaidsPage() {
         
         // Initialize selected chains to default chains (BSC, Base, Solana, ETH)
         if (chains.length > 0 && selectedChains.length === 0) {
-          console.log('Available chains from API:', chains);
           const defaultChains = ['BSC', 'BASE', 'SOL', 'ETH'];
-          const availableDefaultChains = defaultChains.filter(chain => 
-            chains.some(availableChain => 
-              availableChain.toUpperCase() === chain.toUpperCase()
-            )
-          );
-          console.log('Selected default chains:', availableDefaultChains);
-          
-          // If no default chains are available, select all chains to avoid empty state
-          if (availableDefaultChains.length === 0) {
-            console.log('No default chains found, selecting all available chains');
-            setSelectedChains(chains);
-          } else {
-            setSelectedChains(availableDefaultChains);
-          }
+          // Always set the default chains, even if they're not in the current data
+          setSelectedChains(defaultChains);
         }
       } else {
         setTrendingTokens([]);
@@ -396,15 +400,10 @@ export default function RaidsPage() {
         const searchChains = [...new Set(data.result?.map(token => token.chain) || [])];
         setAvailableChains(prev => {
           const allChains = [...new Set([...prev, ...searchChains])];
-          // If we have new chains and no chains are selected, select default chains
-          if (searchChains.length > 0 && selectedChains.length === 0) {
+          // If we have no chains selected, select default chains
+          if (selectedChains.length === 0) {
             const defaultChains = ['BSC', 'BASE', 'SOL', 'ETH'];
-            const availableDefaultChains = defaultChains.filter(chain => 
-              allChains.some(availableChain => 
-                availableChain.toUpperCase() === chain.toUpperCase()
-              )
-            );
-            setSelectedChains(availableDefaultChains);
+            setSelectedChains(defaultChains);
           }
           return allChains;
         });
@@ -460,9 +459,15 @@ export default function RaidsPage() {
     }
   };
 
-  const fetchTweetFeed = async ({ symbol, twitter_handle }: { symbol?: string; twitter_handle?: string }) => {
+  const fetchTweetFeed = async ({ symbol, twitter_handle, isLoadMore = false }: { symbol?: string; twitter_handle?: string; isLoadMore?: boolean }) => {
     try {
-      console.log('Fetching tweets for:', { symbol, twitter_handle });
+      if (isLoadMore) {
+        setLoadingMoreTweets(true);
+      } else {
+        setLoadingMain(true);
+      }
+      
+      console.log('Fetching tweets for:', { symbol, twitter_handle, isLoadMore });
       const params = new URLSearchParams();
       
       // Always pass symbol if available (for mentions)
@@ -480,12 +485,18 @@ export default function RaidsPage() {
         setOriginalTweets([]);
         setMentions([]);
         setLoadingMain(false);
+        setLoadingMoreTweets(false);
         return;
       }
       
       params.append("feed_type", "both");
-      params.append("limit", "10");
-      params.append("start", "0");
+      params.append("limit", tweetPagination.limit.toString());
+      
+      if (isLoadMore) {
+        params.append("start", tweetPagination.nextStart.toString());
+      } else {
+        params.append("start", "0");
+      }
       
       const url = `${process.env.NEXT_PUBLIC_CREDBUZZ_API_URL}/raids/tweet-feed?${params.toString()}`;
       console.log('Fetching from URL:', url);
@@ -496,22 +507,55 @@ export default function RaidsPage() {
         console.log('Tweet feed response:', {
           originalTweets: data.result.original_tweets.length,
           mentions: data.result.mentions.length,
+          pagination: data.result.pagination,
           symbol,
-          twitter_handle
+          twitter_handle,
+          isLoadMore
         });
-        setOriginalTweets(data.result.original_tweets);
-        setMentions(data.result.mentions);
+        
+        if (isLoadMore) {
+          // Append new tweets to existing ones
+          setOriginalTweets(prev => [...prev, ...data.result.original_tweets]);
+          setMentions(prev => [...prev, ...data.result.mentions]);
+        } else {
+          // Replace tweets for new selection
+          setOriginalTweets(data.result.original_tweets);
+          setMentions(data.result.mentions);
+        }
+        
+        // Update pagination state
+        setTweetPagination({
+          start: data.result.pagination.start,
+          limit: data.result.pagination.limit,
+          hasMore: data.result.pagination.has_more,
+          nextStart: data.result.pagination.next_start
+        });
       } else {
         console.log('Failed to fetch tweets');
+        if (!isLoadMore) {
+          setOriginalTweets([]);
+          setMentions([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching tweets:', error);
+      if (!isLoadMore) {
         setOriginalTweets([]);
         setMentions([]);
       }
-    } catch (error) {
-      setOriginalTweets([]);
-      setMentions([]);
     } finally {
       setLoadingMain(false);
+      setLoadingMoreTweets(false);
     }
+  };
+
+  const loadMoreTweets = async () => {
+    if (!selectedItem || loadingMoreTweets || !tweetPagination.hasMore) return;
+    
+    const symbol = selectedItem.symbol;
+    const twitter_handle = selectedItem.twitter_final || undefined;
+    
+    await fetchTweetFeed({ symbol, twitter_handle, isLoadMore: true });
   };
 
   const getLeftSectionItems = (): LeftSectionItem[] => {
@@ -522,23 +566,15 @@ export default function RaidsPage() {
 
   const filteredItems = useMemo(() => {
     const items = getLeftSectionItems();
-    console.log('Filtering items:', {
-      totalItems: items.length,
-      selectedChains,
-      sidebarFilter,
-      isSearching
-    });
     
     const filtered = items.filter((item) => {
       // Always include pinned community regardless of filters
       if (item.token_id === "pinned-grok" || item.token_id === pinnedCommunityData.token_id) return true;
       
       // Apply chain filter (if no chains are selected, show all)
-      // Temporarily disabled for debugging
-      // if (selectedChains.length > 0 && !selectedChains.includes(item.chain)) {
-      //   console.log(`Filtering out ${item.symbol} (${item.chain}) - not in selected chains:`, selectedChains);
-      //   return false;
-      // }
+      if (selectedChains.length > 0 && !selectedChains.includes(item.chain)) {
+        return false;
+      }
       
       // Apply text filter
       if (sidebarFilter.trim()) {
@@ -549,7 +585,6 @@ export default function RaidsPage() {
       return true;
     });
     
-    console.log('Filtered items count:', filtered.length);
     return filtered;
   }, [isSearching, searchResults, trendingTokens, sidebarFilter, selectedChains, pinnedCommunityData]);
 
@@ -574,6 +609,29 @@ export default function RaidsPage() {
       setSelectedTweet(uniqueTweets[0]);
     }
   }, [uniqueTweets, selectedTweet, loadingMain]);
+
+  // Scroll event listener for lazy loading tweets
+  useEffect(() => {
+    const handleScroll = () => {
+      if (loadingMoreTweets || !tweetPagination.hasMore) return;
+      
+      const scrollElement = document.querySelector('.tweet-feed-container');
+      if (!scrollElement) return;
+      
+      const { scrollTop, scrollHeight, clientHeight } = scrollElement;
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100; // Load when 100px from bottom
+      
+      if (isNearBottom) {
+        loadMoreTweets();
+      }
+    };
+
+    const scrollElement = document.querySelector('.tweet-feed-container');
+    if (scrollElement) {
+      scrollElement.addEventListener('scroll', handleScroll);
+      return () => scrollElement.removeEventListener('scroll', handleScroll);
+    }
+  }, [loadingMoreTweets, tweetPagination.hasMore, selectedItem]);
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -710,11 +768,11 @@ export default function RaidsPage() {
             e.currentTarget.src = "/placeholder.svg";
           }}
         />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2">
             <span className={`font-semibold truncate ${isSelected ? "text-[#00D992]" : "text-white"}`}>{item.symbol}</span>
             {isPinned && (
-              <Badge variant="outline" className={`text-xs ${
+              <Badge variant="outline" className={`text-xs shrink-0 ${
                 isSelected 
                   ? "bg-[#00D992]/30 border-[#00D992] text-[#00D992]" 
                   : "bg-[#00D992]/20 border-[#00D992]/50 text-[#00D992]"
@@ -723,16 +781,16 @@ export default function RaidsPage() {
               </Badge>
             )}
             {!isPinned && !isSearching && (
-              <TrendingUp className="w-3 h-3 text-[#00D992]" />
+              <TrendingUp className="w-3 h-3 text-[#00D992] shrink-0" />
             )}
             {!isPinned && isSearching && (
-              <Search className="w-3 h-3 text-blue-400" />
+              <Search className="w-3 h-3 text-blue-400 shrink-0" />
             )}
           </div>
-          <span className="text-xs text-gray-400 truncate">{item.name}</span>
-          <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-            <span>Mentions: {formatNumber('mention_count_24hr' in item ? item.mention_count_24hr : item.mention_count)}</span>
-            <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300">
+          <span className="text-xs text-gray-400 truncate block">{item.name}</span>
+          <div className="flex items-center justify-between text-xs text-gray-500 mt-1 min-w-0">
+            <span className="truncate">Mentions: {formatNumber('mention_count_24hr' in item ? item.mention_count_24hr : item.mention_count)}</span>
+            <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300 shrink-0 ml-2">
               {item.chain}
             </Badge>
           </div>
@@ -887,19 +945,19 @@ export default function RaidsPage() {
                             e.currentTarget.src = "/placeholder.svg";
                           }}
                         />
-                        <div className="flex-1 min-w-0">
+                        <div className="flex-1 min-w-0 overflow-hidden">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold truncate text-white">{item.symbol}</span>
                             {item.token_id === "pinned-grok" && (
-                              <Badge variant="outline" className="text-xs bg-[#00D992]/20 border-[#00D992]/50 text-[#00D992]">
+                              <Badge variant="outline" className="text-xs bg-[#00D992]/20 border-[#00D992]/50 text-[#00D992] shrink-0">
                                 Pinned
                               </Badge>
                             )}
                           </div>
-                          <span className="text-xs text-gray-400 truncate">{item.name}</span>
-                          <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                            <span>Mentions: {formatNumber('mention_count_24hr' in item ? item.mention_count_24hr : item.mention_count)}</span>
-                            <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300">
+                          <span className="text-xs text-gray-400 truncate block">{item.name}</span>
+                          <div className="flex items-center justify-between text-xs text-gray-500 mt-1 min-w-0">
+                            <span className="truncate">Mentions: {formatNumber('mention_count_24hr' in item ? item.mention_count_24hr : item.mention_count)}</span>
+                            <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300 shrink-0 ml-2">
                               {item.chain}
                             </Badge>
                           </div>
@@ -931,7 +989,7 @@ export default function RaidsPage() {
               </div>
               
                              {/* Detail Content */}
-               <div className={`flex-1 overflow-y-auto ${selectedTweet ? 'pb-48' : ''}`}>
+               <div className={`flex-1 overflow-y-auto tweet-feed-container ${selectedTweet ? 'pb-48' : ''}`}>
                 {loadingMain ? (
                   <div className="space-y-4">
                     <Skeleton className="h-8 w-64 mb-2" />
@@ -1111,7 +1169,24 @@ export default function RaidsPage() {
                           <div className="text-center text-gray-400 py-8">
                             No tweets available
                           </div>
-                                                 )}
+                        )}
+                        
+                        {/* Mobile Lazy Loading Indicator */}
+                        {loadingMoreTweets && (
+                          <div className="text-center py-4">
+                            <div className="flex items-center justify-center gap-2 text-gray-400">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
+                              <span className="text-sm">Loading more tweets...</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Mobile End of tweets indicator */}
+                        {!loadingMoreTweets && !tweetPagination.hasMore && uniqueTweets.length > 0 && (
+                          <div className="text-center py-4 text-gray-500 text-sm">
+                            No more tweets to load
+                          </div>
+                        )}
                        </div>
                      </div>
 
@@ -1424,7 +1499,7 @@ export default function RaidsPage() {
           <div className="flex flex-row gap-6 flex-1 min-h-0">
             {/* Tweets List */}
             <div className="flex-1 min-w-[300px] flex flex-col min-h-0">
-              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2 tweet-feed-container">
                 {loadingMain ? (
                   Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-32" />)
                 ) : uniqueTweets.length > 0 ? (
@@ -1565,6 +1640,23 @@ export default function RaidsPage() {
                   <div className="text-center py-8 text-gray-400">Loading tweets...</div>
                 ) : (
                   <div className="text-center py-8 text-gray-400">No tweets found</div>
+                )}
+                
+                {/* Lazy Loading Indicator */}
+                {loadingMoreTweets && (
+                  <div className="text-center py-4">
+                    <div className="flex items-center justify-center gap-2 text-gray-400">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
+                      <span className="text-sm">Loading more tweets...</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* End of tweets indicator */}
+                {!loadingMoreTweets && !tweetPagination.hasMore && uniqueTweets.length > 0 && (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    No more tweets to load
+                  </div>
                 )}
               </div>
             </div>
