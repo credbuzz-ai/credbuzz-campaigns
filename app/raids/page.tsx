@@ -166,8 +166,8 @@ export default function RaidsPage() {
   const [llmIntentUrl, setLlmIntentUrl] = useState<string>("");
 
   // Chain filter state
-  const [selectedChains, setSelectedChains] = useState<string[]>(['solana','base','eth','bsc']);
-  const [availableChains, setAvailableChains] = useState<string[]>(['solana','base','eth','bsc']);
+  const [selectedChains, setSelectedChains] = useState<string[]>(['solana','base','ethereum','bsc']);
+  const [availableChains, setAvailableChains] = useState<string[]>(['solana','base','ethereum','bsc']);
 
   // Mobile responsive state
   const [mobileView, setMobileView] = useState<'tokens' | 'detail'>('tokens');
