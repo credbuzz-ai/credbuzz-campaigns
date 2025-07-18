@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { TrendingUp, Search, ExternalLink, Hash, ChevronDown, Users, Sparkles } from "lucide-react";
+import { TrendingUp, Search, ExternalLink, Hash, ChevronDown, Users, Sparkles, Filter, ArrowLeft } from "lucide-react";
 import { LikeIcon, ReplyIcon, RetweetIcon, ViewIcon, ShareIcon } from "@/components/icons/twitter-icons";
 import { XLogo } from "@/components/icons/x-logo";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  DropdownMenu, 
+  DropdownMenuTrigger, 
+  DropdownMenuContent, 
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 
 // Updated interfaces to match new API structure
 interface TrendingToken {
@@ -157,6 +165,22 @@ export default function RaidsPage() {
   const [llmLoading, setLlmLoading] = useState(false);
   const [llmIntentUrl, setLlmIntentUrl] = useState<string>("");
 
+  // Chain filter state
+  const [selectedChains, setSelectedChains] = useState<string[]>(['solana','base','ethereum','bsc']);
+  const [availableChains, setAvailableChains] = useState<string[]>(['solana','base','ethereum','bsc']);
+
+  // Mobile responsive state
+  const [mobileView, setMobileView] = useState<'tokens' | 'detail'>('tokens');
+
+  // Pagination state for lazy loading tweets
+  const [tweetPagination, setTweetPagination] = useState({
+    start: 0,
+    limit: 20,
+    hasMore: true,
+    nextStart: 0
+  });
+  const [loadingMoreTweets, setLoadingMoreTweets] = useState(false);
+
   // Pinned community - GrokSolanaCTO/GROK
   const pinnedCommunity: TrendingToken = {
     token_id: "pinned-grok",
@@ -296,6 +320,14 @@ export default function RaidsPage() {
       setLlmResponse("");
       setEditedResponse("");
       setLlmIntentUrl("");
+      
+      // Reset pagination for new item
+      setTweetPagination({
+        start: 0,
+        limit: 20,
+        hasMore: true,
+        nextStart: 0
+      });
     } else {
       // Clear everything when no item is selected
       setOriginalTweets([]);
@@ -331,11 +363,24 @@ export default function RaidsPage() {
       if (response.ok) {
         const data: TrendingTokensResponse = await response.json();
         setTrendingTokens(data.result || []);
+        
+        // Extract unique chains from trending tokens
+        const chains = [...new Set(data.result?.map(token => token.chain) || [])];
+        setAvailableChains(chains);
+        
+        // Initialize selected chains to default chains (BSC, Base, Solana, ETH)
+        if (chains.length > 0 && selectedChains.length === 0) {
+          const defaultChains = ['BSC', 'BASE', 'SOL', 'ETH'];
+          // Always set the default chains, even if they're not in the current data
+          setSelectedChains(defaultChains);
+        }
       } else {
         setTrendingTokens([]);
+        setAvailableChains([]);
       }
     } catch (error) {
       setTrendingTokens([]);
+      setAvailableChains([]);
     } finally {
       setLoadingSidebar(false);
     }
@@ -350,6 +395,18 @@ export default function RaidsPage() {
       if (response.ok) {
         const data: SearchResultsResponse = await response.json();
         setSearchResults(data.result || []);
+        
+        // Extract unique chains from search results and merge with existing available chains
+        const searchChains = [...new Set(data.result?.map(token => token.chain) || [])];
+        setAvailableChains(prev => {
+          const allChains = [...new Set([...prev, ...searchChains])];
+          // If we have no chains selected, select default chains
+          if (selectedChains.length === 0) {
+            const defaultChains = ['BSC', 'BASE', 'SOL', 'ETH'];
+            setSelectedChains(defaultChains);
+          }
+          return allChains;
+        });
       } else {
         setSearchResults([]);
       }
@@ -402,9 +459,15 @@ export default function RaidsPage() {
     }
   };
 
-  const fetchTweetFeed = async ({ symbol, twitter_handle }: { symbol?: string; twitter_handle?: string }) => {
+  const fetchTweetFeed = async ({ symbol, twitter_handle, isLoadMore = false }: { symbol?: string; twitter_handle?: string; isLoadMore?: boolean }) => {
     try {
-      console.log('Fetching tweets for:', { symbol, twitter_handle });
+      if (isLoadMore) {
+        setLoadingMoreTweets(true);
+      } else {
+        setLoadingMain(true);
+      }
+      
+      console.log('Fetching tweets for:', { symbol, twitter_handle, isLoadMore });
       const params = new URLSearchParams();
       
       // Always pass symbol if available (for mentions)
@@ -422,12 +485,18 @@ export default function RaidsPage() {
         setOriginalTweets([]);
         setMentions([]);
         setLoadingMain(false);
+        setLoadingMoreTweets(false);
         return;
       }
       
       params.append("feed_type", "both");
-      params.append("limit", "10");
-      params.append("start", "0");
+      params.append("limit", tweetPagination.limit.toString());
+      
+      if (isLoadMore) {
+        params.append("start", tweetPagination.nextStart.toString());
+      } else {
+        params.append("start", "0");
+      }
       
       const url = `${process.env.NEXT_PUBLIC_CREDBUZZ_API_URL}/raids/tweet-feed?${params.toString()}`;
       console.log('Fetching from URL:', url);
@@ -438,22 +507,55 @@ export default function RaidsPage() {
         console.log('Tweet feed response:', {
           originalTweets: data.result.original_tweets.length,
           mentions: data.result.mentions.length,
+          pagination: data.result.pagination,
           symbol,
-          twitter_handle
+          twitter_handle,
+          isLoadMore
         });
-        setOriginalTweets(data.result.original_tweets);
-        setMentions(data.result.mentions);
+        
+        if (isLoadMore) {
+          // Append new tweets to existing ones
+          setOriginalTweets(prev => [...prev, ...data.result.original_tweets]);
+          setMentions(prev => [...prev, ...data.result.mentions]);
+        } else {
+          // Replace tweets for new selection
+          setOriginalTweets(data.result.original_tweets);
+          setMentions(data.result.mentions);
+        }
+        
+        // Update pagination state
+        setTweetPagination({
+          start: data.result.pagination.start,
+          limit: data.result.pagination.limit,
+          hasMore: data.result.pagination.has_more,
+          nextStart: data.result.pagination.next_start
+        });
       } else {
         console.log('Failed to fetch tweets');
+        if (!isLoadMore) {
+          setOriginalTweets([]);
+          setMentions([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching tweets:', error);
+      if (!isLoadMore) {
         setOriginalTweets([]);
         setMentions([]);
       }
-    } catch (error) {
-      setOriginalTweets([]);
-      setMentions([]);
     } finally {
       setLoadingMain(false);
+      setLoadingMoreTweets(false);
     }
+  };
+
+  const loadMoreTweets = async () => {
+    if (!selectedItem || loadingMoreTweets || !tweetPagination.hasMore) return;
+    
+    const symbol = selectedItem.symbol;
+    const twitter_handle = selectedItem.twitter_final || undefined;
+    
+    await fetchTweetFeed({ symbol, twitter_handle, isLoadMore: true });
   };
 
   const getLeftSectionItems = (): LeftSectionItem[] => {
@@ -464,25 +566,42 @@ export default function RaidsPage() {
 
   const filteredItems = useMemo(() => {
     const items = getLeftSectionItems();
-    if (!sidebarFilter.trim()) return items;
     
-    return items.filter((item) => {
-      // Always include pinned community regardless of filter
+    const filtered = items.filter((item) => {
+      // Always include pinned community regardless of filters
       if (item.token_id === "pinned-grok" || item.token_id === pinnedCommunityData.token_id) return true;
       
-      return item.symbol.toLowerCase().includes(sidebarFilter.toLowerCase()) ||
-        item.name.toLowerCase().includes(sidebarFilter.toLowerCase());
+      // Apply chain filter (if no chains are selected, show all)
+      if (selectedChains.length > 0 && !selectedChains.includes(item.chain)) {
+        return false;
+      }
+      
+      // Apply text filter
+      if (sidebarFilter.trim()) {
+        return item.symbol.toLowerCase().includes(sidebarFilter.toLowerCase()) ||
+          item.name.toLowerCase().includes(sidebarFilter.toLowerCase());
+      }
+      
+      return true;
     });
-  }, [isSearching, searchResults, trendingTokens, sidebarFilter, pinnedCommunityData]);
+    
+    return filtered;
+  }, [isSearching, searchResults, trendingTokens, sidebarFilter, selectedChains, pinnedCommunityData]);
 
   const tweetsToShow = tweetFeedType === "original" ? originalTweets : 
                       tweetFeedType === "mentions" ? mentions : 
                       [...originalTweets, ...mentions];
   
-  // Ensure unique tweets by tweet_id to prevent duplicates
-  const uniqueTweets = tweetsToShow.filter((tweet, index, self) => 
-    index === self.findIndex(t => t.tweet_id === tweet.tweet_id)
-  );
+  // Ensure unique tweets by tweet_id to prevent duplicates and sort by latest first
+  const uniqueTweets = tweetsToShow
+    .filter((tweet, index, self) => 
+      index === self.findIndex(t => t.tweet_id === tweet.tweet_id)
+    )
+    .sort((a, b) => {
+      const dateA = new Date(a.tweet_create_time + "Z").getTime();
+      const dateB = new Date(b.tweet_create_time + "Z").getTime();
+      return dateB - dateA; // Latest first
+    });
 
   // Auto-select first tweet when tweets are loaded and no tweet is selected
   useEffect(() => {
@@ -490,6 +609,29 @@ export default function RaidsPage() {
       setSelectedTweet(uniqueTweets[0]);
     }
   }, [uniqueTweets, selectedTweet, loadingMain]);
+
+  // Scroll event listener for lazy loading tweets
+  useEffect(() => {
+    const handleScroll = () => {
+      if (loadingMoreTweets || !tweetPagination.hasMore) return;
+      
+      const scrollElement = document.querySelector('.tweet-feed-container');
+      if (!scrollElement) return;
+      
+      const { scrollTop, scrollHeight, clientHeight } = scrollElement;
+      const isNearBottom = scrollTop + clientHeight >= scrollHeight - 100; // Load when 100px from bottom
+      
+      if (isNearBottom) {
+        loadMoreTweets();
+      }
+    };
+
+    const scrollElement = document.querySelector('.tweet-feed-container');
+    if (scrollElement) {
+      scrollElement.addEventListener('scroll', handleScroll);
+      return () => scrollElement.removeEventListener('scroll', handleScroll);
+    }
+  }, [loadingMoreTweets, tweetPagination.hasMore, selectedItem]);
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -563,6 +705,43 @@ export default function RaidsPage() {
     window.open(url, "_blank");
   };
 
+  const handleLikeIntent = (tweet: Tweet) => {
+    const url = `https://twitter.com/intent/like?tweet_id=${tweet.tweet_id}`;
+    window.open(url, "_blank");
+  };
+
+  const handleRetweetIntent = (tweet: Tweet) => {
+    const url = `https://twitter.com/intent/retweet?tweet_id=${tweet.tweet_id}`;
+    window.open(url, "_blank");
+  };
+
+  // Chain filter handlers
+  const handleSelectAllChains = () => {
+    setSelectedChains(availableChains);
+  };
+
+  const handleDeselectAllChains = () => {
+    setSelectedChains([]);
+  };
+
+  const handleToggleChain = (chain: string, checked: boolean) => {
+    if (checked) {
+      setSelectedChains(prev => [...prev, chain]);
+    } else {
+      setSelectedChains(prev => prev.filter(c => c !== chain));
+    }
+  };
+
+  // Mobile handlers
+  const handleMobileTokenSelect = (item: LeftSectionItem) => {
+    setSelectedItem(item);
+    setMobileView('detail');
+  };
+
+  const handleMobileBackToTokens = () => {
+    setMobileView('tokens');
+  };
+
   const renderLeftSectionItem = (item: LeftSectionItem, index: number) => {
     const isSelected = selectedItem === item;
     const isPinned = item.token_id === "pinned-grok" || item.token_id === pinnedCommunityData.token_id;
@@ -589,11 +768,11 @@ export default function RaidsPage() {
             e.currentTarget.src = "/placeholder.svg";
           }}
         />
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2">
             <span className={`font-semibold truncate ${isSelected ? "text-[#00D992]" : "text-white"}`}>{item.symbol}</span>
             {isPinned && (
-              <Badge variant="outline" className={`text-xs ${
+              <Badge variant="outline" className={`text-xs shrink-0 ${
                 isSelected 
                   ? "bg-[#00D992]/30 border-[#00D992] text-[#00D992]" 
                   : "bg-[#00D992]/20 border-[#00D992]/50 text-[#00D992]"
@@ -602,16 +781,16 @@ export default function RaidsPage() {
               </Badge>
             )}
             {!isPinned && !isSearching && (
-              <TrendingUp className="w-3 h-3 text-[#00D992]" />
+              <TrendingUp className="w-3 h-3 text-[#00D992] shrink-0" />
             )}
             {!isPinned && isSearching && (
-              <Search className="w-3 h-3 text-blue-400" />
+              <Search className="w-3 h-3 text-blue-400 shrink-0" />
             )}
           </div>
-          <span className="text-xs text-gray-400 truncate">{item.name}</span>
-          <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-            <span>Mentions: {formatNumber('mention_count_24hr' in item ? item.mention_count_24hr : item.mention_count)}</span>
-            <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300">
+          <span className="text-xs text-gray-400 truncate block">{item.name}</span>
+          <div className="flex items-center justify-between text-xs text-gray-500 mt-1 min-w-0">
+            <span className="truncate">Mentions: {formatNumber('mention_count_24hr' in item ? item.mention_count_24hr : item.mention_count)}</span>
+            <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300 shrink-0 ml-2">
               {item.chain}
             </Badge>
           </div>
@@ -621,77 +800,590 @@ export default function RaidsPage() {
   };
 
   return (
-    <div className=" bg-[url('/landingPageBg.png')] bg-cover bg-no-repeat pt-16 md:pt-0">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 flex gap-6 h-[calc(100vh-8rem)]">
-        {/* Left Section */}
-        <aside className="w-80 shrink-0 border-r border-neutral-700 pr-4 flex flex-col h-full">
-          <div className="mb-6 shrink-0">
-            <h2 className="text-lg font-bold flex items-center gap-2 mb-2">
-              {isSearching ? (
-                <>
-                  <Search className="w-5 h-5 text-[#00D992]" />
-                  Search Results
-                </>
-              ) : (
-                <>
-                  <TrendingUp className="w-5 h-5 text-[#00D992]" />
-                  Trending Communities
-                </>
-              )}
-            </h2>
-            
-            {/* Search Bar */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Search tokens or handles..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
-              />
+    <div className="bg-[url('/landingPageBg.png')] bg-cover bg-no-repeat pt-20 md:pt-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 h-[calc(100vh-8rem)]">
+        {/* Mobile Layout */}
+        <div className="md:hidden flex flex-col h-full">
+          {mobileView === 'tokens' ? (
+            /* Mobile Tokens View */
+            <div className="flex flex-col h-full">
+              {/* Header */}
+              <div className="mb-6 shrink-0">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-lg font-bold flex items-center gap-2">
+                    {isSearching ? (
+                      <>
+                        <Search className="w-5 h-5 text-[#00D992]" />
+                        Search Results
+                      </>
+                    ) : (
+                      <>
+                        <TrendingUp className="w-5 h-5 text-[#00D992]" />
+                        Trending Communities
+                      </>
+                    )}
+                  </h2>
+                  {filteredItems.length > 0 && (
+                    <span className="text-xs text-gray-400">
+                      {filteredItems.length} result{filteredItems.length !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                </div>
+                
+                {/* Search Bar */}
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    type="text"
+                    placeholder="Search tokens or handles..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
+                  />
+                </div>
+                
+                {/* Filter for current section */}
+                <div className="relative mb-3">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    type="text"
+                    placeholder={`Filter ${isSearching ? 'results' : 'tokens'}...`}
+                    value={sidebarFilter}
+                    onChange={(e) => setSidebarFilter(e.target.value)}
+                    className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
+                  />
+                </div>
+
+                {/* Chain Filter */}
+                {availableChains.length > 0 && (
+                  <div className="mb-3">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between bg-neutral-800 border-neutral-600 text-white hover:border-[#00D992] hover:text-[#00D992]"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Filter className="w-4 h-4" />
+                            <span className="text-sm">
+                              {selectedChains.length === availableChains.length 
+                                ? "All Chains" 
+                                : selectedChains.length === 0 
+                                  ? "All Chains"
+                                  : `${selectedChains.length} Chain${selectedChains.length !== 1 ? 's' : ''} Selected`
+                              }
+                            </span>
+                          </div>
+                          <ChevronDown className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-64 bg-neutral-800 border-neutral-600 text-white">
+                        <DropdownMenuLabel className="text-gray-300">Select Chains</DropdownMenuLabel>
+                        <DropdownMenuSeparator className="bg-neutral-600" />
+                        
+                        {/* Select All / Deselect All */}
+                        <DropdownMenuCheckboxItem
+                          checked={selectedChains.length === availableChains.length}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              handleSelectAllChains();
+                            } else {
+                              handleDeselectAllChains();
+                            }
+                          }}
+                          className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-700"
+                        >
+                          {selectedChains.length === availableChains.length ? "Deselect All" : "Select All"}
+                        </DropdownMenuCheckboxItem>
+                        
+                        <DropdownMenuSeparator className="bg-neutral-600" />
+                        
+                        {/* Individual Chain Options */}
+                        {availableChains.map((chain) => (
+                          <DropdownMenuCheckboxItem
+                            key={chain}
+                            checked={selectedChains.includes(chain)}
+                            onCheckedChange={(checked) => handleToggleChain(chain, checked)}
+                            className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-700"
+                          >
+                            {chain}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                )}
+              </div>
+              
+              {/* Tokens List */}
+              <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+                {loadingSidebar ? (
+                  <div className="space-y-3">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg">
+                        <Skeleton className="w-10 h-10 rounded-full" />
+                        <div className="flex-1">
+                          <Skeleton className="h-4 w-20 mb-1" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : filteredItems.length > 0 ? (
+                  <ul className="space-y-1">
+                    {filteredItems.map((item, index) => (
+                      <button
+                        key={`mobile-${item.token_id || index}`}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left hover:bg-neutral-800 border-2 border-transparent hover:border-neutral-600`}
+                        onClick={() => handleMobileTokenSelect(item)}
+                      >
+                        <img
+                          src={item.profile_image_url || "/placeholder.svg"}
+                          alt={item.symbol}
+                          className="w-10 h-10 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder.svg";
+                          }}
+                        />
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold truncate text-white">{item.symbol}</span>
+                            {item.token_id === "pinned-grok" && (
+                              <Badge variant="outline" className="text-xs bg-[#00D992]/20 border-[#00D992]/50 text-[#00D992] shrink-0">
+                                Pinned
+                              </Badge>
+                            )}
+                          </div>
+                          <span className="text-xs text-gray-400 truncate block">{item.name}</span>
+                          <div className="flex items-center justify-between text-xs text-gray-500 mt-1 min-w-0">
+                            <span className="truncate">Mentions: {formatNumber('mention_count_24hr' in item ? item.mention_count_24hr : item.mention_count)}</span>
+                            <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300 shrink-0 ml-2">
+                              {item.chain}
+                            </Badge>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </ul>
+                ) : (
+                  <div className="text-center text-gray-400 py-8">
+                    {isSearching ? "No search results found." : 
+                     "No tokens found matching the current filters."}
+                  </div>
+                )}
+              </div>
             </div>
-            
-            {/* Filter for current section */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder={`Filter ${isSearching ? 'results' : 'tokens'}...`}
-                value={sidebarFilter}
-                onChange={(e) => setSidebarFilter(e.target.value)}
-                className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
-              />
-            </div>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-            {loadingSidebar ? (
-              <div className="space-y-3">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg">
-                    <Skeleton className="w-10 h-10 rounded-full" />
-                    <div className="flex-1">
-                      <Skeleton className="h-4 w-20 mb-1" />
-                      <Skeleton className="h-3 w-16" />
+          ) : (
+            /* Mobile Detail View */
+            <div className="flex flex-col h-full">
+              {/* Back Button */}
+              <div className="mb-4">
+                <Button
+                  variant="ghost"
+                  onClick={handleMobileBackToTokens}
+                  className="text-gray-400 hover:text-white flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                  Back to Communities
+                </Button>
+              </div>
+              
+                             {/* Detail Content */}
+               <div className={`flex-1 overflow-y-auto tweet-feed-container ${selectedTweet ? 'pb-48' : ''}`}>
+                {loadingMain ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-8 w-64 mb-2" />
+                    <Skeleton className="h-4 w-32 mb-2" />
+                    <Skeleton className="h-4 w-48 mb-2" />
+                    <div className="flex gap-4">
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-20" />
+                      <Skeleton className="h-4 w-20" />
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : filteredItems.length > 0 ? (
-              <ul className="space-y-1">
-                {filteredItems.map((item, index) => renderLeftSectionItem(item, index))}
-              </ul>
-            ) : (
-              <div className="text-center text-gray-400 py-8">
-                {isSearching ? "No search results found." : "No tokens found."}
-              </div>
-            )}
-          </div>
-        </aside>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Item Details - Compact Mobile */}
+                    <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-3">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={tokenDetails?.profile_image_url || handleDetails?.profile_image_url || "/placeholder.svg"}
+                          alt={tokenDetails?.symbol || handleDetails?.author_handle}
+                          className="w-12 h-12 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = "/placeholder.svg";
+                          }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h1 className="text-lg font-bold truncate">{tokenDetails?.symbol || handleDetails?.author_handle}</h1>
+                            <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 shrink-0">{tokenDetails?.chain || "N/A"}</Badge>
+                            {(tokenDetails?.twitter_final || handleDetails?.author_handle) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const twitterHandle = tokenDetails?.twitter_final || handleDetails?.author_handle;
+                                  if (twitterHandle) {
+                                    window.open(`https://twitter.com/${twitterHandle}`, "_blank");
+                                  }
+                                }}
+                                className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992] flex items-center gap-1 shrink-0"
+                              >
+                                <XLogo className="w-3 h-3" />
+                                <span className="text-xs">Twitter</span>
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-gray-300 text-xs mb-2 truncate">
+                            {tokenDetails?.name || handleDetails?.bio || "No description available"}
+                          </p>
+                          <div className="grid grid-cols-4 gap-2 text-xs">
+                            <div>
+                              <span className="text-gray-400 block">Mentions</span>
+                              <p className="font-medium">{formatNumber(tokenDetails?.mention_count_24hr || 0)}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 block">MC</span>
+                              <p className="font-medium">{formatNumber(tokenDetails?.marketcap || 0)}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 block">24h Δ</span>
+                              <p className={`font-medium ${getPriceChangeColor((tokenDetails?.pc_24_hr ?? 0) > 0 ? 1 : -1)}`}>{(tokenDetails?.pc_24_hr ?? 0).toFixed(1)}%</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-400 block">VolN</span>
+                              <p className="font-medium">{formatNumber(tokenDetails?.volume_24hr || 0)}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-        {/* Right Section - Main Panel */}
-        <main className="flex-1 min-w-0 flex flex-col gap-6 h-full">
+                    {/* Tweet Feed */}
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <Select value={tweetFeedType} onValueChange={v => { setTweetFeedType(v as "both" | "original" | "mentions"); setSelectedTweet(null); setLlmResponse(""); setEditedResponse(""); setLlmIntentUrl(""); }}>
+                          <SelectTrigger className="w-full bg-neutral-800 border-neutral-600 text-white">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-neutral-800 border-neutral-600 text-white">
+                            <SelectItem value="both">Both</SelectItem>
+                            <SelectItem value="original" disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}>
+                              Project Tweets
+                            </SelectItem>
+                            <SelectItem value="mentions">Mentions</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <span className="text-gray-400 text-sm">({uniqueTweets.length} tweets)</span>
+                      </div>
+
+                      {/* Tweets List */}
+                      <div className="space-y-4">
+                        {loadingMain ? (
+                          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32" />)
+                        ) : uniqueTweets.length > 0 ? (
+                          uniqueTweets.map((tweet) => (
+                                                         <Card 
+                               key={`mobile-${selectedItem?.symbol}-${tweet.tweet_id}`} 
+                               className={`bg-neutral-800 border-neutral-600 transition-all hover:bg-neutral-750 hover:border-neutral-500 cursor-pointer ${selectedTweet?.tweet_id === tweet.tweet_id ? "border-[#00D992]" : ""}`}
+                               onClick={() => handleGenerateResponse(tweet)}
+                             >
+                               <CardContent className="p-4 max-w-full">
+                                <div className="flex items-start gap-3 mb-2">
+                                  <img
+                                    src={tweet.profile_image_url || "/placeholder.svg"}
+                                    alt={`@${tweet.author_handle}`}
+                                    className="w-10 h-10 rounded-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.src = "/placeholder.svg";
+                                    }}
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-medium text-gray-100 text-sm truncate">
+                                        {tweet.author_handle}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="text-xs text-gray-400">
+                                        {new Date(tweet.tweet_create_time + "Z").toLocaleString()}
+                                      </div>
+                                      {tweetFeedType === "both" && (
+                                        <Badge variant="outline" className={`text-xs ${
+                                          originalTweets.some(t => t.tweet_id === tweet.tweet_id) 
+                                            ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                                            : 'bg-green-500/20 border-green-500/50 text-green-400'
+                                        }`}>
+                                          {originalTweets.some(t => t.tweet_id === tweet.tweet_id) ? 'Author' : 'Mention'}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-sm text-gray-300 mb-3 break-words whitespace-pre-wrap">{tweet.body}</p>
+                                                                         <div className="flex items-center justify-between text-xs text-gray-400">
+                                       <div className="flex items-center gap-4">
+                                         <div className="flex items-center gap-1">
+                                           <ReplyIcon className="w-3 h-3" />
+                                           <span>{tweet.reply_count}</span>
+                                         </div>
+                                         <div 
+                                           className="flex items-center gap-1 hover:text-green-400 cursor-pointer transition-colors"
+                                           onClick={(e) => {
+                                             e.stopPropagation();
+                                             handleRetweetIntent(tweet);
+                                           }}
+                                         >
+                                           <RetweetIcon className="w-3 h-3" />
+                                           <span>{tweet.retweet_count}</span>
+                                         </div>
+                                         <div 
+                                           className="flex items-center gap-1 hover:text-pink-400 cursor-pointer transition-colors"
+                                           onClick={(e) => {
+                                             e.stopPropagation();
+                                             handleLikeIntent(tweet);
+                                           }}
+                                         >
+                                           <LikeIcon className="w-3 h-3" />
+                                           <span>{tweet.like_count}</span>
+                                         </div>
+                                         <div className="flex items-center gap-1">
+                                           <ViewIcon className="w-3 h-3" />
+                                           <span>{tweet.view_count}</span>
+                                         </div>
+                                       </div>
+                                                                             <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         className="text-[#00D992] hover:text-[#00C484] bg-[#00D992]/10 hover:bg-[#00D992]/20 px-3 py-2 rounded-lg"
+                                       >
+                                         <Sparkles className="w-5 h-5 mr-1" />
+                                         <span className="text-sm font-medium">Raid</span>
+                                       </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
+                        ) : (
+                          <div className="text-center text-gray-400 py-8">
+                            No tweets available
+                          </div>
+                        )}
+                        
+                        {/* Mobile Lazy Loading Indicator */}
+                        {loadingMoreTweets && (
+                          <div className="text-center py-4">
+                            <div className="flex items-center justify-center gap-2 text-gray-400">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
+                              <span className="text-sm">Loading more tweets...</span>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Mobile End of tweets indicator */}
+                        {!loadingMoreTweets && !tweetPagination.hasMore && uniqueTweets.length > 0 && (
+                          <div className="text-center py-4 text-gray-500 text-sm">
+                            No more tweets to load
+                          </div>
+                        )}
+                       </div>
+                     </div>
+
+                     {/* Mobile AI Response Panel - Sticky Bottom */}
+                     {selectedTweet && (
+                       <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-600 p-4 z-50">
+                         <Card className="bg-neutral-800 border-[#00D992]">
+                           <CardContent className="p-4">
+                             <div className="mb-2">
+                               <div className="text-xs text-gray-400 mb-1">
+                                 AI Response:
+                               </div>
+                             </div>
+                             <div className="mb-2">
+                               {llmLoading ? (
+                                 <div className="w-full h-24 bg-neutral-900 border border-neutral-600 rounded-lg p-2 flex items-center justify-center">
+                                   <div className="flex items-center gap-2 text-gray-400">
+                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
+                                     <span className="text-sm">Generating AI response...</span>
+                                   </div>
+                                 </div>
+                               ) : (
+                                 <textarea
+                                   className="w-full h-24 bg-neutral-900 border border-neutral-600 rounded-lg p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
+                                   value={editedResponse}
+                                   onChange={handleEditResponse}
+                                   placeholder="AI-generated response will appear here..."
+                                   disabled={llmLoading}
+                                 />
+                               )}
+                             </div>
+                             <div className="flex gap-2">
+                               <Button
+                                 onClick={handlePostToTwitter}
+                                 className="bg-blue-500 hover:bg-blue-600 text-white flex-1"
+                                 disabled={!editedResponse || llmLoading}
+                               >
+                                 Post to Twitter
+                               </Button>
+                               <Button
+                                 variant="outline"
+                                 onClick={() => { setSelectedTweet(null); setLlmResponse(""); setEditedResponse(""); setLlmIntentUrl(""); }}
+                                 className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992]"
+                               >
+                                 Cancel
+                               </Button>
+                             </div>
+                           </CardContent>
+                         </Card>
+                       </div>
+                     )}
+                   </div>
+                 )}
+               </div>
+             </div>
+           )}
+         </div>
+
+        {/* Desktop Layout */}
+        <div className="hidden md:flex gap-6 h-full">
+          {/* Left Section */}
+          <aside className="w-80 shrink-0 border-r border-neutral-700 pr-4 flex flex-col h-full">
+            <div className="mb-6 shrink-0">
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  {isSearching ? (
+                    <>
+                      <Search className="w-5 h-5 text-[#00D992]" />
+                      Search Results
+                    </>
+                  ) : (
+                    <>
+                      <TrendingUp className="w-5 h-5 text-[#00D992]" />
+                      Trending Communities
+                    </>
+                  )}
+                </h2>
+                {filteredItems.length > 0 && (
+                  <span className="text-xs text-gray-400">
+                    {filteredItems.length} result{filteredItems.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+              
+              {/* Search Bar */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search tokens or handles..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
+                />
+              </div>
+              
+              {/* Filter for current section */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder={`Filter ${isSearching ? 'results' : 'tokens'}...`}
+                  value={sidebarFilter}
+                  onChange={(e) => setSidebarFilter(e.target.value)}
+                  className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
+                />
+              </div>
+
+              {/* Chain Filter */}
+              {availableChains.length > 0 && (
+                <div className="mb-3">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-between bg-neutral-800 border-neutral-600 text-white hover:border-[#00D992] hover:text-[#00D992]"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Filter className="w-4 h-4" />
+                          <span className="text-sm">
+                            {selectedChains.length === availableChains.length 
+                              ? "All Chains" 
+                              : selectedChains.length === 0 
+                                ? "All Chains"
+                                : `${selectedChains.length} Chain${selectedChains.length !== 1 ? 's' : ''} Selected`
+                            }
+                          </span>
+                        </div>
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-64 bg-neutral-800 border-neutral-600 text-white">
+                      <DropdownMenuLabel className="text-gray-300">Select Chains</DropdownMenuLabel>
+                      <DropdownMenuSeparator className="bg-neutral-600" />
+                      
+                      {/* Select All / Deselect All */}
+                      <DropdownMenuCheckboxItem
+                        checked={selectedChains.length === availableChains.length}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            handleSelectAllChains();
+                          } else {
+                            handleDeselectAllChains();
+                          }
+                        }}
+                        className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-700"
+                      >
+                        {selectedChains.length === availableChains.length ? "Deselect All" : "Select All"}
+                      </DropdownMenuCheckboxItem>
+                      
+                      <DropdownMenuSeparator className="bg-neutral-600" />
+                      
+                      {/* Individual Chain Options */}
+                      {availableChains.map((chain) => (
+                        <DropdownMenuCheckboxItem
+                          key={chain}
+                          checked={selectedChains.includes(chain)}
+                          onCheckedChange={(checked) => handleToggleChain(chain, checked)}
+                          className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-700"
+                        >
+                          {chain}
+                        </DropdownMenuCheckboxItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+              {loadingSidebar ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-2 rounded-lg">
+                      <Skeleton className="w-10 h-10 rounded-full" />
+                      <div className="flex-1">
+                        <Skeleton className="h-4 w-20 mb-1" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : filteredItems.length > 0 ? (
+                <ul className="space-y-1">
+                  {filteredItems.map((item, index) => renderLeftSectionItem(item, index))}
+                </ul>
+              ) : (
+                <div className="text-center text-gray-400 py-8">
+                  {isSearching ? "No search results found." : 
+                   "No tokens found matching the current filters."}
+                </div>
+              )}
+            </div>
+          </aside>
+
+                    {/* Right Section - Main Panel */}
+          <main className="flex-1 min-w-0 flex flex-col gap-6 h-full">
           {/* Item Details */}
           {loadingMain ? (
             <div className="mb-6">
@@ -807,7 +1499,7 @@ export default function RaidsPage() {
           <div className="flex flex-row gap-6 flex-1 min-h-0">
             {/* Tweets List */}
             <div className="flex-1 min-w-[300px] flex flex-col min-h-0">
-              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2 tweet-feed-container">
                 {loadingMain ? (
                   Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-32" />)
                 ) : uniqueTweets.length > 0 ? (
@@ -817,7 +1509,7 @@ export default function RaidsPage() {
                       className={`bg-neutral-800 border-neutral-600 transition-all hover:bg-neutral-750 hover:border-neutral-500 cursor-pointer ${selectedTweet?.tweet_id === tweet.tweet_id ? "border-[#00D992]" : ""}`}
                       onClick={() => handleGenerateResponse(tweet)}
                     >
-                      <CardContent className="p-4">
+                      <CardContent className="p-4 max-w-full">
                         <div className="flex items-start gap-3 mb-2">
                           <img
                             src={tweet.profile_image_url || "/placeholder.svg"}
@@ -877,7 +1569,7 @@ export default function RaidsPage() {
                           </div>
                         )}
                         <div className="mb-2">
-                          <p className="text-gray-300 text-sm leading-relaxed break-words whitespace-pre-wrap">
+                          <p className="text-gray-300 text-sm leading-relaxed break-words whitespace-pre-wrap overflow-hidden">
                             {tweet.body}
                           </p>
                         </div>
@@ -887,11 +1579,17 @@ export default function RaidsPage() {
                               <ReplyIcon className="w-4 h-4" />
                               <span>{formatNumber(tweet.reply_count)}</span>
                             </div>
-                            <div className="flex items-center gap-1 hover:text-green-400 cursor-pointer transition-colors">
+                            <div 
+                              className="flex items-center gap-1 hover:text-green-400 cursor-pointer transition-colors"
+                              onClick={() => handleRetweetIntent(tweet)}
+                            >
                               <RetweetIcon className="w-4 h-4" />
                               <span>{formatNumber(tweet.retweet_count)}</span>
                             </div>
-                            <div className="flex items-center gap-1 hover:text-pink-400 cursor-pointer transition-colors">
+                            <div 
+                              className="flex items-center gap-1 hover:text-pink-400 cursor-pointer transition-colors"
+                              onClick={() => handleLikeIntent(tweet)}
+                            >
                               <LikeIcon className="w-4 h-4" />
                               <span>{formatNumber(tweet.like_count)}</span>
                             </div>
@@ -943,12 +1641,29 @@ export default function RaidsPage() {
                 ) : (
                   <div className="text-center py-8 text-gray-400">No tweets found</div>
                 )}
+                
+                {/* Lazy Loading Indicator */}
+                {loadingMoreTweets && (
+                  <div className="text-center py-4">
+                    <div className="flex items-center justify-center gap-2 text-gray-400">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
+                      <span className="text-sm">Loading more tweets...</span>
+                    </div>
+                  </div>
+                )}
+                
+                {/* End of tweets indicator */}
+                {!loadingMoreTweets && !tweetPagination.hasMore && uniqueTweets.length > 0 && (
+                  <div className="text-center py-4 text-gray-500 text-sm">
+                    No more tweets to load
+                  </div>
+                )}
               </div>
             </div>
 
             {/* LLM Response and Edit Box */}
             <div className="shrink-0 min-w-[200px] flex flex-col">
-              {uniqueTweets.length > 0 && (
+              {(uniqueTweets.length > 0 || selectedTweet) && (
                 <Card className={`bg-neutral-800 ${selectedTweet ? 'border-[#00D992]' : 'border-neutral-600'} flex-1 flex flex-col`}>
                   <CardContent className="p-4 flex flex-col flex-1">
                     <div className="mb-2">
@@ -957,13 +1672,22 @@ export default function RaidsPage() {
                       </div>
                     </div>
                     <div className="mb-2 flex-1">
-                      <textarea
-                        className="w-full h-full min-h-[200px] bg-neutral-900 border border-neutral-600 rounded-lg p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
-                        value={editedResponse}
-                        onChange={handleEditResponse}
-                        placeholder={selectedTweet ? "AI-generated response will appear here..." : "Click on a tweet to generate an AI response..."}
-                        disabled={llmLoading || !selectedTweet}
-                      />
+                      {llmLoading ? (
+                        <div className="w-full h-full min-h-[200px] bg-neutral-900 border border-neutral-600 rounded-lg p-2 flex items-center justify-center">
+                          <div className="flex items-center gap-2 text-gray-400">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
+                            <span className="text-sm">Generating AI response...</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <textarea
+                          className="w-full h-full min-h-[200px] bg-neutral-900 border border-neutral-600 rounded-lg p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
+                          value={editedResponse}
+                          onChange={handleEditResponse}
+                          placeholder={selectedTweet ? "AI-generated response will appear here..." : "Click on a tweet to generate an AI response..."}
+                          disabled={llmLoading || !selectedTweet}
+                        />
+                      )}
                     </div>
                     {selectedTweet && (
                       <div className="flex gap-2 mt-auto">
@@ -989,6 +1713,7 @@ export default function RaidsPage() {
             </div>
           </div>
         </main>
+        </div>
       </div>
     </div>
   );
