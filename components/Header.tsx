@@ -16,6 +16,10 @@ const navItems = [
     href: "/kols",
   },
   {
+    label: "Raids",
+    href: "/raids",
+  },
+  {
     label: "Communities",
     href: "/communities",
   },
@@ -107,6 +111,9 @@ export default function Header() {
                 }`}
               >
                 {item.label}
+                {item.href === "/raids" && (
+                  <span className="absolute -top-1 -right-3 w-2 h-2 bg-[#00D992] rounded-full animate-pulse"></span>
+                )}
               </Link>
             ))}
 
@@ -245,12 +252,15 @@ export default function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium text-2xl mt-0 py-6 px-4 border-b border-neutral-600 ${
+                  className={`text-gray-300 hover:text-[#00D992] transition-colors font-medium text-2xl mt-0 py-6 px-4 border-b border-neutral-600 relative ${
                     pathname?.startsWith(item.href) ? "!text-[#00D992]" : ""
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.label}
+                  {item.href === "/raids" && (
+                    <span className="absolute top-6 right-6 w-2 h-2 bg-[#00D992] rounded-full animate-pulse"></span>
+                  )}
                 </Link>
               ))}
               {ready && !authenticated && (
