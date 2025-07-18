@@ -189,6 +189,8 @@ export default function RaidsPage() {
     }
   }, [pinnedCommunityData, selectedItem, isSearching, trendingTokens.length]);
 
+
+
   const fetchPinnedCommunityData = async () => {
     try {
       const response = await fetch(
@@ -482,6 +484,13 @@ export default function RaidsPage() {
     index === self.findIndex(t => t.tweet_id === tweet.tweet_id)
   );
 
+  // Auto-select first tweet when tweets are loaded and no tweet is selected
+  useEffect(() => {
+    if (uniqueTweets.length > 0 && !selectedTweet && !loadingMain) {
+      setSelectedTweet(uniqueTweets[0]);
+    }
+  }, [uniqueTweets, selectedTweet, loadingMain]);
+
   const formatNumber = (num: number): string => {
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
     if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
@@ -612,11 +621,11 @@ export default function RaidsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[url('/landingPageBg.png')] bg-cover bg-no-repeat pt-16 md:pt-0">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 flex gap-6">
+    <div className=" bg-[url('/landingPageBg.png')] bg-cover bg-no-repeat pt-16 md:pt-0">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 flex gap-6 h-[calc(100vh-8rem)]">
         {/* Left Section */}
-        <aside className="w-80 shrink-0 border-r border-neutral-700 pr-4 flex flex-col">
-          <div className="mb-6">
+        <aside className="w-80 shrink-0 border-r border-neutral-700 pr-4 flex flex-col h-full">
+          <div className="mb-6 shrink-0">
             <h2 className="text-lg font-bold flex items-center gap-2 mb-2">
               {isSearching ? (
                 <>
@@ -656,7 +665,7 @@ export default function RaidsPage() {
             </div>
           </div>
           
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
             {loadingSidebar ? (
               <div className="space-y-3">
                 {Array.from({ length: 8 }).map((_, i) => (
@@ -682,7 +691,7 @@ export default function RaidsPage() {
         </aside>
 
         {/* Right Section - Main Panel */}
-        <main className="flex-1 min-w-0 flex flex-col gap-6">
+        <main className="flex-1 min-w-0 flex flex-col gap-6 h-full">
           {/* Item Details */}
           {loadingMain ? (
             <div className="mb-6">
@@ -776,15 +785,15 @@ export default function RaidsPage() {
               <SelectContent className="bg-neutral-800 border-neutral-600 text-white">
                 <SelectItem value="both">Both</SelectItem>
                 <SelectItem value="original" disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}>
-                  Original Tweets
+                  Project Tweets
                 </SelectItem>
                 <SelectItem value="mentions">Mentions</SelectItem>
               </SelectContent>
             </Select>
             <span className="text-gray-400 text-sm">({uniqueTweets.length} tweets)</span>
-            {!handleDetails && selectedItem?.twitter_final && (
+            {!handleDetails && selectedItem?.twitter_final && originalTweets.length === 0 && mentions.length > 0 && (
               <span className="text-xs text-yellow-400">
-                (Original tweets unavailable - showing mentions only)
+                (Project tweets unavailable - showing mentions only)
               </span>
             )}
             {tweetFeedType === "both" && (
@@ -795,10 +804,10 @@ export default function RaidsPage() {
           </div>
 
           {/* Main Content: Tweets and LLM Response */}
-          <div className="flex flex-row gap-6 min-h-[400px]">
+          <div className="flex flex-row gap-6 flex-1 min-h-0">
             {/* Tweets List */}
-            <div className="flex-1 min-w-[300px]">
-              <div className="space-y-4">
+            <div className="flex-1 min-w-[300px] flex flex-col min-h-0">
+              <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2">
                 {loadingMain ? (
                   Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-32" />)
                 ) : uniqueTweets.length > 0 ? (
@@ -905,7 +914,7 @@ export default function RaidsPage() {
                                 ) : (
                                   <>
                                     <Sparkles className="w-4 h-4" />
-                                    <span className="text-xs">AI Selected</span>
+                                    <span className="text-xs">Raid the tweet</span>
                                   </>
                                 )}
                               </div>
@@ -917,10 +926,11 @@ export default function RaidsPage() {
                                   e.stopPropagation();
                                   handleGenerateResponse(tweet);
                                 }}
-                                className="text-gray-400 hover:text-[#00D992] hover:bg-[#00D992]/10 p-1"
+                                className="text-gray-400 hover:text-[#00D992] hover:bg-[#00D992]/10 px-3 py-2 flex items-center gap-2"
                                 title="Generate AI Response"
                               >
-                                <Sparkles className="w-4 h-4" />
+                                <Sparkles className="w-5 h-5" />
+                                <span className="text-xs font-medium">Raid the tweet</span>
                               </Button>
                             )}
                           </div>
@@ -937,39 +947,42 @@ export default function RaidsPage() {
             </div>
 
             {/* LLM Response and Edit Box */}
-            <div className="shrink-0 min-w-[200px]">
-              {selectedTweet && (
-                <Card className="bg-neutral-800 border-[#00D992]">
-                  <CardContent className="p-4">
+            <div className="shrink-0 min-w-[200px] flex flex-col">
+              {uniqueTweets.length > 0 && (
+                <Card className={`bg-neutral-800 ${selectedTweet ? 'border-[#00D992]' : 'border-neutral-600'} flex-1 flex flex-col`}>
+                  <CardContent className="p-4 flex flex-col flex-1">
                     <div className="mb-2">
-                      <div className="text-xs text-gray-400 mb-1">AI Response:</div>
-                      {/* <div className="text-sm text-gray-200 mb-2">{selectedTweet.body}</div> */}
+                      <div className="text-xs text-gray-400 mb-1">
+                        {selectedTweet ? 'AI Response:' : 'Select a tweet to generate AI response'}
+                      </div>
                     </div>
-                    <div className="mb-2">
+                    <div className="mb-2 flex-1">
                       <textarea
-                        className="w-full min-h-[100px] bg-neutral-900 border border-neutral-600 rounded-lg p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992]"
+                        className="w-full h-full min-h-[200px] bg-neutral-900 border border-neutral-600 rounded-lg p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
                         value={editedResponse}
                         onChange={handleEditResponse}
-                        placeholder="AI-generated response will appear here..."
-                        disabled={llmLoading}
+                        placeholder={selectedTweet ? "AI-generated response will appear here..." : "Click on a tweet to generate an AI response..."}
+                        disabled={llmLoading || !selectedTweet}
                       />
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        onClick={handlePostToTwitter}
-                        className="bg-blue-500 hover:bg-blue-600 text-white"
-                        disabled={!editedResponse || llmLoading}
-                      >
-                        Post to Twitter
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => { setSelectedTweet(null); setLlmResponse(""); setEditedResponse(""); setLlmIntentUrl(""); }}
-                        className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992]"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                    {selectedTweet && (
+                      <div className="flex gap-2 mt-auto">
+                        <Button
+                          onClick={handlePostToTwitter}
+                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                          disabled={!editedResponse || llmLoading}
+                        >
+                          Post to Twitter
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => { setSelectedTweet(null); setLlmResponse(""); setEditedResponse(""); setLlmIntentUrl(""); }}
+                          className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992]"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
