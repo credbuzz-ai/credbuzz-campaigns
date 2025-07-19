@@ -35,6 +35,57 @@
   }
 }
 
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-slow-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes border-line {
+  0% {
+    top: -9px;
+    left: -8px;
+    width: 10px;
+    height: 10px;
+  }
+  35% {
+    top: -9px;
+    left: calc(100% - 1px);
+    width: 10px;
+    height: 10px;
+  }
+  50% {
+    top: calc(100% - 1px);
+    left: calc(100% - 1px);
+    width: 10px;
+    height: 10px;
+  }
+  85% {
+    top: calc(100% - 1px);
+    left: -9px;
+    width: 10px;
+    height: 10px;
+  }
+  100% {
+    top: -9px;
+    left: -9px;
+    width: 10px;
+    height: 10px;
+  }
+}
+
 .animate-shimmer {
   animation: shimmer 2s infinite linear;
   background: linear-gradient(
@@ -44,6 +95,18 @@
     rgba(255, 255, 255, 0.02) 33%
   );
   background-size: 1000px 100%;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+.animate-spin-slow-reverse {
+  animation: spin-slow-reverse 4s linear infinite;
+}
+
+.animate-border-line {
+  animation: border-line 3s linear infinite;
 }
 
 @layer utilities {
