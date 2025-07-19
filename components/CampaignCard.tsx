@@ -102,12 +102,9 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
           <div className="flex items-center justify-center gap-2 text-sm my-6">
             <span className="text-gray-400 text-left">
               {campaign.description.slice(0, 100)}...{" "}
-              <Link
-                href={`/sage-campaigns/${campaign.campaign_id}`}
-                className="text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors"
-              >
+              <span className="text-[#00D992] hover:text-[#00F5A8] font-medium transition-colors">
                 Read more
-              </Link>
+              </span>
             </span>
           </div>
         </div>
