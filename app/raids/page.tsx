@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { TrendingUp, Search, ExternalLink, Hash, ChevronDown, Users, Sparkles, Filter, ArrowLeft } from "lucide-react";
+import { TrendingUp, Search, ExternalLink, Hash, ChevronDown, Users, Sparkles, Filter, ArrowLeft, Copy } from "lucide-react";
 import { LikeIcon, ReplyIcon, RetweetIcon, ViewIcon, ShareIcon } from "@/components/icons/twitter-icons";
 import { XLogo } from "@/components/icons/x-logo";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 // Updated interfaces to match new API structure
 interface TrendingToken {
@@ -145,6 +146,7 @@ interface GenerateResponseResponse {
 type LeftSectionItem = TrendingToken | SearchToken;
 
 export default function RaidsPage() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [trendingTokens, setTrendingTokens] = useState<TrendingToken[]>([]);
@@ -164,10 +166,70 @@ export default function RaidsPage() {
   const [editedResponse, setEditedResponse] = useState<string>("");
   const [llmLoading, setLlmLoading] = useState(false);
   const [llmIntentUrl, setLlmIntentUrl] = useState<string>("");
+  const [generatedShareUrl, setGeneratedShareUrl] = useState<string>("");
+  const [generatedHtmlUrl, setGeneratedHtmlUrl] = useState<string>("");
+  const [imageLoading, setImageLoading] = useState(false);
+  
+  // Raid target state
+  const [raidTarget, setRaidTarget] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('raidTarget') || "";
+    }
+    return "";
+  });
+  const [isRaidTargetLocked, setIsRaidTargetLocked] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('isRaidTargetLocked') === 'true';
+    }
+    return false;
+  });
+  
+  // Response customization state
+  const [responseType, setResponseType] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('responseType') || "supportive";
+    }
+    return "supportive";
+  });
+  const [tone, setTone] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('tone') || "enthusiastic";
+    }
+    return "enthusiastic";
+  });
 
   // Chain filter state
   const [selectedChains, setSelectedChains] = useState<string[]>(['solana','base','ethereum','bsc']);
   const [availableChains, setAvailableChains] = useState<string[]>(['solana','base','ethereum','bsc']);
+
+  // Wrapper functions to update both state and localStorage
+  const updateRaidTarget = (value: string) => {
+    setRaidTarget(value);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('raidTarget', value);
+    }
+  };
+
+  const updateIsRaidTargetLocked = (value: boolean) => {
+    setIsRaidTargetLocked(value);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isRaidTargetLocked', value.toString());
+    }
+  };
+
+  const updateResponseType = (value: string) => {
+    setResponseType(value);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('responseType', value);
+    }
+  };
+
+  const updateTone = (value: string) => {
+    setTone(value);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('tone', value);
+    }
+  };
 
   // Mobile responsive state
   const [mobileView, setMobileView] = useState<'tokens' | 'detail'>('tokens');
@@ -213,7 +275,67 @@ export default function RaidsPage() {
     }
   }, [pinnedCommunityData, selectedItem, isSearching, trendingTokens.length]);
 
+  const [copyStatus, setCopyStatus] = useState<string>('');
 
+  const copyImage = useCallback(async (imageUrl: string) => {
+    // feature‑detect Clipboard APIs
+    if (!navigator.clipboard || typeof ClipboardItem === 'undefined') {
+      setCopyStatus('⚠️ Your browser does not support image copy to clipboard.');
+      toast({
+        title: "Copy Failed",
+        description: "Your browser does not support image copy to clipboard.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setCopyStatus('⏳ Fetching image…');
+
+      // Fetch as Blob (requires CloudFront to allow CORS)
+      console.log('Fetching image:', imageUrl);
+      const res = await fetch(imageUrl, { mode: 'cors' });
+      if (!res.ok) throw new Error(`Image fetch failed (${res.status})`);
+      const blob = await res.blob();
+
+      // Wrap in ClipboardItem
+      const item = new ClipboardItem({ [blob.type]: blob });
+
+      // Write to clipboard
+      await navigator.clipboard.write([item]);
+
+      setCopyStatus('✅ Image copied to clipboard!');
+      toast({
+        title: "Success",
+        description: "Image copied to clipboard!",
+      });
+    } catch (err: any) {
+      console.error('Copy image error:', err);
+      setCopyStatus(`❌ Failed: ${err.message}`);
+      toast({
+        title: "Copy Failed",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  const copyTokenId = useCallback(async (tokenId: string) => {
+    try {
+      await navigator.clipboard.writeText(tokenId);
+      toast({
+        title: "Token ID copied!",
+        description: "The token ID has been copied to your clipboard.",
+      });
+    } catch (error) {
+      console.error("Failed to copy token ID:", error);
+      toast({
+        title: "Failed to copy token ID",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
 
   const fetchPinnedCommunityData = async () => {
     try {
@@ -320,6 +442,17 @@ export default function RaidsPage() {
       setLlmResponse("");
       setEditedResponse("");
       setLlmIntentUrl("");
+      setGeneratedShareUrl("");
+      setGeneratedHtmlUrl("");
+      
+      // Reset raid target when switching items (unless locked)
+      if (!isRaidTargetLocked) {
+        updateRaidTarget("");
+      }
+      
+      // Reset response customization to defaults
+      updateResponseType("supportive");
+      updateTone("enthusiastic");
       
       // Reset pagination for new item
       setTweetPagination({
@@ -339,6 +472,17 @@ export default function RaidsPage() {
       setLlmResponse("");
       setEditedResponse("");
       setLlmIntentUrl("");
+      setGeneratedShareUrl("");
+      setGeneratedHtmlUrl("");
+      
+      // Reset raid target when clearing selection (unless locked)
+      if (!isRaidTargetLocked) {
+        updateRaidTarget("");
+      }
+      
+      // Reset response customization to defaults
+      updateResponseType("supportive");
+      updateTone("enthusiastic");
     }
   }, [selectedItem]);
 
@@ -654,16 +798,19 @@ export default function RaidsPage() {
     setLlmIntentUrl("");
     try {
       const selectedSymbol = selectedItem && 'symbol' in selectedItem ? selectedItem.symbol : '';
+      // Use raid target if specified, otherwise use selected community symbol
+      const raidTargetSymbol = raidTarget.trim() || selectedSymbol;
+      
       const requestBody: GenerateResponseRequest = {
         tweet_content: tweet.body,
         tweet_context: {
           author_handle: tweet.author_handle,
-          symbol: selectedSymbol,
+          symbol: raidTargetSymbol,
           sentiment: tweet.sentiment,
           tweet_category: tweet.tweet_category,
         },
-        response_type: "supportive",
-        tone: "casual",
+        response_type: responseType,
+        tone: tone,
       };
 
       const response = await fetch(
@@ -699,9 +846,96 @@ export default function RaidsPage() {
     setEditedResponse(e.target.value);
   };
 
-  const handlePostToTwitter = () => {
+  const generateRaidImage = async () => {
+    if (!selectedItem || !editedResponse || !selectedTweet) return;
+    
+    setImageLoading(true);
+    try {
+      // Determine response type and tone based on sentiment and content
+      const determineResponseType = (sentiment: number, content: string) => {
+        if (sentiment > 0.5) return "supportive";
+        if (sentiment < -0.5) return "critical";
+        return "neutral";
+      };
+
+      const determineTone = (content: string) => {
+        const lowerContent = content.toLowerCase();
+        if (lowerContent.includes("🚀") || lowerContent.includes("moon") || lowerContent.includes("pump")) return "enthusiastic";
+        if (lowerContent.includes("💎") || lowerContent.includes("hodl") || lowerContent.includes("diamond")) return "confident";
+        if (lowerContent.includes("🔥") || lowerContent.includes("fire") || lowerContent.includes("hot")) return "excited";
+        if (lowerContent.includes("😱") || lowerContent.includes("wow") || lowerContent.includes("amazing")) return "surprised";
+        return "enthusiastic"; // default
+      };
+
+      const responseType = determineResponseType(selectedTweet.sentiment, editedResponse);
+      const tone = determineTone(editedResponse);
+
+      // Use raid target if specified, otherwise use selected community symbol
+      const raidTargetSymbol = raidTarget.trim() || selectedItem.symbol;
+      
+      // Call the AI image generation API
+      const response = await fetch(`${process.env.NEXT_PUBLIC_CREDBUZZ_API_URL}/raids/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_API_KEY}`,
+        },
+        body: JSON.stringify({
+          prompt: `A dynamic crypto raid response image featuring ${raidTargetSymbol} token on ${selectedItem.chain} blockchain. The image should represent a ${tone} ${responseType} response to a tweet about ${raidTargetSymbol}. Show crypto trading charts, rocket emojis, and a futuristic trading interface with ${raidTargetSymbol} prominently displayed. The mood should reflect: ${editedResponse.substring(0, 100)}...`,
+          style: "realistic",
+          aspect_ratio: "16:9",
+          token_symbol: raidTargetSymbol,
+          author_handle: selectedTweet.author_handle,
+          original_tweet_content: selectedTweet.body,
+          ai_response_content: editedResponse,
+          tweet_author_handle: selectedTweet.author_handle,
+          response_type: responseType,
+          tone: tone
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.result && data.result.image_url && data.result.html_url) {
+        setGeneratedShareUrl(data.result.image_url); // Use image URL for preview
+        setGeneratedHtmlUrl(data.result.html_url); // Use HTML URL for sharing
+        console.log("AI image and HTML page generated successfully:", data.result.image_url);
+      } else {
+        console.error("Failed to generate image:", data.message);
+        // Fallback to static image if API fails
+        setGeneratedShareUrl("https://dhowgvd18tbhl.cloudfront.net/raid-images/grokbanner.jpeg");
+        setGeneratedHtmlUrl("");
+      }
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+      // Fallback to static image if API fails
+      setGeneratedShareUrl("https://dhowgvd18tbhl.cloudfront.net/raid-images/grokbanner.jpeg");
+      setGeneratedHtmlUrl("");
+    } finally {
+      setImageLoading(false);
+    }
+  };
+
+  // Remove auto-generation - users will click the button explicitly
+
+  const handlePostToTwitter = async () => {
+    
     if (!selectedTweet || !editedResponse) return;
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(editedResponse)}&in_reply_to=${selectedTweet.tweet_id}`;
+    
+    // First, copy the generated image to clipboard if available
+    if (generatedShareUrl) {
+      await copyImage(generatedShareUrl);
+    }
+    
+    let tweetText = editedResponse;
+    
+    // Add share URL to the tweet text if available
+    // if (generatedHtmlUrl) {
+    //   tweetText += `\n\n${generatedHtmlUrl}`;
+    // }
+    
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&in_reply_to=${selectedTweet.tweet_id}`;
+    
     window.open(url, "_blank");
   };
 
@@ -747,9 +981,9 @@ export default function RaidsPage() {
     const isPinned = item.token_id === "pinned-grok" || item.token_id === pinnedCommunityData.token_id;
     
     return (
-      <button
+      <div
         key={`${isPinned ? 'pinned' : 'token'}-${item.token_id || index}`}
-        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left hover:bg-neutral-800 border-2 ${
+        className={`w-full flex items-center gap-3 p-3 rounded-none transition-all text-left hover:bg-neutral-800 border-2 cursor-pointer ${
           isSelected 
             ? "bg-[#00D992]/10 border-[#00D992] shadow-lg shadow-[#00D992]/20" 
             : "border-transparent hover:border-neutral-600"
@@ -771,6 +1005,17 @@ export default function RaidsPage() {
         <div className="flex-1 min-w-0 overflow-hidden">
           <div className="flex items-center gap-2">
             <span className={`font-semibold truncate ${isSelected ? "text-[#00D992]" : "text-white"}`}>{item.symbol}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                copyTokenId(item.token_id);
+              }}
+              className="h-6 w-6 p-0 text-gray-400 hover:text-[#00D992] hover:bg-[#00D992]/10"
+            >
+              <Copy className="w-3 h-3" />
+            </Button>
             {isPinned && (
               <Badge variant="outline" className={`text-xs shrink-0 ${
                 isSelected 
@@ -795,7 +1040,7 @@ export default function RaidsPage() {
             </Badge>
           </div>
         </div>
-      </button>
+      </div>
     );
   };
 
@@ -838,12 +1083,12 @@ export default function RaidsPage() {
                     placeholder="Search tokens or handles..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
+                    className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992] rounded-none"
                   />
                 </div>
                 
                 {/* Filter for current section */}
-                <div className="relative mb-3">
+                {/* <div className="relative mb-3">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     type="text"
@@ -852,7 +1097,7 @@ export default function RaidsPage() {
                     onChange={(e) => setSidebarFilter(e.target.value)}
                     className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
                   />
-                </div>
+                </div> */}
 
                 {/* Chain Filter */}
                 {availableChains.length > 0 && (
@@ -861,7 +1106,7 @@ export default function RaidsPage() {
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-between bg-neutral-800 border-neutral-600 text-white hover:border-[#00D992] hover:text-[#00D992]"
+                          className="w-full justify-between bg-neutral-800 border-neutral-600 text-white hover:border-[#00D992] hover:text-[#000000] rounded-none"
                         >
                           <div className="flex items-center gap-2">
                             <Filter className="w-4 h-4" />
@@ -891,7 +1136,7 @@ export default function RaidsPage() {
                               handleDeselectAllChains();
                             }
                           }}
-                          className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-700"
+                          className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100"
                         >
                           {selectedChains.length === availableChains.length ? "Deselect All" : "Select All"}
                         </DropdownMenuCheckboxItem>
@@ -920,7 +1165,7 @@ export default function RaidsPage() {
                 {loadingSidebar ? (
                   <div className="space-y-3">
                     {Array.from({ length: 8 }).map((_, i) => (
-                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg">
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-none">
                         <Skeleton className="w-10 h-10 rounded-full" />
                         <div className="flex-1">
                           <Skeleton className="h-4 w-20 mb-1" />
@@ -932,9 +1177,9 @@ export default function RaidsPage() {
                 ) : filteredItems.length > 0 ? (
                   <ul className="space-y-1">
                     {filteredItems.map((item, index) => (
-                      <button
+                      <div
                         key={`mobile-${item.token_id || index}`}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-all text-left hover:bg-neutral-800 border-2 border-transparent hover:border-neutral-600`}
+                        className={`w-full flex items-center gap-3 p-3 rounded-none transition-all text-left hover:bg-neutral-800 border-2 border-transparent hover:border-neutral-600 cursor-pointer`}
                         onClick={() => handleMobileTokenSelect(item)}
                       >
                         <img
@@ -948,6 +1193,17 @@ export default function RaidsPage() {
                         <div className="flex-1 min-w-0 overflow-hidden">
                           <div className="flex items-center gap-2">
                             <span className="font-semibold truncate text-white">{item.symbol}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyTokenId(item.token_id);
+                              }}
+                              className="h-6 w-6 p-0 text-gray-400 hover:text-[#00D992] hover:bg-[#00D992]/10"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </Button>
                             {item.token_id === "pinned-grok" && (
                               <Badge variant="outline" className="text-xs bg-[#00D992]/20 border-[#00D992]/50 text-[#00D992] shrink-0">
                                 Pinned
@@ -962,7 +1218,7 @@ export default function RaidsPage() {
                             </Badge>
                           </div>
                         </div>
-                      </button>
+                      </div>
                     ))}
                   </ul>
                 ) : (
@@ -1004,7 +1260,7 @@ export default function RaidsPage() {
                 ) : (
                   <div className="space-y-6">
                     {/* Item Details - Compact Mobile */}
-                    <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-3">
+                    <div className="bg-neutral-800 border border-neutral-600 rounded-none p-3">
                       <div className="flex items-center gap-3">
                         <img
                           src={tokenDetails?.profile_image_url || handleDetails?.profile_image_url || "/placeholder.svg"}
@@ -1017,18 +1273,28 @@ export default function RaidsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <h1 className="text-lg font-bold truncate">{tokenDetails?.symbol || handleDetails?.author_handle}</h1>
+                            {tokenDetails?.token_id && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyTokenId(tokenDetails.token_id)}
+                                className="h-6 w-6 p-0 text-gray-400 hover:text-[#00D992] hover:bg-[#00D992]/10"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            )}
                             <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 shrink-0">{tokenDetails?.chain || "N/A"}</Badge>
                             {(tokenDetails?.twitter_final || handleDetails?.author_handle) && (
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => {
-                                  const twitterHandle = tokenDetails?.twitter_final || handleDetails?.author_handle;
-                                  if (twitterHandle) {
-                                    window.open(`https://twitter.com/${twitterHandle}`, "_blank");
-                                  }
-                                }}
-                                className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992] flex items-center gap-1 shrink-0"
+                                                        onClick={() => {
+                          const twitterHandle = tokenDetails?.twitter_final || handleDetails?.author_handle;
+                          if (twitterHandle) {
+                            window.open(`https://x.com/search?q=${encodeURIComponent(twitterHandle)}&src=typed_query&f=live`, "_blank");
+                          }
+                        }}
+                                className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-black flex items-center gap-1 shrink-0"
                               >
                                 <XLogo className="w-3 h-3" />
                                 <span className="text-xs">Twitter</span>
@@ -1063,19 +1329,73 @@ export default function RaidsPage() {
                     {/* Tweet Feed */}
                     <div className="space-y-4">
                       <div className="flex items-center gap-4">
-                        <Select value={tweetFeedType} onValueChange={v => { setTweetFeedType(v as "both" | "original" | "mentions"); setSelectedTweet(null); setLlmResponse(""); setEditedResponse(""); setLlmIntentUrl(""); }}>
-                          <SelectTrigger className="w-full bg-neutral-800 border-neutral-600 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-neutral-800 border-neutral-600 text-white">
-                            <SelectItem value="both">Both</SelectItem>
-                            <SelectItem value="original" disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}>
-                              Project Tweets
-                            </SelectItem>
-                            <SelectItem value="mentions">Mentions</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <span className="text-gray-400 text-sm">({uniqueTweets.length} tweets)</span>
+                        <div className="flex bg-neutral-800 border border-neutral-600 rounded-none flex-1">
+                          <button
+                            onClick={() => { 
+                              setTweetFeedType("both"); 
+                              setSelectedTweet(null); 
+                              setLlmResponse(""); 
+                              setEditedResponse(""); 
+                              setLlmIntentUrl(""); 
+                              if (!isRaidTargetLocked) {
+                                updateRaidTarget("");
+                              }
+                              updateResponseType("supportive");
+                              updateTone("enthusiastic");
+                            }}
+                            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                              tweetFeedType === "both"
+                                ? "bg-[#00D992] text-black"
+                                : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
+                            }`}
+                          >
+                            Both
+                          </button>
+                          <button
+                            onClick={() => { 
+                              setTweetFeedType("original"); 
+                              setSelectedTweet(null); 
+                              setLlmResponse(""); 
+                              setEditedResponse(""); 
+                              setLlmIntentUrl(""); 
+                              if (!isRaidTargetLocked) {
+                                updateRaidTarget("");
+                              }
+                              updateResponseType("supportive");
+                              updateTone("enthusiastic");
+                            }}
+                            disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}
+                            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                              tweetFeedType === "original"
+                                ? "bg-[#00D992] text-black"
+                                : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                            }`}
+                          >
+                            Project
+                          </button>
+                          <button
+                            onClick={() => { 
+                              setTweetFeedType("mentions"); 
+                              setSelectedTweet(null); 
+                              setLlmResponse(""); 
+                              setEditedResponse(""); 
+                              setLlmIntentUrl(""); 
+                              if (!isRaidTargetLocked) {
+                                updateRaidTarget("");
+                              }
+                              updateResponseType("supportive");
+                              updateTone("enthusiastic");
+                            }}
+                            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+                              tweetFeedType === "mentions"
+                                ? "bg-[#00D992] text-black"
+                                : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
+                            }`}
+                          >
+                            Mentions
+                          </button>
+                        </div>
+                        <span className="text-gray-400 text-xs">({uniqueTweets.length})</span>
                       </div>
 
                       {/* Tweets List */}
@@ -1084,11 +1404,11 @@ export default function RaidsPage() {
                           Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-32" />)
                         ) : uniqueTweets.length > 0 ? (
                           uniqueTweets.map((tweet) => (
-                                                         <Card 
-                               key={`mobile-${selectedItem?.symbol}-${tweet.tweet_id}`} 
-                               className={`bg-neutral-800 border-neutral-600 transition-all hover:bg-neutral-750 hover:border-neutral-500 cursor-pointer ${selectedTweet?.tweet_id === tweet.tweet_id ? "border-[#00D992]" : ""}`}
-                               onClick={() => handleGenerateResponse(tweet)}
-                             >
+                                                                                          <Card 
+                                   key={`mobile-${selectedItem?.symbol}-${tweet.tweet_id}`} 
+                                   className={`bg-neutral-800 border-neutral-600 transition-all hover:bg-neutral-750 hover:border-neutral-500 cursor-pointer rounded-none ${selectedTweet?.tweet_id === tweet.tweet_id ? "border-[#00D992]" : ""}`}
+                                   onClick={() => handleGenerateResponse(tweet)}
+                                 >
                                <CardContent className="p-4 max-w-full">
                                 <div className="flex items-start gap-3 mb-2">
                                   <img
@@ -1154,7 +1474,7 @@ export default function RaidsPage() {
                                                                              <Button
                                          variant="ghost"
                                          size="sm"
-                                         className="text-[#00D992] hover:text-[#00C484] bg-[#00D992]/10 hover:bg-[#00D992]/20 px-3 py-2 rounded-lg"
+                                         className="text-[#00D992] hover:text-[#00C484] bg-[#00D992]/10 hover:bg-[#00D992]/20 px-3 py-2 rounded-none animate-pulse"
                                        >
                                          <Sparkles className="w-5 h-5 mr-1" />
                                          <span className="text-sm font-medium">Raid</span>
@@ -1193,43 +1513,231 @@ export default function RaidsPage() {
                      {/* Mobile AI Response Panel - Sticky Bottom */}
                      {selectedTweet && (
                        <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-600 p-4 z-50">
-                         <Card className="bg-neutral-800 border-[#00D992]">
+                         <Card className="bg-neutral-800 border-[#00D992] rounded-none">
                            <CardContent className="p-4">
                              <div className="mb-2">
                                <div className="text-xs text-gray-400 mb-1">
                                  AI Response:
                                </div>
                              </div>
+                             
+                             {/* Mobile Raid Target Input */}
+                             <div className="mb-3">
+                               <div className="flex items-center justify-between mb-1">
+                                 <div className="text-xs text-gray-400">
+                                 {raidTarget && (
+                                 <div className="text-xs text-[#00D992] mt-1">
+                                   Raiding: <span className="font-medium">{raidTarget}</span>
+                                 </div>
+                               )}
+                               {!raidTarget && selectedItem && (
+                                 <div className="text-xs text-gray-500 mt-1">
+                                   Raiding: <span className="font-medium">${selectedItem.symbol}</span>
+                                 </div>
+                               )}
+                                 </div>
+                                 <div className="flex items-center gap-1">
+                                                               <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => updateIsRaidTargetLocked(!isRaidTargetLocked)}
+                              className={`text-xs px-2 py-1 h-6 ${
+                                isRaidTargetLocked 
+                                  ? "text-[#00D992] bg-[#00D992]/10" 
+                                  : "text-gray-400 hover:text-[#00D992]"
+                              }`}
+                              title={isRaidTargetLocked ? "Unlock raid target" : "Lock raid target"}
+                            >
+                              {isRaidTargetLocked ? "🔒" : "🔓"}
+                            </Button>
+                            {raidTarget && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => updateRaidTarget("")}
+                                className="text-xs px-2 py-1 h-6 text-gray-400 hover:text-red-400"
+                                title="Clear raid target"
+                              >
+                                ✕
+                              </Button>
+                            )}
+                                 </div>
+                               </div>
+                               <div className="flex items-center gap-2">
+                                                           <Input
+                            type="text"
+                            placeholder={`e.g., $${selectedItem?.symbol || 'PEPE'}, @handle, or leave empty for ${selectedItem?.symbol || 'selected community'}`}
+                            value={raidTarget}
+                            onChange={(e) => updateRaidTarget(e.target.value)}
+                            className="flex-1 text-xs bg-neutral-900 border-neutral-600 text-white placeholder-gray-500 focus:border-[#00D992] focus:ring-[#00D992] rounded-none h-8"
+                            disabled={llmLoading}
+                          />
+                               </div>
+                               
+                             </div>
+                             
+                             {/* Mobile Response Type and Tone Selection */}
+                             <div className="mb-3">
+                               <div className="grid grid-cols-2 gap-2">
+                                 <div>
+                                   <Select value={responseType} onValueChange={updateResponseType}>
+                                     <SelectTrigger className="h-8 text-xs bg-neutral-900 border-neutral-600 text-white focus:border-[#00D992] focus:ring-[#00D992] rounded-none">
+                                       <SelectValue />
+                                     </SelectTrigger>
+                                     <SelectContent className="bg-neutral-800 border-neutral-600 text-white">
+                                       <SelectItem value="supportive" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Supportive</SelectItem>
+                                       <SelectItem value="questioning" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Questioning</SelectItem>
+                                       <SelectItem value="humorous" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Humorous</SelectItem>
+                                       <SelectItem value="analytical" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Analytical</SelectItem>
+                                       <SelectItem value="bullish" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Bullish</SelectItem>
+                                       <SelectItem value="memeish" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Memeish</SelectItem>
+                                     </SelectContent>
+                                   </Select>
+                                 </div>
+                                 <div>
+                                   <Select value={tone} onValueChange={updateTone}>
+                                     <SelectTrigger className="h-8 text-xs bg-neutral-900 border-neutral-600 text-white focus:border-[#00D992] focus:ring-[#00D992] rounded-none">
+                                       <SelectValue />
+                                     </SelectTrigger>
+                                     <SelectContent className="bg-neutral-800 border-neutral-600 text-white">
+                                       <SelectItem value="casual" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Casual</SelectItem>
+                                       <SelectItem value="professional" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Professional</SelectItem>
+                                       <SelectItem value="enthusiastic" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Enthusiastic</SelectItem>
+                                       <SelectItem value="moonish" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Moonish</SelectItem>
+                                       <SelectItem value="diamond" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Diamond Hands</SelectItem>
+                                       <SelectItem value="fomo" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">FOMO</SelectItem>
+                                     </SelectContent>
+                                   </Select>
+                                 </div>
+                               </div>
+                             </div>
                              <div className="mb-2">
                                {llmLoading ? (
-                                 <div className="w-full h-24 bg-neutral-900 border border-neutral-600 rounded-lg p-2 flex items-center justify-center">
+                                 <div className="w-full h-24 bg-neutral-900 border border-neutral-600 rounded-none p-2 flex items-center justify-center">
                                    <div className="flex items-center gap-2 text-gray-400">
                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
                                      <span className="text-sm">Generating AI response...</span>
                                    </div>
                                  </div>
                                ) : (
-                                 <textarea
-                                   className="w-full h-24 bg-neutral-900 border border-neutral-600 rounded-lg p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
-                                   value={editedResponse}
-                                   onChange={handleEditResponse}
-                                   placeholder="AI-generated response will appear here..."
-                                   disabled={llmLoading}
-                                 />
+                                                         <textarea
+                          className="w-full h-24 bg-neutral-900 border border-neutral-600 rounded-none p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
+                          value={editedResponse}
+                          onChange={handleEditResponse}
+                          placeholder="AI-generated response will appear here..."
+                          disabled={llmLoading}
+                        />
                                )}
                              </div>
+                             
+                             {/* Mobile Image Preview */}
+                             {editedResponse && (
+                               <div className="mb-3">
+                                 <div className="flex items-center justify-between mb-2">
+                                   <div className="text-xs text-gray-400">
+                                     Generated Image:
+                                   </div>
+                                   <div className="flex gap-2">
+                                     {!generatedShareUrl && (
+                                       <Button
+                                         variant="outline"
+                                         size="sm"
+                                         onClick={generateRaidImage}
+                                         disabled={imageLoading || !editedResponse}
+                                         className="text-[#00D992] border-[#00D992] hover:bg-[#00D992]/10 px-3 py-1"
+                                       >
+                                         {imageLoading ? (
+                                           <div className="flex items-center gap-1">
+                                             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#00D992]"></div>
+                                             <span className="text-xs">Generating...</span>
+                                           </div>
+                                         ) : (
+                                           <span className="text-xs">🎨 Generate</span>
+                                         )}
+                                       </Button>
+                                     )}
+                                     {generatedShareUrl && (
+                                       <>
+                                         <Button
+                                           variant="ghost"
+                                           size="sm"
+                                           onClick={generateRaidImage}
+                                           disabled={imageLoading || !editedResponse}
+                                           className="text-[#00D992] hover:text-[#00C484] hover:bg-[#00D992]/10 px-2 py-1"
+                                         >
+                                           {imageLoading ? (
+                                             <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#00D992]"></div>
+                                           ) : (
+                                             <span className="text-xs">🔄</span>
+                                           )}
+                                         </Button>
+                                         <Button
+                                           variant="outline"
+                                           size="sm"
+                                           onClick={() => copyImage(generatedShareUrl)}
+                                           disabled={copyStatus.includes('⏳')}
+                                           className="text-blue-400 border-blue-400 hover:bg-blue-400/10 px-2 py-1"
+                                         >
+                                           <Copy className="w-3 h-3" />
+                                         </Button>
+                                       </>
+                                     )}
+                                   </div>
+                                 </div>
+                                 
+                                 {generatedShareUrl ? (
+                                   <div className="relative">
+                                     <img
+                                       src={generatedShareUrl}
+                                       alt="Raid Response Preview"
+                                       className="w-full h-auto rounded-none border border-neutral-600"
+                                       style={{ maxHeight: "120px", objectFit: "cover" }}
+                                     />
+                                     <div className="absolute top-1 right-1 flex gap-1">
+                                       <Badge variant="outline" className="text-xs bg-[#00D992]/20 border-[#00D992] text-[#00D992]">
+                                         🚀
+                                       </Badge>
+                                     </div>
+                                   </div>
+                                 ) : imageLoading ? (
+                                   <div className="w-full h-20 bg-neutral-900 border border-neutral-600 rounded-none flex items-center justify-center">
+                                     <div className="flex items-center gap-2 text-gray-400">
+                                       <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#00D992]"></div>
+                                       <span className="text-xs">Generating...</span>
+                                     </div>
+                                   </div>
+                                 ) : (
+                                   <div className="w-full h-20 bg-neutral-900 border border-neutral-600 rounded-none flex items-center justify-center text-gray-500 text-xs">
+                                     Click "Generate" to create image
+                                   </div>
+                                 )}
+                               </div>
+                             )}
+                             
                              <div className="flex gap-2">
                                <Button
                                  onClick={handlePostToTwitter}
-                                 className="bg-blue-500 hover:bg-blue-600 text-white flex-1"
+                                 className="bg-blue-500 hover:bg-blue-600 text-white flex-1 rounded-none"
                                  disabled={!editedResponse || llmLoading}
                                >
                                  Post to Twitter
                                </Button>
                                <Button
                                  variant="outline"
-                                 onClick={() => { setSelectedTweet(null); setLlmResponse(""); setEditedResponse(""); setLlmIntentUrl(""); }}
-                                 className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992]"
+                                 onClick={() => { 
+                                   setSelectedTweet(null); 
+                                   setLlmResponse(""); 
+                                   setEditedResponse(""); 
+                                   setLlmIntentUrl(""); 
+                                   setGeneratedShareUrl(""); 
+                                   setGeneratedHtmlUrl(""); 
+                                   if (!isRaidTargetLocked) {
+                                     updateRaidTarget("");
+                                   }
+                                   updateResponseType("supportive");
+                                   updateTone("enthusiastic");
+                                 }}
+                                 className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992] rounded-none"
                                >
                                  Cancel
                                </Button>
@@ -1246,7 +1754,7 @@ export default function RaidsPage() {
          </div>
 
         {/* Desktop Layout */}
-        <div className="hidden md:flex gap-6 h-full">
+        <div className="hidden md:flex gap-4 h-full">
           {/* Left Section */}
           <aside className="w-80 shrink-0 border-r border-neutral-700 pr-4 flex flex-col h-full">
             <div className="mb-6 shrink-0">
@@ -1274,17 +1782,17 @@ export default function RaidsPage() {
               {/* Search Bar */}
               <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  type="text"
-                  placeholder="Search tokens or handles..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
-                />
+                                  <Input
+                    type="text"
+                    placeholder="Search tokens or handles..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992] rounded-none"
+                  />
               </div>
               
               {/* Filter for current section */}
-              <div className="relative mb-3">
+              {/* <div className="relative mb-3">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   type="text"
@@ -1293,17 +1801,17 @@ export default function RaidsPage() {
                   onChange={(e) => setSidebarFilter(e.target.value)}
                   className="pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992]"
                 />
-              </div>
+              </div> */}
 
               {/* Chain Filter */}
               {availableChains.length > 0 && (
                 <div className="mb-3">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-between bg-neutral-800 border-neutral-600 text-white hover:border-[#00D992] hover:text-[#00D992]"
-                      >
+                                              <Button
+                          variant="outline"
+                          className="w-full justify-between bg-neutral-800 border-neutral-600 text-white hover:border-[#00D992] hover:text-black rounded-none"
+                        >
                         <div className="flex items-center gap-2">
                           <Filter className="w-4 h-4" />
                           <span className="text-sm">
@@ -1319,9 +1827,7 @@ export default function RaidsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-64 bg-neutral-800 border-neutral-600 text-white">
-                      <DropdownMenuLabel className="text-gray-300">Select Chains</DropdownMenuLabel>
-                      <DropdownMenuSeparator className="bg-neutral-600" />
-                      
+
                       {/* Select All / Deselect All */}
                       <DropdownMenuCheckboxItem
                         checked={selectedChains.length === availableChains.length}
@@ -1332,7 +1838,7 @@ export default function RaidsPage() {
                             handleDeselectAllChains();
                           }
                         }}
-                        className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-700"
+                        className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100"
                       >
                         {selectedChains.length === availableChains.length ? "Deselect All" : "Select All"}
                       </DropdownMenuCheckboxItem>
@@ -1345,7 +1851,7 @@ export default function RaidsPage() {
                           key={chain}
                           checked={selectedChains.includes(chain)}
                           onCheckedChange={(checked) => handleToggleChain(chain, checked)}
-                          className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-700"
+                          className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100"
                         >
                           {chain}
                         </DropdownMenuCheckboxItem>
@@ -1360,7 +1866,7 @@ export default function RaidsPage() {
               {loadingSidebar ? (
                 <div className="space-y-3">
                   {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-3 p-2 rounded-lg">
+                    <div key={i} className="flex items-center gap-3 p-2 rounded-none">
                       <Skeleton className="w-10 h-10 rounded-full" />
                       <div className="flex-1">
                         <Skeleton className="h-4 w-20 mb-1" />
@@ -1383,7 +1889,7 @@ export default function RaidsPage() {
           </aside>
 
                     {/* Right Section - Main Panel */}
-          <main className="flex-1 min-w-0 flex flex-col gap-6 h-full">
+          <main className="flex-1 min-w-0 flex flex-col gap-4 h-full">
           {/* Item Details */}
           {loadingMain ? (
             <div className="mb-6">
@@ -1397,8 +1903,8 @@ export default function RaidsPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-neutral-800 border border-neutral-600 rounded-lg p-6 mb-2">
-              <div className="flex items-start gap-4">
+                          <div className="bg-neutral-800 border border-neutral-600 rounded-none p-4 mb-2">
+                              <div className="flex items-start gap-3">
                 <img
                   src={tokenDetails?.profile_image_url || handleDetails?.profile_image_url || "/placeholder.svg"}
                   alt={tokenDetails?.symbol || handleDetails?.author_handle}
@@ -1408,95 +1914,162 @@ export default function RaidsPage() {
                   }}
                 />
                 <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-2xl font-bold">{tokenDetails?.symbol || handleDetails?.author_handle}</h1>
-                    <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500">{tokenDetails?.chain || "N/A"}</Badge>
-                    {/* Twitter Profile Link */}
-                    {(tokenDetails?.twitter_final || handleDetails?.author_handle) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const twitterHandle = tokenDetails?.twitter_final || handleDetails?.author_handle;
-                          if (twitterHandle) {
-                            window.open(`https://twitter.com/${twitterHandle}`, "_blank");
-                          }
-                        }}
-                        className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992] flex items-center gap-2"
-                      >
-                        <XLogo className="w-4 h-4" />
-                        Twitter
-                      </Button>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <h1 className="text-xl font-bold">${tokenDetails?.symbol || handleDetails?.author_handle}</h1>
+                      {tokenDetails?.token_id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyTokenId(tokenDetails.token_id)}
+                          className="h-6 w-6 p-0 text-gray-400 hover:text-[#00D992] hover:bg-[#00D992]/10"
+                        >
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      )}
+                      <span className="text-gray-300 text-sm">{tokenDetails?.name}</span>
+                      {(tokenDetails?.twitter_final || handleDetails?.author_handle) && (
+                        <button
+                          onClick={() => {
+                            const twitterHandle = tokenDetails?.twitter_final || handleDetails?.author_handle;
+                            if (twitterHandle) {
+                              window.open(`https://x.com/search?q=${encodeURIComponent(twitterHandle)}&src=typed_query&f=live`, "_blank");
+                            }
+                          }}
+                          className="text-gray-400 text-sm hover:text-[#00D992] transition-colors"
+                        >
+                          (@{tokenDetails?.twitter_final || handleDetails?.author_handle})
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500">{tokenDetails?.chain || "N/A"}</Badge>
+                      {/* Twitter Profile Link */}
+                      {(tokenDetails?.twitter_final || handleDetails?.author_handle) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const twitterHandle = tokenDetails?.twitter_final || handleDetails?.author_handle;
+                            if (twitterHandle) {
+                              window.open(`https://x.com/search?q=${encodeURIComponent(twitterHandle)}&src=typed_query&f=live`, "_blank");
+                            }
+                          }}
+                          className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#000000] p-1 h-7 px-3"
+                        >
+                          <XLogo className="w-3 h-3" />
+                          <span className="text-xs">Twitter</span>
+                        </Button> 
+                      )}
+                    </div>
+                  </div>
+                  
+
+                  <div className="flex items-center justify-between">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-400">Mentions (24h)</span>
+                        <p className="font-medium">{formatNumber(tokenDetails?.mention_count_24hr || 0)}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Market Cap</span>
+                        <p className="font-medium">{formatNumber(tokenDetails?.marketcap || 0)}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">24h Change</span>
+                        <p className={`font-medium ${getPriceChangeColor((tokenDetails?.pc_24_hr ?? 0) > 0 ? 1 : -1)}`}>{(tokenDetails?.pc_24_hr ?? 0).toFixed(1)}%</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Volume (24h)</span>
+                        <p className="font-medium">{formatNumber(tokenDetails?.volume_24hr || 0)}</p>
+                      </div>
+                    </div>
+                    {tokenDetails?.narrative && (
+                      <div className="flex flex-col gap-1">
+                        {tokenDetails.narrative.split(", ").map((tag, index) => (
+                          <Badge key={index} variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300">{tag}</Badge>
+                        ))}
+                      </div>
                     )}
                   </div>
-                  <p className="text-gray-300 mb-3">
-                    {tokenDetails?.name || handleDetails?.bio || "No description available"}
-                    {!handleDetails && tokenDetails?.twitter_final && (
-                      <span className="text-xs text-gray-500 block mt-1">
-                        (Twitter details unavailable - showing token info only)
-                      </span>
-                    )}
-                  </p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-400">Mentions (24h)</span>
-                      <p className="font-medium">{formatNumber(tokenDetails?.mention_count_24hr || 0)}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Market Cap</span>
-                      <p className="font-medium">{formatNumber(tokenDetails?.marketcap || 0)}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">24h Change</span>
-                      <p className={`font-medium ${getPriceChangeColor((tokenDetails?.pc_24_hr ?? 0) > 0 ? 1 : -1)}`}>{(tokenDetails?.pc_24_hr ?? 0).toFixed(1)}%</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-400">Volume (24h)</span>
-                      <p className="font-medium">{formatNumber(tokenDetails?.volume_24hr || 0)}</p>
-                    </div>
-                  </div>
-                  {tokenDetails?.narrative && (
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {tokenDetails.narrative.split(", ").map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300">{tag}</Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* Tweet Feed Dropdown */}
+          {/* Tweet Feed Tabs */}
           <div className="flex items-center gap-4 mb-2">
-            <Select value={tweetFeedType} onValueChange={v => { setTweetFeedType(v as "both" | "original" | "mentions"); setSelectedTweet(null); setLlmResponse(""); setEditedResponse(""); setLlmIntentUrl(""); }}>
-              <SelectTrigger className="w-56 bg-neutral-800 border-neutral-600 text-white">
-                <SelectValue />
-                {/* <ChevronDown className="w-4 h-4 ml-2" /> */}
-              </SelectTrigger>
-              <SelectContent className="bg-neutral-800 border-neutral-600 text-white">
-                <SelectItem value="both">Both</SelectItem>
-                <SelectItem value="original" disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}>
-                  Project Tweets
-                </SelectItem>
-                <SelectItem value="mentions">Mentions</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex bg-neutral-800 border border-neutral-600 rounded-none">
+              <button
+                onClick={() => { 
+                  setTweetFeedType("both"); 
+                  setSelectedTweet(null); 
+                  setLlmResponse(""); 
+                  setEditedResponse(""); 
+                  setLlmIntentUrl(""); 
+                  if (!isRaidTargetLocked) {
+                    updateRaidTarget("");
+                  }
+                  updateResponseType("supportive");
+                  updateTone("enthusiastic");
+                }}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  tweetFeedType === "both"
+                    ? "bg-[#00D992] text-black"
+                    : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
+                }`}
+              >
+                Both
+              </button>
+              <button
+                                            onClick={() => { 
+                              setTweetFeedType("original"); 
+                              setSelectedTweet(null); 
+                              setLlmResponse(""); 
+                              setEditedResponse(""); 
+                              setLlmIntentUrl(""); 
+                              if (!isRaidTargetLocked) {
+                                updateRaidTarget("");
+                              }
+                              updateResponseType("supportive");
+                              updateTone("enthusiastic");
+                            }}
+                disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  tweetFeedType === "original"
+                    ? "bg-[#00D992] text-black"
+                    : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                }`}
+              >
+                Project Tweets
+              </button>
+              <button
+                                            onClick={() => { 
+                              setTweetFeedType("mentions"); 
+                              setSelectedTweet(null); 
+                              setLlmResponse(""); 
+                              setEditedResponse(""); 
+                              setLlmIntentUrl(""); 
+                              if (!isRaidTargetLocked) {
+                                updateRaidTarget("");
+                              }
+                              updateResponseType("supportive");
+                              updateTone("enthusiastic");
+                            }}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  tweetFeedType === "mentions"
+                    ? "bg-[#00D992] text-black"
+                    : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
+                }`}
+              >
+                Mentions
+              </button>
+            </div>
             <span className="text-gray-400 text-sm">({uniqueTweets.length} tweets)</span>
-            {!handleDetails && selectedItem?.twitter_final && originalTweets.length === 0 && mentions.length > 0 && (
-              <span className="text-xs text-yellow-400">
-                (Project tweets unavailable - showing mentions only)
-              </span>
-            )}
-            {tweetFeedType === "both" && (
-              <span className="text-xs text-gray-400">
-                ({originalTweets.length} original, {mentions.length} mentions)
-              </span>
-            )}
           </div>
 
           {/* Main Content: Tweets and LLM Response */}
-          <div className="flex flex-row gap-6 flex-1 min-h-0">
+                      <div className="flex flex-row gap-4 flex-1 min-h-0">
             {/* Tweets List */}
             <div className="flex-1 min-w-[300px] flex flex-col min-h-0">
               <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2 tweet-feed-container">
@@ -1506,7 +2079,7 @@ export default function RaidsPage() {
                   uniqueTweets.map((tweet) => (
                     <Card 
                       key={`${selectedItem?.symbol}-${tweet.tweet_id}`} 
-                      className={`bg-neutral-800 border-neutral-600 transition-all hover:bg-neutral-750 hover:border-neutral-500 cursor-pointer ${selectedTweet?.tweet_id === tweet.tweet_id ? "border-[#00D992]" : ""}`}
+                      className={`bg-neutral-800 border-neutral-600 transition-all hover:bg-neutral-750 hover:border-neutral-500 cursor-pointer rounded-none ${selectedTweet?.tweet_id === tweet.tweet_id ? "border-[#00D992]" : ""}`}
                       onClick={() => handleGenerateResponse(tweet)}
                     >
                       <CardContent className="p-4 max-w-full">
@@ -1520,48 +2093,82 @@ export default function RaidsPage() {
                             }}
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-gray-100 text-sm truncate">
-                                {tweet.author_handle}
-                              </span>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    window.open(`https://twitter.com/i/status/${tweet.tweet_id}`, "_blank");
+                                  }}
+                                  className="text-gray-400 hover:text-[#00D992] p-1"
+                                >
+                                  <ExternalLink className="w-4 h-4" />
+                                </Button>
+                                <span className="font-medium text-gray-100 text-sm truncate">
+                                  {tweet.author_handle}
+                                </span>
+                              </div>
+                              {selectedTweet?.tweet_id === tweet.tweet_id ? (
+                                <div className="flex items-center gap-2 text-[#00D992]">
+                                  {llmLoading ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
+                                      <span className="text-xs">Generating...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="w-4 h-4" />
+                                      <span className="text-xs">Raid the tweet</span>
+                                    </>
+                                  )}
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleGenerateResponse(tweet);
+                                  }}
+                                  className="text-[#00D992] hover:text-[#00C484] hover:bg-[#00D992]/10 px-3 py-2 flex items-center gap-2 animate-pulse"
+                                  title="Generate AI Response"
+                                >
+                                  <Sparkles className="w-5 h-5" />
+                                  <span className="text-xs font-medium">Raid the tweet</span>
+                                </Button>
+                              )}
                             </div>
-                                                    <div className="flex items-center gap-2">
-                          <div className="text-xs text-gray-400">
-                            {new Date(tweet.tweet_create_time + "Z").toLocaleString()}
-                          </div>
-                          {tweetFeedType === "both" && (
-                            <Badge variant="outline" className={`text-xs ${
-                              originalTweets.some(t => t.tweet_id === tweet.tweet_id) 
-                                ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
-                                : 'bg-green-500/20 border-green-500/50 text-green-400'
-                            }`}>
-                              {originalTweets.some(t => t.tweet_id === tweet.tweet_id) ? 'Author' : 'Mention'}
-                            </Badge>
-                          )}
-                          {tweet.sentiment !== 0 && (
-                            <div className={`text-xs px-2 py-1 rounded-full ${
-                              tweet.sentiment > 0 
-                                ? 'bg-green-500/20 text-green-400' 
-                                : 'bg-red-500/20 text-red-400'
-                            }`}>
-                              {tweet.sentiment > 0 ? '😊' : '😞'} {Math.abs(tweet.sentiment).toFixed(1)}
+                            <div className="flex items-center gap-2">
+                              <div className="text-xs text-gray-400">
+                                {new Date(tweet.tweet_create_time + "Z").toLocaleString()}
+                              </div>
+                              {tweetFeedType === "both" && (
+                                <Badge variant="outline" className={`text-xs ${
+                                  originalTweets.some(t => t.tweet_id === tweet.tweet_id) 
+                                    ? 'bg-blue-500/20 border-blue-500/50 text-blue-400' 
+                                    : 'bg-green-500/20 border-green-500/50 text-green-400'
+                                }`}>
+                                  {originalTweets.some(t => t.tweet_id === tweet.tweet_id) ? 'Author' : 'Mention'}
+                                </Badge>
+                              )}
+                              {tweet.sentiment !== 0 && (
+                                <div className={`text-xs px-2 py-1 rounded-full ${
+                                  tweet.sentiment > 0 
+                                    ? 'bg-green-500/20 text-green-400' 
+                                    : 'bg-red-500/20 text-red-400'
+                                }`}>
+                                  {tweet.sentiment > 0 ? '😊' : '😞'} {Math.abs(tweet.sentiment).toFixed(1)}
+                                </div>
+                              )}
+                              {tweet.tweet_category && (
+                                <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300">
+                                  {tweet.tweet_category}
+                                </Badge>
+                              )}
                             </div>
-                          )}
-                          {tweet.tweet_category && (
-                            <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300">
-                              {tweet.tweet_category}
-                            </Badge>
-                          )}
-                        </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open(`https://twitter.com/i/status/${tweet.tweet_id}`, "_blank")}
-                            className="text-gray-400 hover:text-[#00D992] p-1"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
                         </div>
                         {tweet.mentioned_author_handle && (
                           <div className="mb-2 text-xs text-gray-500">
@@ -1574,7 +2181,7 @@ export default function RaidsPage() {
                           </p>
                         </div>
                         <div className="flex items-center justify-between text-xs text-gray-400">
-                          <div className="flex items-center gap-6">
+                          <div className="flex items-center gap-4">
                             <div className="flex items-center gap-1 hover:text-blue-400 cursor-pointer transition-colors">
                               <ReplyIcon className="w-4 h-4" />
                               <span>{formatNumber(tweet.reply_count)}</span>
@@ -1602,35 +2209,6 @@ export default function RaidsPage() {
                             {/* <button className="hover:text-blue-400 transition-colors">
                               <ShareIcon className="w-4 h-4" />
                             </button> */}
-                            {selectedTweet?.tweet_id === tweet.tweet_id ? (
-                              <div className="flex items-center gap-2 text-[#00D992]">
-                                {llmLoading ? (
-                                  <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
-                                    <span className="text-xs">Generating...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Sparkles className="w-4 h-4" />
-                                    <span className="text-xs">Raid the tweet</span>
-                                  </>
-                                )}
-                              </div>
-                            ) : (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleGenerateResponse(tweet);
-                                }}
-                                className="text-gray-400 hover:text-[#00D992] hover:bg-[#00D992]/10 px-3 py-2 flex items-center gap-2"
-                                title="Generate AI Response"
-                              >
-                                <Sparkles className="w-5 h-5" />
-                                <span className="text-xs font-medium">Raid the tweet</span>
-                              </Button>
-                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -1662,18 +2240,113 @@ export default function RaidsPage() {
             </div>
 
             {/* LLM Response and Edit Box */}
-            <div className="shrink-0 min-w-[200px] flex flex-col">
+            <div className="shrink-0 min-w-[280px] max-w-[350px] flex flex-col h-full">
               {(uniqueTweets.length > 0 || selectedTweet) && (
-                <Card className={`bg-neutral-800 ${selectedTweet ? 'border-[#00D992]' : 'border-neutral-600'} flex-1 flex flex-col`}>
-                  <CardContent className="p-4 flex flex-col flex-1">
+                <Card className={`bg-neutral-800 ${selectedTweet ? 'border-[#00D992]' : 'border-neutral-600'} flex flex-col h-full rounded-none`}>
+                  <CardContent className="p-4 flex flex-col h-full">
                     <div className="mb-2">
                       <div className="text-xs text-gray-400 mb-1">
                         {selectedTweet ? 'AI Response:' : 'Select a tweet to generate AI response'}
                       </div>
                     </div>
-                    <div className="mb-2 flex-1">
+                    
+                    {/* Raid Target Input */}
+                    {selectedTweet && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="text-xs text-gray-400">
+                          {raidTarget && (
+                          <div className="text-xs text-[#00D992] mt-1">
+                            Raiding: <span className="font-medium">{raidTarget}</span>
+                          </div>
+                        )}
+                        {!raidTarget && selectedItem && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            Raiding: <span className="font-medium">${selectedItem.symbol}</span>
+                          </div>
+                        )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                                                               <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     onClick={() => updateIsRaidTargetLocked(!isRaidTargetLocked)}
+                                     className={`text-xs px-2 py-1 h-6 ${
+                                       isRaidTargetLocked 
+                                         ? "text-[#00D992] bg-[#00D992]/10" 
+                                         : "text-gray-400 hover:text-[#00D992]"
+                                     }`}
+                                     title={isRaidTargetLocked ? "Unlock raid target" : "Lock raid target"}
+                                   >
+                                     {isRaidTargetLocked ? "🔒" : "🔓"}
+                                   </Button>
+                                   {raidTarget && (
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       onClick={() => updateRaidTarget("")}
+                                       className="text-xs px-2 py-1 h-6 text-gray-400 hover:text-red-400"
+                                       title="Clear raid target"
+                                     >
+                                       ✕
+                                     </Button>
+                                   )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                                                           <Input
+                                   type="text"
+                                   placeholder={`e.g., $${selectedItem?.symbol || 'PEPE'}, @handle, or leave empty for ${selectedItem?.symbol || 'selected community'}`}
+                                   value={raidTarget}
+                                   onChange={(e) => updateRaidTarget(e.target.value)}
+                                   className="flex-1 text-xs bg-neutral-900 border-neutral-600 text-white placeholder-gray-500 focus:border-[#00D992] focus:ring-[#00D992] rounded-none h-8"
+                                   disabled={llmLoading}
+                                 />
+                        </div>
+                        
+                      </div>
+                    )}
+                    
+                    {/* Response Type and Tone Selection */}
+                    {selectedTweet && (
+                      <div className="mb-3">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Select value={responseType} onValueChange={updateResponseType}>
+                              <SelectTrigger className="h-8 text-xs bg-neutral-900 border-neutral-600 text-white focus:border-[#00D992] focus:ring-[#00D992] rounded-none">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-neutral-800 border-neutral-600 text-white">
+                                <SelectItem value="supportive" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Supportive</SelectItem>
+                                <SelectItem value="questioning" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Questioning</SelectItem>
+                                <SelectItem value="humorous" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Humorous</SelectItem>
+                                <SelectItem value="analytical" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Analytical</SelectItem>
+                                <SelectItem value="bullish" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Bullish</SelectItem>
+                                <SelectItem value="memeish" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Memeish</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Select value={tone} onValueChange={updateTone}>
+                              <SelectTrigger className="h-8 text-xs bg-neutral-900 border-neutral-600 text-white focus:border-[#00D992] focus:ring-[#00D992] rounded-none">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-neutral-800 border-neutral-600 text-white">
+                                <SelectItem value="casual" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Casual</SelectItem>
+                                <SelectItem value="professional" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Professional</SelectItem>
+                                <SelectItem value="enthusiastic" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Enthusiastic</SelectItem>
+                                <SelectItem value="moonish" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Moonish</SelectItem>
+                                <SelectItem value="diamond" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">Diamond Hands</SelectItem>
+                                <SelectItem value="fomo" className="text-gray-300 hover:bg-neutral-700 focus:bg-neutral-100">FOMO</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="mb-2 flex-1 min-h-0">
                       {llmLoading ? (
-                        <div className="w-full h-full min-h-[200px] bg-neutral-900 border border-neutral-600 rounded-lg p-2 flex items-center justify-center">
+                        <div className="w-full h-full min-h-[150px] bg-neutral-900 border border-neutral-600 rounded-none p-2 flex items-center justify-center">
                           <div className="flex items-center gap-2 text-gray-400">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
                             <span className="text-sm">Generating AI response...</span>
@@ -1681,7 +2354,7 @@ export default function RaidsPage() {
                         </div>
                       ) : (
                         <textarea
-                          className="w-full h-full min-h-[200px] bg-neutral-900 border border-neutral-600 rounded-lg p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
+                          className="w-full h-full min-h-[150px] bg-neutral-900 border border-neutral-600 rounded-none p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
                           value={editedResponse}
                           onChange={handleEditResponse}
                           placeholder={selectedTweet ? "AI-generated response will appear here..." : "Click on a tweet to generate an AI response..."}
@@ -1689,19 +2362,114 @@ export default function RaidsPage() {
                         />
                       )}
                     </div>
+                    
+                    {/* Image Preview and Generation */}
+                    {selectedTweet && editedResponse && (
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-xs text-gray-400">
+                            Generated Image:
+                          </div>
+                          <div className="flex gap-1">
+                            {!generatedShareUrl && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={generateRaidImage}
+                                disabled={imageLoading || !editedResponse}
+                                className="text-[#00D992] border-[#00D992] hover:bg-[#00D992]/10 px-2 py-1 text-xs"
+                              >
+                                {imageLoading ? (
+                                  <div className="flex items-center gap-1">
+                                    <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#00D992]"></div>
+                                    <span className="text-xs">Generating...</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs">🎨 Generate</span>
+                                )}
+                              </Button>
+                            )}
+                            {generatedShareUrl && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={generateRaidImage}
+                                disabled={imageLoading || !editedResponse}
+                                className="text-[#00D992] hover:text-[#00C484] hover:bg-[#00D992]/10 px-1 py-1 text-xs"
+                              >
+                                {imageLoading ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#00D992]"></div>
+                                ) : (
+                                  <span className="text-xs">🔄</span>
+                                )}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {generatedShareUrl ? (
+                          <div className="relative w-full">
+                            <img
+                              src={generatedShareUrl}
+                              alt="Raid Response Preview"
+                              className="w-full h-auto rounded-none border border-neutral-600"
+                              style={{ maxHeight: "140px", objectFit: "cover" }}
+                            />
+                            <div className="absolute top-2 right-2 flex gap-1">
+                              <Badge variant="outline" className="text-xs bg-[#00D992]/20 border-[#00D992] text-[#00D992]">
+                                🚀 With Image
+                              </Badge>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => copyImage(generatedShareUrl)}
+                                disabled={copyStatus.includes('⏳')}
+                                className="text-blue-400 border-blue-400 hover:bg-blue-400/10 px-2 py-1 h-6"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : imageLoading ? (
+                          <div className="w-full h-24 bg-neutral-900 border border-neutral-600 rounded-none flex items-center justify-center">
+                            <div className="flex items-center gap-2 text-gray-400">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]"></div>
+                              <span className="text-sm">Generating image...</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-full h-24 bg-neutral-900 border border-neutral-600 rounded-none flex items-center justify-center text-gray-500 text-sm">
+                            Click "Generate Image" to create
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
                     {selectedTweet && (
-                      <div className="flex gap-2 mt-auto">
+                      <div className="flex gap-2 mt-auto pt-2 border-t border-neutral-700">
                         <Button
                           onClick={handlePostToTwitter}
-                          className="bg-blue-500 hover:bg-blue-600 text-white"
+                          className="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-2 flex-1 rounded-none"
                           disabled={!editedResponse || llmLoading}
                         >
                           Post to Twitter
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => { setSelectedTweet(null); setLlmResponse(""); setEditedResponse(""); setLlmIntentUrl(""); }}
-                          className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992]"
+                          onClick={() => { 
+                            setSelectedTweet(null); 
+                            setLlmResponse(""); 
+                            setEditedResponse(""); 
+                            setLlmIntentUrl(""); 
+                            setGeneratedShareUrl(""); 
+                            setGeneratedHtmlUrl(""); 
+                            if (!isRaidTargetLocked) {
+                              updateRaidTarget("");
+                            }
+                            updateResponseType("supportive");
+                            updateTone("enthusiastic");
+                          }}
+                          className="border-neutral-600 text-gray-300 hover:border-[#00D992] hover:text-[#00D992] text-xs px-3 py-2 rounded-none"
                         >
                           Cancel
                         </Button>
