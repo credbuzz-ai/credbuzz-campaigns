@@ -70,7 +70,6 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
   const [selectedNarrative, setSelectedNarrative] = useState<string | null>(
     null
   );
-  const [hoveredToken, setHoveredToken] = useState<string | null>(null);
   const [showAllLegends, setShowAllLegends] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -322,6 +321,9 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
     svg.call(zoom);
 
     // Create tooltip
+    // Remove any existing tooltip before creating a new one
+    d3.select("body").selectAll(".tooltip").remove();
+
     const tooltip = d3
       .select("body")
       .append("div")
@@ -535,8 +537,6 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
     // Add hover effects to all token nodes
     tokenNodes
       .on("mouseover", function (event, d) {
-        setHoveredToken(d.data.symbol || null);
-
         // Animate the hovered token
         d3.select(this)
           .transition()
@@ -599,8 +599,6 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
           .style("left", event.pageX + 10 + "px");
       })
       .on("mouseout", function () {
-        setHoveredToken(null);
-
         // Reset the token appearance
         d3.select(this)
           .transition()
@@ -645,7 +643,7 @@ export default function TokenOverview({ authorHandle }: TokenOverviewProps) {
     if (data && !loading) {
       renderCircularPacking();
     }
-  }, [data, loading, selectedNarrative, hoveredToken, isMobile]);
+  }, [data, loading, selectedNarrative, isMobile]);
 
   const formatNumber = (num: number): string => {
     if (num >= 1000000000) return `$${(num / 1000000000).toFixed(1)}B`;

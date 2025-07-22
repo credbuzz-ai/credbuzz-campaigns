@@ -213,7 +213,7 @@ export default function CommunityDetails({
   >(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(100);
+  const [followersLimit, setFollowersLimit] = useState<20 | 50 | 100>(20);
   const pageSize = 100;
   const [tokenUsdPrice, setTokenUsdPrice] = useState<number | null>(null);
   const [selectedSubCampaign, setSelectedSubCampaign] = useState<string | null>(
@@ -244,7 +244,7 @@ export default function CommunityDetails({
     useState<TimePeriod>("30d");
   const [subCampaignFollowersLimit, setSubCampaignFollowersLimit] = useState<
     20 | 50 | 100
-  >(100);
+  >(20);
   const [subCampaignCurrentPage, setSubCampaignCurrentPage] = useState(1);
 
   // Add safety timeout to prevent infinite loading
@@ -329,7 +329,19 @@ export default function CommunityDetails({
         setLoading(true);
         setMainCampaignDataReady(false);
         const handle = campaign.target_x_handle.replace("@", "").toLowerCase();
-        const offset = (currentPage - 1) * followersLimit;
+
+        // Calculate the correct limit and offset based on the selected range and current page
+        let limit, offset;
+        if (followersLimit === 20) {
+          limit = 20;
+          offset = (currentPage - 1) * 20;
+        } else if (followersLimit === 50) {
+          limit = 30;
+          offset = 20 + (currentPage - 1) * 30;
+        } else if (followersLimit === 100) {
+          limit = 50;
+          offset = 50 + (currentPage - 1) * 50;
+        }
 
         // Reset states before fetching new data
         setMindshareData(null);
@@ -337,15 +349,10 @@ export default function CommunityDetails({
 
         // Fetch paginated data for the leaderboard
         const paginatedResponse = await apiClient.get(
-          `/mindshare?project_name=${handle}&limit=${followersLimit}&offset=${offset}&period=${period}`
+          `/mindshare?project_name=${handle}&limit=${limit}&offset=${offset}&period=${period}`
         );
+        setVisualizationData(paginatedResponse.data);
         setMindshareData(paginatedResponse.data);
-
-        // Use the same limit for visualization data to maintain consistency
-        const visualizationResponse = await apiClient.get(
-          `/mindshare?project_name=${handle}&limit=${followersLimit}&period=${period}`
-        );
-        setVisualizationData(visualizationResponse.data);
 
         // Mark data as ready - even if data is empty
         setMainCampaignDataReady(true);
@@ -365,9 +372,8 @@ export default function CommunityDetails({
   }, [
     campaign?.target_x_handle,
     selectedTimePeriod,
-    currentPage,
     followersLimit,
-    pageSize,
+    currentPage,
   ]);
 
   useEffect(() => {
@@ -413,9 +419,26 @@ export default function CommunityDetails({
     setCurrentPage(page);
   };
 
-  // Add separate page change handler for sub-campaigns
   const handleSubCampaignPageChange = (page: number) => {
     setSubCampaignCurrentPage(page);
+  };
+
+  // Function to get range label based on followersLimit and currentPage
+  const getRangeLabel = (limit: number, page: number) => {
+    if (limit === 20) {
+      const start = (page - 1) * 20 + 1;
+      const end = page * 20;
+      return `${start}-${end}`;
+    } else if (limit === 50) {
+      const start = 20 + (page - 1) * 30 + 1;
+      const end = 20 + page * 30;
+      return `${start}-${end}`;
+    } else if (limit === 100) {
+      const start = 50 + (page - 1) * 50 + 1;
+      const end = 50 + page * 50;
+      return `${start}-${end}`;
+    }
+    return "";
   };
 
   // Function to fetch mindshare data for a specific sub-campaign
@@ -449,23 +472,27 @@ export default function CommunityDetails({
         [subCampaign.campaign_id]: false,
       }));
 
-      const handle = subCampaign.target_x_handle.replace("@", "").toLowerCase();
-      const offset = (subCampaignCurrentPage - 1) * subCampaignFollowersLimit;
-
-      // Fetch visualization data for the sub-campaign
-      const visualizationResponse = await apiClient.get(
-        `/mindshare?project_name=${handle}&limit=${subCampaignFollowersLimit}&period=${period}`
-      );
-
-      setSubCampaignVisualizationData((prev) => ({
-        ...prev,
-        [subCampaign.campaign_id]: visualizationResponse.data,
-      }));
+      // Calculate the correct limit and offset based on the selected range and current page
+      let limit, offset;
+      if (subCampaignFollowersLimit === 20) {
+        limit = 20;
+        offset = (subCampaignCurrentPage - 1) * 20;
+      } else if (subCampaignFollowersLimit === 50) {
+        limit = 30;
+        offset = 20 + (subCampaignCurrentPage - 1) * 30;
+      } else if (subCampaignFollowersLimit === 100) {
+        limit = 50;
+        offset = 50 + (subCampaignCurrentPage - 1) * 50;
+      }
 
       // Fetch paginated data for the leaderboard
       const paginatedResponse = await apiClient.get(
-        `/mindshare?project_name=${handle}&limit=${subCampaignFollowersLimit}&offset=${offset}&period=${period}`
+        `/mindshare?project_name=${subCampaign.campaign_name}&limit=${limit}&offset=${offset}&period=${period}`
       );
+      setSubCampaignVisualizationData((prev) => ({
+        ...prev,
+        [subCampaign.campaign_id]: paginatedResponse.data,
+      }));
 
       setSubCampaignMindshareData((prev) => ({
         ...prev,
@@ -927,17 +954,24 @@ export default function CommunityDetails({
                 <div className="justify-center md:justify-between  pt-4 border-b border-neutral-600 pb-4 flex flex-col md:flex-row items-center md:items-center gap-4">
                   {/* Limit buttons */}
                   <div className="flex gap-1 bg-transparent rounded-lg border border-neutral-600">
-                    {[20, 50, 100].map((num) => (
+                    {[
+                      { value: 20, label: "Top 20" },
+                      { value: 50, label: "21-50" },
+                      { value: 100, label: "51-100" },
+                    ].map(({ value, label }) => (
                       <button
-                        key={num}
-                        onClick={() => setFollowersLimit(num as 20 | 50 | 100)}
+                        key={value}
+                        onClick={() => {
+                          setFollowersLimit(value as 20 | 50 | 100);
+                          setCurrentPage(1); // Reset to first page when changing range
+                        }}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                          followersLimit === num
+                          followersLimit === value
                             ? "bg-neutral-700 text-neutral-100"
                             : "text-neutral-300 hover:text-neutral-100"
                         }`}
                       >
-                        Top {num}
+                        {label}
                       </button>
                     ))}
                   </div>
@@ -974,6 +1008,7 @@ export default function CommunityDetails({
                         currentPage={currentPage}
                         followersLimit={followersLimit}
                         onPageChange={handlePageChange}
+                        rangeLabel={getRangeLabel(followersLimit, currentPage)}
                       />
                     )}
                 </Tabs>
