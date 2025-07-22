@@ -45,6 +45,7 @@
     "@radix-ui/react-tooltip": "1.1.6",
     "@selfxyz/core": "^1.0.5-beta.1",
     "@selfxyz/qrcode": "^1.0.10-beta.1",
+    "@types/uuid": "^10.0.0",
     "apexcharts": "^4.7.0",
     "autoprefixer": "^10.4.20",
     "axios": "^1.9.0",
@@ -72,6 +73,7 @@
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
+    "uuid": "^11.1.0",
     "vaul": "^0.9.6",
     "zod": "^3.24.1"
   },
