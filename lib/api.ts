@@ -32,15 +32,15 @@ apiClient.interceptors.request.use(
 );
 
 // Add response interceptor to handle token-related errors
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Clear token
-      localStorage.removeItem("token");
-    }
-    return Promise.reject(error);
-  }
-);
+// apiClient.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error.response?.status === 401) {
+//       // Clear token
+//       localStorage.removeItem("token");
+//     }
+//     return Promise.reject(error);
+//   }
+// );
 
 export default apiClient;
