@@ -135,37 +135,7 @@ export default function RaidsPage() {
   });
   const [loadingMoreTweets, setLoadingMoreTweets] = useState(false);
 
-  // Pinned community - GrokSolanaCTO/GROK
-  const pinnedCommunity: TrendingToken = {
-    token_id: "pinned-grok",
-    symbol: "GROK",
-    name: "Grok",
-    chain: "SOL",
-    twitter_final: "GrokSolanaCTO",
-    profile_image_url: "/placeholder.svg", // Will be updated with real data
-    mention_count: 0,
-    total_accounts: 0,
-    influencer_count: 0,
-    marketcap: 0,
-    volume_24hr: 0,
-    pc_24_hr: 0,
-    narrative: "Pinned Community"
-  };
 
-  // State for pinned community real data
-  const [pinnedCommunityData, setPinnedCommunityData] = useState<TrendingToken>(pinnedCommunity);
-
-  // Fetch pinned community data on mount
-  useEffect(() => {
-    fetchPinnedCommunityData();
-  }, []);
-
-  // When pinned community data is loaded, select it by default if no item is selected
-  useEffect(() => {
-    if (pinnedCommunityData && !selectedItem && !isSearching && trendingTokens.length > 0) {
-      setSelectedItem(pinnedCommunityData);
-    }
-  }, [pinnedCommunityData, selectedItem, isSearching, trendingTokens.length]);
 
   const [copyStatus, setCopyStatus] = useState<string>('');
 
@@ -188,37 +158,7 @@ export default function RaidsPage() {
     }
   }, [toast]);
 
-  const fetchPinnedCommunityData = async () => {
-    try {
-      const response = await fetch(
-        `/api/raids/author-details/GrokSolanaCTO`
-      );
-      if (response.ok) {
-        const data: AuthorDetailsFullResponse = await response.json();
-        if (data.result.token) {
-          // Update pinned community with real data
-          const realData: TrendingToken = {
-            token_id: data.result.token.token_id || "pinned-grok",
-            symbol: data.result.token.symbol,
-            name: data.result.token.name,
-            chain: data.result.token.chain,
-            twitter_final: data.result.token.twitter_final,
-            profile_image_url: data.result.token.profile_image_url || "/placeholder.svg",
-            mention_count: data.result.token.mention_count_24hr,
-            total_accounts: data.result.token.total_accounts_24hr,
-            influencer_count: data.result.token.influencer_count_24hr,
-            marketcap: data.result.token.marketcap,
-            volume_24hr: data.result.token.volume_24hr,
-            pc_24_hr: data.result.token.pc_24_hr,
-            narrative: data.result.token.narrative
-          };
-          setPinnedCommunityData(realData);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch pinned community data:", error);
-    }
-  };
+
 
   // Debounce search term
   useEffect(() => {
@@ -234,13 +174,12 @@ export default function RaidsPage() {
     fetchTrendingTokens();
   }, []);
 
-  // When trending tokens are loaded, select the pinned community by default
+  // When trending tokens are loaded, select the first token by default
   useEffect(() => {
     if (trendingTokens.length > 0 && !selectedItem && !isSearching) {
-      // Select the pinned community (GROK) by default
-      setSelectedItem(pinnedCommunityData);
+      setSelectedItem(trendingTokens[0]);
     }
-  }, [trendingTokens, isSearching, pinnedCommunityData]);
+  }, [trendingTokens, isSearching, selectedItem]);
 
   // When selectedItem changes, fetch its details and tweets
   useEffect(() => {
@@ -562,17 +501,13 @@ export default function RaidsPage() {
 
   const getLeftSectionItems = (): LeftSectionItem[] => {
     const items = isSearching ? searchResults : trendingTokens;
-    // Always include pinned community at the top with real data
-    return [pinnedCommunityData, ...items];
+    return items;
   };
 
   const filteredItems = useMemo(() => {
     const items = getLeftSectionItems();
 
     const filtered = items.filter((item) => {
-      // Always include pinned community regardless of filters
-      if (item.token_id === "pinned-grok" || item.token_id === pinnedCommunityData.token_id) return true;
-
       // Apply chain filter (if no chains are selected, show all)
       if (selectedChains.length > 0 && !selectedChains.includes(item.chain)) {
         return false;
@@ -588,7 +523,7 @@ export default function RaidsPage() {
     });
 
     return filtered;
-  }, [isSearching, searchResults, trendingTokens, sidebarFilter, selectedChains, pinnedCommunityData]);
+  }, [isSearching, searchResults, trendingTokens, sidebarFilter, selectedChains]);
 
   const tweetsToShow = tweetFeedType === "original" ? originalTweets :
     tweetFeedType === "mentions" ? mentions :
@@ -825,17 +760,13 @@ export default function RaidsPage() {
 
   const renderLeftSectionItem = (item: LeftSectionItem, index: number) => {
     const isSelected = selectedItem === item;
-    const isPinned = item.token_id === "pinned-grok" || item.token_id === pinnedCommunityData.token_id;
 
     return (
       <div
-        key={`${isPinned ? 'pinned' : 'token'}-${item.token_id || index}`}
+        key={`token-${item.token_id || index}`}
         className={`w-full flex items-center gap-3 p-3 rounded-none transition-all text-left hover:bg-neutral-800 border-2 cursor-pointer ${isSelected
             ? "bg-[#00D992]/10 border-[#00D992] shadow-lg shadow-[#00D992]/20"
             : "border-transparent hover:border-neutral-600"
-          } ${isPinned && !isSelected
-            ? "bg-neutral-700/30 border-[#00D992]/20"
-            : ""
           }`}
         onClick={() => setSelectedItem(item)}
       >
@@ -861,18 +792,10 @@ export default function RaidsPage() {
             >
               <Copy className="w-3 h-3" />
             </Button>
-            {isPinned && (
-              <Badge variant="outline" className={`text-xs shrink-0 ${isSelected
-                  ? "bg-[#00D992]/30 border-[#00D992] text-[#00D992]"
-                  : "bg-[#00D992]/20 border-[#00D992]/50 text-[#00D992]"
-                }`}>
-                Pinned
-              </Badge>
-            )}
-            {!isPinned && !isSearching && (
+            {!isSearching && (
               <TrendingUp className="w-3 h-3 text-[#00D992] shrink-0" />
             )}
-            {!isPinned && isSearching && (
+            {isSearching && (
               <Search className="w-3 h-3 text-blue-400 shrink-0" />
             )}
           </div>
@@ -1044,11 +967,7 @@ export default function RaidsPage() {
                             >
                               <Copy className="w-3 h-3" />
                             </Button>
-                            {item.token_id === "pinned-grok" && (
-                              <Badge variant="outline" className="text-xs bg-[#00D992]/20 border-[#00D992]/50 text-[#00D992] shrink-0">
-                                Pinned
-                              </Badge>
-                            )}
+
                           </div>
                           <span className="text-xs text-gray-400 truncate block">{item.name}</span>
                           <div className="flex items-center justify-between text-xs text-gray-500 mt-1 min-w-0">
