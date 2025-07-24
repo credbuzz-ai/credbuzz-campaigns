@@ -103,6 +103,17 @@ export default function CampaignLeaderboard({
   return (
     <Card className="bg-neutral-900 border-none h-[500px] overflow-y-auto flex flex-col">
       <div className="py-2 flex-1 flex flex-col">
+        {/* <div className="flex items-center justify-between mb-6">
+          <div className="space-y-2">
+            <h3 className="text-xl font-semibold text-gray-100">
+              Community Leaderboard
+            </h3>
+            <p className="text-sm text-gray-400">
+              Top contributors in the last{" "}
+              {selectedTimePeriod === "1d" ? "24 hours" : selectedTimePeriod}
+            </p>
+          </div>
+        </div> */}
 
         <div className="relative overflow-x-auto">
           <Table>
@@ -194,7 +205,7 @@ export default function CampaignLeaderboard({
                     <div className="font-medium text-neutral-100 text-sm">
                       {new Intl.NumberFormat("en-US", {
                         notation: "compact",
-                        maximumFractionDigits: 2,
+                        maximumFractionDigits: 1,
                       }).format(contributor.user_info.smart_followers_count)}
                     </div>
                   </TableCell>
