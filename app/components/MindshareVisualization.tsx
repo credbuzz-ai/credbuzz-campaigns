@@ -239,11 +239,35 @@ export default function MindshareVisualization({
 
   // Treemap data - memoized
   const chartData = useMemo(() => {
+    // Set the maximum allowed block size as a percentage of the total (e.g., 20%)
+    const MAX_BLOCK_RATIO = 0.2; // 20%
+    const originalValues = validData.map((item) => Number(item.mindshare_percent.toFixed(4)) + 0.0001);
+    const totalOriginal = originalValues.reduce((a, b) => a + b, 0);
+    const maxAllowed = totalOriginal * MAX_BLOCK_RATIO;
+
+    // First, cap values above the max
+    const capped = originalValues.map((v) => Math.min(v, maxAllowed));
+    const cappedTotal = capped.reduce((a, b) => a + b, 0);
+    const overCapSum = capped.filter((v, i) => originalValues[i] > maxAllowed).reduce((a, b) => a + b, 0);
+    const underCapSum = capped.filter((v, i) => originalValues[i] <= maxAllowed).reduce((a, b) => a + b, 0);
+
+    // If any values were capped, scale the uncapped values so total sum remains the same
+    let adjusted;
+    if (cappedTotal > totalOriginal) {
+      // Shouldn't happen, but just in case
+      adjusted = capped;
+    } else {
+      const remaining = totalOriginal - capped.filter((v, i) => originalValues[i] > maxAllowed).length * maxAllowed;
+      const scale = underCapSum > 0 ? (totalOriginal - overCapSum) / underCapSum : 1;
+      adjusted = capped.map((v, i) => (originalValues[i] > maxAllowed ? maxAllowed : v * scale));
+    }
+
     return [
       {
-        data: validData.map((item) => ({
+        data: validData.map((item, i) => ({
           x: item.user_info.name,
-          y: Number(item.mindshare_percent.toFixed(4)),
+          y: adjusted[i],
+          originalMindshare: item.mindshare_percent,
           author_handle: item.author_handle || "",
           twitter_name: item.user_info.name || "",
           author_buzz: item.author_buzz || 0,
@@ -434,7 +458,7 @@ export default function MindshareVisualization({
                         bbox.width / 6
                       )}px; font-weight: bold; pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);`
                     );
-                    mindshareText.textContent = `${dataPoint.y.toFixed(2)}%`;
+                    mindshareText.textContent = `${(dataPoint.originalMindshare || dataPoint.y).toFixed(2)}%`;
                     textGroup.appendChild(mindshareText);
                   } else {
                     // Background for percentage in top left
@@ -462,7 +486,7 @@ export default function MindshareVisualization({
                       "style",
                       "font-size: 15px; font-weight: bold; pointer-events: none;"
                     );
-                    mindshareText.textContent = `${dataPoint.y.toFixed(2)}%`;
+                    mindshareText.textContent = `${(dataPoint.originalMindshare || dataPoint.y).toFixed(2)}%`;
 
                     // Author handle text
                     const handleText = document.createElementNS(
@@ -591,7 +615,7 @@ export default function MindshareVisualization({
             <div class="flex items-center gap-3 mb-3">
               ${
                 data.profile_image_url
-                  ? `<img src="${data.profile_image_url}" class="w-10 h-10 rounded-full bg-gray-800 object-cover" />`
+                  ? `<img src="${data.profile_image_url}" alt="${data.twitter_name || data.author_handle || 'Profile image'}" class="w-10 h-10 rounded-full bg-gray-800 object-cover" />`
                   : '<div class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-600">👤</div>'
               }
               <div>
@@ -612,7 +636,7 @@ export default function MindshareVisualization({
               </div>
               <div class="p-2 bg-gray-800/50 rounded-lg">
                 <div class="text-sm text-gray-400">Mindshare</div>
-                <div class="font-medium text-white">${(data.y || 0).toFixed(
+                <div class="font-medium text-white">${(data.originalMindshare || data.y || 0).toFixed(
                   2
                 )}%</div>
               </div>

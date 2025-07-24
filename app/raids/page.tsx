@@ -76,6 +76,13 @@ export default function RaidsPage() {
     return false;
   });
 
+  // Raid target search state
+  const [raidTargetSearchTerm, setRaidTargetSearchTerm] = useState("");
+  const [debouncedRaidTargetSearchTerm, setDebouncedRaidTargetSearchTerm] = useState("");
+  const [raidTargetSearchResults, setRaidTargetSearchResults] = useState<SearchToken[]>([]);
+  const [isRaidTargetSearching, setIsRaidTargetSearching] = useState(false);
+  const [showRaidTargetDropdown, setShowRaidTargetDropdown] = useState(false);
+
   // Response customization state
   const [responseType, setResponseType] = useState<string>(() => {
     if (typeof window !== 'undefined') {
@@ -168,6 +175,15 @@ export default function RaidsPage() {
 
     return () => clearTimeout(timer);
   }, [searchTerm]);
+
+  // Debounce raid target search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedRaidTargetSearchTerm(raidTargetSearchTerm);
+    }, 300); // 300ms delay for faster response
+
+    return () => clearTimeout(timer);
+  }, [raidTargetSearchTerm]);
 
   // Fetch trending tokens on mount
   useEffect(() => {
@@ -292,6 +308,17 @@ export default function RaidsPage() {
     }
   }, [debouncedSearchTerm]);
 
+  // Raid target search effect
+  useEffect(() => {
+    if (debouncedRaidTargetSearchTerm.trim().length >= 2) {
+      setIsRaidTargetSearching(true);
+      fetchRaidTargetSearchResults();
+    } else if (debouncedRaidTargetSearchTerm.trim().length === 0) {
+      setRaidTargetSearchResults([]);
+      setIsRaidTargetSearching(false);
+    }
+  }, [debouncedRaidTargetSearchTerm]);
+
   const fetchTrendingTokens = async () => {
     try {
       setLoadingTrendingTokens(true);
@@ -352,6 +379,24 @@ export default function RaidsPage() {
       setSearchResults([]);
     } finally {
       setLoadingTrendingTokens(false);
+    }
+  };
+
+  const fetchRaidTargetSearchResults = async () => {
+    try {
+      const response = await fetch(
+        `/api/raids/search?search_term=${encodeURIComponent(debouncedRaidTargetSearchTerm)}&limit=10`
+      );
+      if (response.ok) {
+        const data: SearchResultsResponse = await response.json();
+        setRaidTargetSearchResults(data.result || []);
+      } else {
+        setRaidTargetSearchResults([]);
+      }
+    } catch (error) {
+      setRaidTargetSearchResults([]);
+    } finally {
+      setIsRaidTargetSearching(false);
     }
   };
 
@@ -758,6 +803,33 @@ export default function RaidsPage() {
     setMobileView('tokens');
   };
 
+  const handleRaidTargetSelect = (item: SearchToken) => {
+    const target = item.twitter_final ? `@${item.twitter_final}` : `$${item.symbol}`;
+    updateRaidTarget(target);
+    setRaidTargetSearchTerm("");
+    setShowRaidTargetDropdown(false);
+    setRaidTargetSearchResults([]);
+  };
+
+  const handleRaidTargetInputChange = (value: string) => {
+    setRaidTargetSearchTerm(value);
+    updateRaidTarget(value);
+    setShowRaidTargetDropdown(value.length >= 2);
+  };
+
+  const handleRaidTargetInputFocus = () => {
+    if (raidTargetSearchTerm.length >= 2) {
+      setShowRaidTargetDropdown(true);
+    }
+  };
+
+  const handleRaidTargetInputBlur = () => {
+    // Delay hiding dropdown to allow for clicks
+    setTimeout(() => {
+      setShowRaidTargetDropdown(false);
+    }, 200);
+  };
+
   const renderLeftSectionItem = (item: LeftSectionItem, index: number) => {
     const isSelected = selectedItem === item;
 
@@ -1080,71 +1152,165 @@ export default function RaidsPage() {
 
                     {/* Tweet Feed */}
                     <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                        <div className="flex bg-neutral-800 border border-neutral-600 rounded-none flex-1">
-                          <button
-                            onClick={() => {
-                              setTweetFeedType("both");
-                              setSelectedTweet(null);
-                              setLlmResponse("");
-                              setEditedResponse("");
-                              setLlmIntentUrl("");
-                              if (!isRaidTargetLocked) {
-                                updateRaidTarget("");
-                              }
-                              updateResponseType("supportive");
-                              updateTone("enthusiastic");
-                            }}
-                            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${tweetFeedType === "both"
-                                ? "bg-[#00D992] text-black"
-                                : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
-                              }`}
-                          >
-                            Both
-                          </button>
-                          <button
-                            onClick={() => {
-                              setTweetFeedType("original");
-                              setSelectedTweet(null);
-                              setLlmResponse("");
-                              setEditedResponse("");
-                              setLlmIntentUrl("");
-                              if (!isRaidTargetLocked) {
-                                updateRaidTarget("");
-                              }
-                              updateResponseType("supportive");
-                              updateTone("enthusiastic");
-                            }}
-                            disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}
-                            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${tweetFeedType === "original"
-                                ? "bg-[#00D992] text-black"
-                                : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                              }`}
-                          >
-                            Project
-                          </button>
-                          <button
-                            onClick={() => {
-                              setTweetFeedType("mentions");
-                              setSelectedTweet(null);
-                              setLlmResponse("");
-                              setEditedResponse("");
-                              setLlmIntentUrl("");
-                              if (!isRaidTargetLocked) {
-                                updateRaidTarget("");
-                              }
-                              updateResponseType("supportive");
-                              updateTone("enthusiastic");
-                            }}
-                            className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${tweetFeedType === "mentions"
-                                ? "bg-[#00D992] text-black"
-                                : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
-                              }`}
-                          >
-                            Mentions
-                          </button>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-4">
+                          <div className="flex bg-neutral-800 border border-neutral-600 rounded-none">
+                            <button
+                              onClick={() => {
+                                setTweetFeedType("both");
+                                setSelectedTweet(null);
+                                setLlmResponse("");
+                                setEditedResponse("");
+                                setLlmIntentUrl("");
+                                if (!isRaidTargetLocked) {
+                                  updateRaidTarget("");
+                                }
+                                updateResponseType("supportive");
+                                updateTone("enthusiastic");
+                              }}
+                              className={`px-3 py-2 text-xs font-medium transition-colors ${tweetFeedType === "both"
+                                  ? "bg-[#00D992] text-black"
+                                  : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
+                                }`}
+                            >
+                              Both
+                            </button>
+                            <button
+                              onClick={() => {
+                                setTweetFeedType("original");
+                                setSelectedTweet(null);
+                                setLlmResponse("");
+                                setEditedResponse("");
+                                setLlmIntentUrl("");
+                                if (!isRaidTargetLocked) {
+                                  updateRaidTarget("");
+                                }
+                                updateResponseType("supportive");
+                                updateTone("enthusiastic");
+                              }}
+                              disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}
+                              className={`px-3 py-2 text-xs font-medium transition-colors ${tweetFeedType === "original"
+                                  ? "bg-[#00D992] text-black"
+                                  : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                }`}
+                            >
+                              Project
+                            </button>
+                            <button
+                              onClick={() => {
+                                setTweetFeedType("mentions");
+                                setSelectedTweet(null);
+                                setLlmResponse("");
+                                setEditedResponse("");
+                                setLlmIntentUrl("");
+                                if (!isRaidTargetLocked) {
+                                  updateRaidTarget("");
+                                }
+                                updateResponseType("supportive");
+                                updateTone("enthusiastic");
+                              }}
+                              className={`px-3 py-2 text-xs font-medium transition-colors ${tweetFeedType === "mentions"
+                                  ? "bg-[#00D992] text-black"
+                                  : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
+                                }`}
+                            >
+                              Mentions
+                            </button>
+                          </div>
+                          <span className="text-gray-400 text-xs">({uniqueTweets.length})</span>
                         </div>
-                        <span className="text-gray-400 text-xs">({uniqueTweets.length})</span>
+
+                        {/* Mobile Raid Target Input - Horizontal */}
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 text-xs">
+                            {raidTarget && (
+                              <div className="text-[#00D992] whitespace-nowrap">
+                                Raiding: <span className="font-medium">{raidTarget}</span>
+                              </div>
+                            )}
+                            {!raidTarget && selectedItem && (
+                              <div className="text-gray-500 whitespace-nowrap">
+                                Raiding: <span className="font-medium">${selectedItem.symbol}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="relative w-40">
+                            <Input
+                              type="text"
+                              placeholder="Search tokens or @handles..."
+                              value={raidTargetSearchTerm || raidTarget}
+                              onChange={(e) => handleRaidTargetInputChange(e.target.value)}
+                              onFocus={handleRaidTargetInputFocus}
+                              onBlur={handleRaidTargetInputBlur}
+                              className="w-40 pr-8 text-xs bg-neutral-900 border-neutral-600 text-white placeholder-gray-500 focus:border-[#00D992] focus:ring-[#00D992] rounded-none h-8"
+                            />
+                            {raidTarget && (
+                              <button
+                                onClick={() => {
+                                  updateRaidTarget("");
+                                  setRaidTargetSearchTerm("");
+                                }}
+                                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-400 text-xs"
+                                title="Clear raid target"
+                              >
+                                ×
+                              </button>
+                            )}
+                            {showRaidTargetDropdown && (raidTargetSearchResults.length > 0 || isRaidTargetSearching) && (
+                              <div className="absolute top-full left-0 w-80 bg-neutral-800 border border-neutral-600 border-t-0 max-h-48 overflow-y-auto z-50">
+                                {isRaidTargetSearching ? (
+                                  <div className="p-2 text-xs text-gray-400 text-center">
+                                    <div className="flex items-center justify-center gap-2">
+                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-[#00D992]"></div>
+                                      Searching...
+                                    </div>
+                                  </div>
+                                ) : (
+                                  raidTargetSearchResults.map((item, index) => (
+                                    <div
+                                      key={`raid-target-${item.token_id || index}`}
+                                      className="flex items-center gap-2 p-2 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0"
+                                      onClick={() => handleRaidTargetSelect(item)}
+                                    >
+                                      <img
+                                        src={item.profile_image_url || "/placeholder.svg"}
+                                        alt={item.symbol}
+                                        className="w-6 h-6 rounded-full object-cover"
+                                        onError={(e) => {
+                                          e.currentTarget.src = "/placeholder.svg";
+                                        }}
+                                      />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs font-medium text-white">${item.symbol}</span>
+                                          {item.twitter_final && (
+                                            <span className="text-xs text-blue-400">@{item.twitter_final}</span>
+                                          )}
+                                          <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300">
+                                            {item.chain}
+                                          </Badge>
+                                        </div>
+                                        <div className="text-xs text-gray-400 truncate">{item.name}</div>
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => updateIsRaidTargetLocked(!isRaidTargetLocked)}
+                            className={`text-xs px-2 py-1 h-8 ${isRaidTargetLocked
+                                ? "text-[#00D992] bg-[#00D992]/10"
+                                : "text-gray-400 hover:text-[#00D992]"
+                              }`}
+                            title={isRaidTargetLocked ? "Unlock raid target" : "Lock raid target"}
+                          >
+                            {isRaidTargetLocked ? "🔒" : "🔓"}
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Tweets List */}
@@ -1293,59 +1459,7 @@ export default function RaidsPage() {
                               </div>
                             </div>
 
-                            {/* Mobile Raid Target Input */}
-                            <div className="mb-3">
-                              <div className="flex items-center justify-between mb-1">
-                                <div className="text-xs text-gray-400">
-                                  {raidTarget && (
-                                    <div className="text-xs text-[#00D992] mt-1">
-                                      Raiding: <span className="font-medium">{raidTarget}</span>
-                                    </div>
-                                  )}
-                                  {!raidTarget && selectedItem && (
-                                    <div className="text-xs text-gray-500 mt-1">
-                                      Raiding: <span className="font-medium">${selectedItem.symbol}</span>
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => updateIsRaidTargetLocked(!isRaidTargetLocked)}
-                                    className={`text-xs px-2 py-1 h-6 ${isRaidTargetLocked
-                                        ? "text-[#00D992] bg-[#00D992]/10"
-                                        : "text-gray-400 hover:text-[#00D992]"
-                                      }`}
-                                    title={isRaidTargetLocked ? "Unlock raid target" : "Lock raid target"}
-                                  >
-                                    {isRaidTargetLocked ? "🔒" : "🔓"}
-                                  </Button>
-                                  {raidTarget && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => updateRaidTarget("")}
-                                      className="text-xs px-2 py-1 h-6 text-gray-400 hover:text-red-400"
-                                      title="Clear raid target"
-                                    >
-                                      ✕
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="text"
-                                  placeholder={`e.g., $${selectedItem?.symbol || 'PEPE'}, @handle, or leave empty for ${selectedItem?.symbol || 'selected community'}`}
-                                  value={raidTarget}
-                                  onChange={(e) => updateRaidTarget(e.target.value)}
-                                  className="flex-1 text-xs bg-neutral-900 border-neutral-600 text-white placeholder-gray-500 focus:border-[#00D992] focus:ring-[#00D992] rounded-none h-8"
-                                  disabled={llmLoading}
-                                />
-                              </div>
 
-                            </div>
 
                             {/* Mobile Response Type and Tone Selection */}
                             <div className="mb-3">
@@ -1772,72 +1886,170 @@ export default function RaidsPage() {
 
             {/* Tweet Feed Tabs */}
             {!loadingTweets ? (
-              <div className="flex items-center gap-4 mb-2">
-              <div className="flex bg-neutral-800 border border-neutral-600 rounded-none">
-                <button
-                  onClick={() => {
-                    setTweetFeedType("both");
-                    setSelectedTweet(null);
-                    setLlmResponse("");
-                    setEditedResponse("");
-                    setLlmIntentUrl("");
-                    if (!isRaidTargetLocked) {
-                      updateRaidTarget("");
-                    }
-                    updateResponseType("supportive");
-                    updateTone("enthusiastic");
-                  }}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${tweetFeedType === "both"
-                      ? "bg-[#00D992] text-black"
-                      : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
-                    }`}
-                >
-                  Both
-                </button>
-                <button
-                  onClick={() => {
-                    setTweetFeedType("original");
-                    setSelectedTweet(null);
-                    setLlmResponse("");
-                    setEditedResponse("");
-                    setLlmIntentUrl("");
-                    if (!isRaidTargetLocked) {
-                      updateRaidTarget("");
-                    }
-                    updateResponseType("supportive");
-                    updateTone("enthusiastic");
-                  }}
-                  disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${tweetFeedType === "original"
-                      ? "bg-[#00D992] text-black"
-                      : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    }`}
-                >
-                  Project Tweets
-                </button>
-                <button
-                  onClick={() => {
-                    setTweetFeedType("mentions");
-                    setSelectedTweet(null);
-                    setLlmResponse("");
-                    setEditedResponse("");
-                    setLlmIntentUrl("");
-                    if (!isRaidTargetLocked) {
-                      updateRaidTarget("");
-                    }
-                    updateResponseType("supportive");
-                    updateTone("enthusiastic");
-                  }}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${tweetFeedType === "mentions"
-                      ? "bg-[#00D992] text-black"
-                      : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
-                    }`}
-                >
-                  Mentions
-                </button>
+              <div className="flex items-center justify-between gap-4 mb-2">
+                <div className="flex items-center gap-4">
+                  <div className="flex bg-neutral-800 border border-neutral-600 rounded-none">
+                    <button
+                      onClick={() => {
+                        setTweetFeedType("both");
+                        setSelectedTweet(null);
+                        setLlmResponse("");
+                        setEditedResponse("");
+                        setLlmIntentUrl("");
+                        if (!isRaidTargetLocked) {
+                          updateRaidTarget("");
+                        }
+                        updateResponseType("supportive");
+                        updateTone("enthusiastic");
+                      }}
+                      className={`px-4 py-2 text-sm font-medium transition-colors ${tweetFeedType === "both"
+                          ? "bg-[#00D992] text-black"
+                          : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
+                        }`}
+                    >
+                      Both
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTweetFeedType("original");
+                        setSelectedTweet(null);
+                        setLlmResponse("");
+                        setEditedResponse("");
+                        setLlmIntentUrl("");
+                        if (!isRaidTargetLocked) {
+                          updateRaidTarget("");
+                        }
+                        updateResponseType("supportive");
+                        updateTone("enthusiastic");
+                      }}
+                      disabled={!handleDetails && Boolean(selectedItem?.twitter_final)}
+                      className={`px-4 py-2 text-sm font-medium transition-colors ${tweetFeedType === "original"
+                          ? "bg-[#00D992] text-black"
+                          : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        }`}
+                    >
+                      Project Tweets
+                    </button>
+                    <button
+                      onClick={() => {
+                        setTweetFeedType("mentions");
+                        setSelectedTweet(null);
+                        setLlmResponse("");
+                        setEditedResponse("");
+                        setLlmIntentUrl("");
+                        if (!isRaidTargetLocked) {
+                          updateRaidTarget("");
+                        }
+                        updateResponseType("supportive");
+                        updateTone("enthusiastic");
+                      }}
+                      className={`px-4 py-2 text-sm font-medium transition-colors ${tweetFeedType === "mentions"
+                          ? "bg-[#00D992] text-black"
+                          : "bg-transparent text-gray-400 hover:text-white hover:bg-neutral-700"
+                        }`}
+                    >
+                      Mentions
+                    </button>
+                  </div>
+                  <span className="text-gray-400 text-sm">({uniqueTweets.length} tweets)</span>
+                </div>
+
+                {/* Desktop Raid Target Input - Horizontal */}
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    {raidTarget && (
+                      <div className="text-[#00D992] whitespace-nowrap">
+                        Raiding: <span className="font-medium">{raidTarget}</span>
+                      </div>
+                    )}
+                    {!raidTarget && selectedItem && (
+                      <div className="text-gray-500 whitespace-nowrap">
+                        Raiding: <span className="font-medium">${selectedItem.symbol}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <Input
+                      type="text"
+                      placeholder="Search tokens or @handles..."
+                      value={raidTargetSearchTerm || raidTarget}
+                      onChange={(e) => handleRaidTargetInputChange(e.target.value)}
+                      onFocus={handleRaidTargetInputFocus}
+                      onBlur={handleRaidTargetInputBlur}
+                      className="w-64 pr-10 text-sm bg-neutral-900 border-neutral-600 text-white placeholder-gray-500 focus:border-[#00D992] focus:ring-[#00D992] rounded-none h-9"
+                    />
+                    {raidTarget && (
+                      <button
+                        onClick={() => {
+                          updateRaidTarget("");
+                          setRaidTargetSearchTerm("");
+                        }}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-400"
+                        title="Clear raid target"
+                      >
+                        ×
+                      </button>
+                    )}
+                    {showRaidTargetDropdown && (raidTargetSearchResults.length > 0 || isRaidTargetSearching) && (
+                      <div className="absolute top-full left-0 bg-neutral-800 border border-neutral-600 border-t-0 max-h-64 overflow-y-auto z-50">
+                        {isRaidTargetSearching ? (
+                          <div className="p-3 text-sm text-gray-400 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#00D992]">
+                              </div>
+                              Searching...
+                            </div>
+                          </div>
+                        ) : (
+                          raidTargetSearchResults.map((item, index) => (
+                            <div
+                              key={`raid-target-desktop-${item.token_id || index}`}
+                              className="flex items-center gap-3 p-3 hover:bg-neutral-700 cursor-pointer border-b border-neutral-600 last:border-b-0"
+                              onClick={() => handleRaidTargetSelect(item)}
+                            >
+                              <img
+                                src={item.profile_image_url || "/placeholder.svg"}
+                                alt={item.symbol}
+                                className="w-8 h-8 rounded-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.src = "/placeholder.svg";
+                                }}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-sm font-medium text-white">${item.symbol}</span>
+                                  {item.twitter_final && (
+                                    <span className="text-sm text-blue-400">@{item.twitter_final}</span>
+                                  )}
+                                  <Badge variant="outline" className="text-xs bg-neutral-700 border-neutral-500 text-gray-300">
+                                    {item.chain}
+                                  </Badge>
+                                </div>
+                                <div className="text-sm text-gray-400 truncate">{item.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  Mentions: {formatNumber('mention_count_24hr' in item ? item.mention_count_24hr : item.mention_count)}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateIsRaidTargetLocked(!isRaidTargetLocked)}
+                    className={`px-3 py-2 h-9 ${isRaidTargetLocked
+                        ? "text-[#00D992] bg-[#00D992]/10"
+                        : "text-gray-400 hover:text-[#00D992]"
+                      }`}
+                    title={isRaidTargetLocked ? "Unlock raid target" : "Lock raid target"}
+                  >
+                    {isRaidTargetLocked ? "🔒" : "🔓"}
+                  </Button>
+                </div>
               </div>
-              <span className="text-gray-400 text-sm">({uniqueTweets.length} tweets)</span>
-            </div>
             ) : (
               <div className="flex items-center gap-4 mb-2">
                 <Skeleton className="h-8 w-32 mb-2" />
@@ -2048,61 +2260,7 @@ export default function RaidsPage() {
                         </div>
                       </div>
 
-                      {/* Raid Target Input */}
-                      {selectedTweet && (
-                        <div className="mb-1">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="text-xs text-gray-400">
-                              {raidTarget && (
-                                <div className="text-xs text-[#00D992] mt-1">
-                                  Raiding: <span className="font-medium">{raidTarget}</span>
-                                </div>
-                              )}
-                              {!raidTarget && selectedItem && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  Raiding: <span className="font-medium">${selectedItem.symbol}</span>
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => updateIsRaidTargetLocked(!isRaidTargetLocked)}
-                                className={`text-xs px-2 py-1 h-6 ${isRaidTargetLocked
-                                    ? "text-[#00D992] bg-[#00D992]/10"
-                                    : "text-gray-400 hover:text-[#00D992]"
-                                  }`}
-                                title={isRaidTargetLocked ? "Unlock raid target" : "Lock raid target"}
-                              >
-                                {isRaidTargetLocked ? "🔒" : "🔓"}
-                              </Button>
-                              {raidTarget && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => updateRaidTarget("")}
-                                  className="text-xs px-2 py-1 h-6 text-gray-400 hover:text-red-400"
-                                  title="Clear raid target"
-                                >
-                                  ✕
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="text"
-                              placeholder={`e.g., $${selectedItem?.symbol || 'PEPE'}, @handle, or leave empty for ${selectedItem?.symbol || 'selected community'}`}
-                              value={raidTarget}
-                              onChange={(e) => updateRaidTarget(e.target.value)}
-                              className="flex-1 text-xs bg-neutral-900 border-neutral-600 text-white placeholder-gray-500 focus:border-[#00D992] focus:ring-[#00D992] rounded-none h-8"
-                              disabled={llmLoading}
-                            />
-                          </div>
 
-                        </div>
-                      )}
 
                       {/* Response Type and Tone Selection */}
                       {selectedTweet && (
