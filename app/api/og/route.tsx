@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
-export const runtime = "edge";
-
 // Enable caching for OG images
 export const revalidate = 3600; // Cache for 1 hour
 

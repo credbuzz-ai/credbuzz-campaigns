@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
-export const runtime = "edge";
-
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_TRENDSAGE_API_URL ||
   process.env.NEXT_PUBLIC_CREDBUZZ_API_URL ||
@@ -456,7 +454,7 @@ export async function GET(
                     width: "100%",
                   }}
                 >
-                  {mindshareData.slice(0, 5).map((user, index) => (
+                  {mindshareData.slice(0, 5).map((user: any, index: number) => (
                     <div
                       key={user.author_handle}
                       style={{
