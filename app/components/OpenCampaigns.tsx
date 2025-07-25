@@ -17,7 +17,13 @@ export default function OpenCampaigns() {
           campaign_type: "Public",
           is_visible: true,
         });
-        setCampaigns(res.data.result || []);
+        // Sort campaigns by offer_end_date in descending order
+        const sortedCampaigns = (res.data.result || []).sort(
+          (a: Campaign, b: Campaign) =>
+            new Date(b.offer_end_date).getTime() -
+            new Date(a.offer_end_date).getTime()
+        );
+        setCampaigns(sortedCampaigns);
       } catch (err) {
         console.error("Failed to fetch campaigns", err);
       } finally {
