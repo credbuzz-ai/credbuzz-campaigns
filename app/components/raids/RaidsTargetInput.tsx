@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { SearchToken } from "./RaidsInterfaces";
 import { formatNumber } from "./RaidsUtils";
@@ -12,6 +13,7 @@ interface RaidsTargetInputProps {
   onRaidTargetChange: (target: string) => void;
   onRaidTargetLockChange: (locked: boolean) => void;
   onRaidTargetSelect: (item: SearchToken) => void;
+  onSearchTermChange: (term: string) => void;
   searchResults: SearchToken[];
   isSearching: boolean;
 }
@@ -23,6 +25,7 @@ export function RaidsTargetInput({
   onRaidTargetChange,
   onRaidTargetLockChange,
   onRaidTargetSelect,
+  onSearchTermChange,
   searchResults,
   isSearching,
 }: RaidsTargetInputProps) {
@@ -35,7 +38,11 @@ export function RaidsTargetInput({
 
   const handleInputChange = (value: string) => {
     setSearchTerm(value);
-    onRaidTargetChange(value);
+    onSearchTermChange(value);
+    // Only update raid target when selecting from dropdown, not during search
+    if (value.startsWith("@") || value.startsWith("$")) {
+      onRaidTargetChange(value);
+    }
     setShowDropdown(value.length >= 2);
   };
 
@@ -67,14 +74,15 @@ export function RaidsTargetInput({
         )}
       </div>
       <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
         <Input
           type="text"
-          placeholder="Search tokens or @handles..."
+          placeholder="Search tokens or handles..."
           value={searchTerm}
           onChange={(e) => handleInputChange(e.target.value)}
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
-          className="w-64 pr-10 text-sm bg-neutral-900 border-neutral-600 text-white placeholder-gray-500 focus:border-[#00D992] focus:ring-[#00D992] rounded-none h-9"
+          className="w-64 pl-10 pr-3 py-2 text-sm bg-neutral-800 border-neutral-600 text-white placeholder-gray-400 focus:border-[#00D992] focus:ring-[#00D992] rounded-none h-9"
         />
         {raidTarget && (
           <button
@@ -89,7 +97,7 @@ export function RaidsTargetInput({
           </button>
         )}
         {showDropdown && (searchResults.length > 0 || isSearching) && (
-          <div className="absolute top-full left-0 bg-neutral-800 border border-neutral-600 border-t-0 max-h-64 overflow-y-auto z-50">
+          <div className="absolute top-full left-0 bg-neutral-800 border border-neutral-600 border-t-0 max-h-64 overflow-y-auto z-50 w-[350px]">
             {isSearching ? (
               <div className="p-3 text-sm text-gray-400 text-center">
                 <div className="flex items-center justify-center gap-2">

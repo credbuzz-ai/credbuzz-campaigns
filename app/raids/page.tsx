@@ -187,6 +187,25 @@ export default function RaidsPage() {
     return () => clearTimeout(timer);
   }, [raidTargetSearchTerm]);
 
+  // Raid target search effect
+  useEffect(() => {
+    if (raidTargetSearchTerm.trim().length >= 2) {
+      setIsRaidTargetSearching(true);
+    } else {
+      setIsRaidTargetSearching(false);
+      setRaidTargetSearchResults([]);
+    }
+  }, [raidTargetSearchTerm]);
+
+  // Debounced raid target search effect
+  useEffect(() => {
+    if (debouncedRaidTargetSearchTerm.trim().length >= 2) {
+      fetchRaidTargetSearchResults();
+    } else {
+      setRaidTargetSearchResults([]);
+    }
+  }, [debouncedRaidTargetSearchTerm]);
+
   // Fetch trending tokens on mount
   useEffect(() => {
     fetchTrendingTokens();
@@ -329,17 +348,6 @@ export default function RaidsPage() {
       setSelectedItem(null);
     }
   }, [debouncedSearchTerm]);
-
-  // Raid target search effect
-  useEffect(() => {
-    if (debouncedRaidTargetSearchTerm.trim().length >= 2) {
-      setIsRaidTargetSearching(true);
-      fetchRaidTargetSearchResults();
-    } else if (debouncedRaidTargetSearchTerm.trim().length === 0) {
-      setRaidTargetSearchResults([]);
-      setIsRaidTargetSearching(false);
-    }
-  }, [debouncedRaidTargetSearchTerm]);
 
   // API calls
   const fetchTrendingTokens = async () => {
@@ -1157,9 +1165,12 @@ export default function RaidsPage() {
                           raidTarget={raidTarget}
                           isRaidTargetLocked={isRaidTargetLocked}
                           selectedSymbol={selectedItem?.symbol}
-                          onRaidTargetChange={updateRaidTarget}
+                          onRaidTargetChange={(value) => {
+                            updateRaidTarget(value);
+                          }}
                           onRaidTargetLockChange={updateIsRaidTargetLocked}
                           onRaidTargetSelect={handleRaidTargetSelect}
+                          onSearchTermChange={setRaidTargetSearchTerm}
                           searchResults={raidTargetSearchResults}
                           isSearching={isRaidTargetSearching}
                         />
@@ -1361,9 +1372,12 @@ export default function RaidsPage() {
                 raidTarget={raidTarget}
                 isRaidTargetLocked={isRaidTargetLocked}
                 selectedSymbol={selectedItem?.symbol}
-                onRaidTargetChange={updateRaidTarget}
+                onRaidTargetChange={(value) => {
+                  updateRaidTarget(value);
+                }}
                 onRaidTargetLockChange={updateIsRaidTargetLocked}
                 onRaidTargetSelect={handleRaidTargetSelect}
+                onSearchTermChange={setRaidTargetSearchTerm}
                 searchResults={raidTargetSearchResults}
                 isSearching={isRaidTargetSearching}
               />
