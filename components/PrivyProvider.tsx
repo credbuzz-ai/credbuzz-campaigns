@@ -7,9 +7,16 @@ interface PrivyProviderProps {
 }
 
 export default function PrivyProvider({ children }: PrivyProviderProps) {
+  const appId = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
+  
+  // During static generation, render children without Privy
+  if (!appId || typeof window === 'undefined') {
+    return <>{children}</>;
+  }
+
   return (
     <PrivyProviderBase
-      appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID || ""}
+      appId={appId}
       config={{
         appearance: {
           theme: "dark",

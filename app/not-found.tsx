@@ -5,26 +5,17 @@ import { useEffect, useState } from "react";
 
 export default function NotFound() {
   const [countdown, setCountdown] = useState(10);
-
-  // useEffect(() => {
-  //   const timer = setInterval(() => {
-  //     setCountdown((prev) => {
-  //       if (prev <= 1) {
-  //         window.location.href = "https://trendsage.xyz";
-  //         return 0;
-  //       }
-  //       return prev - 1;
-  //     });
-  //   }, 1000);
-
-  //   return () => clearInterval(timer);
-  // }, []);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     window.location.href = "https://trendsage.xyz";
   }, []);
 
-  return null;
+  // During static generation, return null
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-900 flex items-center justify-center px-4">

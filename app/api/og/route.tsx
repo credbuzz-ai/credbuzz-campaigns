@@ -1,8 +1,8 @@
 import { ImageResponse } from "next/og";
 import { NextRequest } from "next/server";
 
-// Enable caching for OG images
-export const revalidate = 3600; // Cache for 1 hour
+// Force dynamic rendering for OG images
+export const dynamic = 'force-dynamic';
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_TRENDSAGE_API_URL ||
