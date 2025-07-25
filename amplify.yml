@@ -7,7 +7,7 @@ frontend:
         - pnpm install --frozen-lockfile
     build:
       commands:
-        - echo "NEXT_PUBLIC_PRIVY_APP_ID is set: $([ ! -z "$NEXT_PUBLIC_PRIVY_APP_ID" ] && echo 'YES' || echo 'NO')"
+        - 'echo "NEXT_PUBLIC_PRIVY_APP_ID is set: $([ ! -z "$NEXT_PUBLIC_PRIVY_APP_ID" ] && echo "YES" || echo "NO")"'
         - pnpm run build
   artifacts:
     baseDirectory: .next
