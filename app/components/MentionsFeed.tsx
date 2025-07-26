@@ -1,21 +1,14 @@
 "use client";
 
-import { CREDBUZZ_API_URL } from "@/lib/constants";
-import {
-  AtSign,
-  Eye,
-  Hash,
-  Heart,
-  MessageCircle,
-  Repeat2,
-  TrendingDown,
-  TrendingUp,
-} from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { MentionsResponse, PaginationInfo, TweetMentionData } from "../types";
+import { useEffect, useState } from "react";
+import { Tweet, TweetFeedResponse } from "./raids/RaidsInterfaces";
+import { RaidsResponsePanel } from "./raids/RaidsResponsePanel";
+import { RaidsTweetCard } from "./raids/RaidsTweetCard";
 
 interface MentionsFeedProps {
   authorHandle?: string;
+  paymentToken?: string;
+  targetXHandle?: string;
 }
 
 type Interval = "1day" | "7day" | "30day";
@@ -36,469 +29,395 @@ const sortOptions = [
 
 export default function MentionsFeed({
   authorHandle = "eliz883",
+  paymentToken,
+  targetXHandle,
 }: MentionsFeedProps) {
-  const [retryCount, setRetryCount] = useState(0);
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000;
-  const [tweets, setTweets] = useState<TweetMentionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [interval, setInterval] = useState<Interval>("7day");
   const [sortBy, setSortBy] = useState<SortBy>("tweet_create_time_desc");
-  const [expandedTweets, setExpandedTweets] = useState<Set<string>>(new Set());
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [pagination, setPagination] = useState<PaginationInfo>({
-    total_count: 0,
+  const [tweetFeedType, setTweetFeedType] = useState<
+    "both" | "original" | "mentions"
+  >("both");
+  const [selectedTweet, setSelectedTweet] = useState<Tweet | null>(null);
+  const [llmResponse, setLlmResponse] = useState("");
+  const [editedResponse, setEditedResponse] = useState("");
+  const [llmLoading, setLlmLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [generatedShareUrl, setGeneratedShareUrl] = useState("");
+  const [responseType, setResponseType] = useState("supportive");
+  const [tone, setTone] = useState("enthusiastic");
+  const [tweetFeedData, setTweetFeedData] = useState<{
+    original_tweets: Tweet[];
+    mentions: Tweet[];
+  }>({
+    original_tweets: [],
+    mentions: [],
+  });
+  const [pagination, setPagination] = useState<{
+    start: number;
+    limit: number;
+    has_more: boolean;
+    next_start: number;
+  }>({
     start: 0,
     limit: 20,
     has_more: false,
+    next_start: 0,
   });
 
-  const observerTarget = useRef<HTMLDivElement>(null);
-
-  const fetchTweets = async (attempt = 0, start = 0, append = false) => {
-    if (!append) {
-      setLoading(true);
-    }
-    setError(null);
-
+  const fetchTweetFeed = async ({
+    isLoadMore = false,
+  }: {
+    isLoadMore?: boolean;
+  }) => {
     try {
-      const response = await fetch(
-        `${CREDBUZZ_API_URL}/tweet/tweets-mentioning-author?author_handle=${authorHandle}&start=${start}&limit=${pagination.limit}&sort_by=${sortBy}`,
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-          cache: "no-store",
-          signal: AbortSignal.timeout(5000),
-        }
-      );
+      setLoading(true);
+      console.log("Fetching tweets for:", {
+        paymentToken,
+        targetXHandle,
+        isLoadMore,
+      });
+      const params = new URLSearchParams();
 
-      if (response.ok) {
-        const data = (await response.json()) as MentionsResponse;
-        if (data.tweets && Array.isArray(data.tweets)) {
-          const sanitizedTweets = data.tweets.map((tweet) => ({
-            ...tweet,
-            view_count: tweet.view_count || 0,
-            like_count: tweet.like_count || 0,
-            quote_count: tweet.quote_count || 0,
-            reply_count: tweet.reply_count || 0,
-            retweet_count: tweet.retweet_count || 0,
-            sentiment: tweet.sentiment,
-            tweet_category: tweet.tweet_category || null,
-          })) as TweetMentionData[];
-
-          if (append) {
-            setTweets((prev) => [...prev, ...sanitizedTweets]);
-          } else {
-            setTweets(sanitizedTweets);
-          }
-
-          setPagination(data.pagination);
-          setRetryCount(0);
-        } else {
-          throw new Error("Invalid response format");
-        }
-      } else {
-        throw new Error(`API Error: ${response.status}`);
+      // Always pass symbol if available (for mentions) - use paymentToken as fallback
+      if (paymentToken) {
+        params.append("symbol", paymentToken);
       }
-    } catch (error) {
-      console.error(
-        `Failed to fetch mentions (attempt ${attempt + 1}):`,
-        error
-      );
 
-      if (attempt < MAX_RETRIES) {
-        const delay = RETRY_DELAY * Math.pow(2, attempt);
-        setRetryCount(attempt + 1);
-        setError(`Retrying... (${attempt + 1}/${MAX_RETRIES})`);
+      // Pass twitter_handle if available (for original tweets) - use targetXHandle as fallback
+      if (targetXHandle) {
+        params.append("twitter_handle", targetXHandle.replace("@", ""));
+      }
 
-        setTimeout(() => {
-          fetchTweets(attempt + 1, start, append);
-        }, delay);
+      // If we have neither, we can't fetch tweets
+      if (!paymentToken && !targetXHandle) {
+        setLoading(false);
         return;
       }
 
-      setError("Failed to fetch mentions");
-      setRetryCount(0);
-    } finally {
+      params.append("feed_type", tweetFeedType);
+      params.append("limit", "20");
+      params.append("sort_by", sortBy);
+
+      if (isLoadMore && pagination.next_start) {
+        params.append("start", String(pagination.next_start));
+      } else {
+        params.append("start", "0");
+      }
+
+      const url = `/api/raids/tweet-feed?${params.toString()}`;
+      console.log("Fetching from URL:", url);
+      const response = await fetch(url);
+
+      if (response.ok) {
+        const data: TweetFeedResponse = await response.json();
+        console.log("Tweet feed response:", {
+          originalTweets: data.result.original_tweets.length,
+          mentions: data.result.mentions.length,
+          pagination: data.result.pagination,
+          paymentToken,
+          targetXHandle,
+          isLoadMore,
+        });
+
+        // Update tweet feed data
+        setTweetFeedData((prevData) => ({
+          original_tweets: isLoadMore
+            ? [...prevData.original_tweets, ...data.result.original_tweets]
+            : data.result.original_tweets,
+          mentions: isLoadMore
+            ? [...prevData.mentions, ...data.result.mentions]
+            : data.result.mentions,
+        }));
+
+        // Update pagination state
+        setPagination(data.result.pagination);
+        setLoading(false);
+        setError(null);
+      } else {
+        console.log("Failed to fetch tweets");
+        setError("Failed to fetch tweets");
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Error fetching tweets:", error);
+      setError("Error fetching tweets");
       setLoading(false);
     }
   };
 
-  const loadMore = useCallback(() => {
-    if (pagination.has_more && !loading) {
-      fetchTweets(0, pagination.next_start || 0, true);
-    }
-  }, [pagination.has_more, loading, pagination.next_start]);
-
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          loadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
-
-    const currentTarget = observerTarget.current;
-    if (currentTarget) {
-      observer.observe(currentTarget);
+    if (paymentToken || targetXHandle) {
+      fetchTweetFeed({ isLoadMore: false });
     }
+  }, [paymentToken, targetXHandle, sortBy, interval, tweetFeedType]);
 
-    return () => {
-      if (currentTarget) {
-        observer.unobserve(currentTarget);
-      }
-    };
-  }, [loadMore]);
-
-  useEffect(() => {
-    fetchTweets();
-  }, [sortBy, interval, authorHandle]);
-
-  const formatNumber = (num: number | null | undefined): string => {
-    if (num === null || num === undefined || isNaN(num)) {
-      return "0";
-    }
-
-    const numValue = Number(num);
-    if (numValue >= 1000000) return `${(numValue / 1000000).toFixed(1)}M`;
-    if (numValue >= 1000) return `${(numValue / 1000).toFixed(1)}K`;
-    return numValue.toString();
-  };
-
-  const formatDate = (dateString: string): string => {
+  const handleGenerateResponse = async (tweet: Tweet) => {
+    setSelectedTweet(tweet);
+    setLlmLoading(true);
+    setLlmResponse("");
+    setEditedResponse("");
     try {
-      // Create a date object from UTC string
-      const date = new Date(dateString + "Z"); // Append 'Z' to ensure UTC parsing
-      if (isNaN(date.getTime())) {
-        return "now";
-      }
+      const requestBody = {
+        tweet_content: tweet.body,
+        tweet_context: {
+          author_handle: tweet.author_handle,
+          symbol: paymentToken,
+          sentiment: tweet.sentiment,
+          tweet_category: tweet.tweet_category,
+        },
+        response_type: responseType,
+        tone: tone,
+      };
 
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - date.getTime());
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      const diffHours = Math.ceil(diffTime / (1000 * 60 * 60));
-
-      if (diffHours < 24) {
-        return diffHours === 1 ? "1h" : `${diffHours}h`;
-      }
-      if (diffDays === 1) return "1d";
-      if (diffDays < 7) return `${diffDays}d`;
-      if (diffDays < 30) return `${Math.ceil(diffDays / 7)}w`;
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, // Use system timezone
+      const response = await fetch(`/api/raids/generate-response`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
       });
-    } catch (error) {
-      return "now";
-    }
-  };
 
-  const getSentimentIcon = (sentiment: number | null) => {
-    if (sentiment === null || sentiment === undefined) return null;
-    if (sentiment > 0.1)
-      return <TrendingUp className="w-3 h-3 text-green-500" />;
-    if (sentiment < -0.1)
-      return <TrendingDown className="w-3 h-3 text-red-500" />;
-    return null;
-  };
-
-  const extractTokens = (text: string): string[] => {
-    if (!text || typeof text !== "string") return [];
-    const tokenRegex = /\$[A-Z]{2,10}/g;
-    return text.match(tokenRegex) || [];
-  };
-
-  const highlightTokens = (text: string) => {
-    if (!text || typeof text !== "string") return text;
-
-    const tokens = extractTokens(text);
-    if (tokens.length === 0) return text;
-
-    const parts = [];
-    let lastIndex = 0;
-
-    tokens.forEach((token) => {
-      const index = text.indexOf(token, lastIndex);
-      if (index !== -1) {
-        // Add text before token
-        if (index > lastIndex) {
-          parts.push(text.substring(lastIndex, index));
-        }
-        // Add highlighted token
-        parts.push(
-          <span
-            key={`${token}-${index}`}
-            className="text-blue-600 font-semibold"
-          >
-            {token}
-          </span>
-        );
-        lastIndex = index + token.length;
+      if (response.ok) {
+        const data = await response.json();
+        setLlmResponse(data.result.response_text);
+        setEditedResponse(data.result.response_text);
+      } else {
+        setLlmResponse("Failed to generate response.");
+        setEditedResponse("");
       }
-    });
-
-    // Add remaining text
-    if (lastIndex < text.length) {
-      parts.push(text.substring(lastIndex));
+    } catch (error) {
+      setLlmResponse("Failed to generate response.");
+      setEditedResponse("");
+    } finally {
+      setLlmLoading(false);
     }
-
-    return parts.length > 1 ? parts : text;
   };
 
-  const getDisplayHandle = (handle: string) => {
-    if (!handle) return "unknown";
-    return handle.startsWith("@") ? handle.slice(1) : handle;
-  };
+  const handleGenerateImage = async () => {
+    setImageLoading(true);
+    try {
+      const response = await fetch(`/api/raids/generate-image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          tweet_content: selectedTweet?.body,
+          response_text: editedResponse,
+        }),
+      });
 
-  const toggleTweetExpansion = (tweetId: string) => {
-    const newExpanded = new Set(expandedTweets);
-    if (newExpanded.has(tweetId)) {
-      newExpanded.delete(tweetId);
-    } else {
-      newExpanded.add(tweetId);
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedShareUrl(data.result.share_url);
+      }
+    } catch (error) {
+      console.error("Failed to generate image:", error);
+    } finally {
+      setImageLoading(false);
     }
-    setExpandedTweets(newExpanded);
   };
 
-  const truncateText = (text: string, maxLength: number = 200) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength);
+  const handleCopyImage = (url: string) => {
+    navigator.clipboard.writeText(url);
   };
 
-  const likeTweet = (tweetId: string) => {
+  const handlePostToTwitter = () => {
+    if (selectedTweet) {
+      const tweetText = encodeURIComponent(editedResponse);
+      const tweetUrl = `https://twitter.com/intent/tweet?in_reply_to=${selectedTweet.tweet_id}&text=${tweetText}`;
+      window.open(tweetUrl, "_blank");
+    }
+  };
+
+  const handleLikeIntent = (tweet: Tweet) => {
     window.open(
-      `https://twitter.com/intent/like?tweet_id=${tweetId}`,
+      `https://twitter.com/intent/like?tweet_id=${tweet.tweet_id}`,
       "_blank"
     );
   };
 
-  const replyTweet = (tweetId: string) => {
+  const handleRetweetIntent = (tweet: Tweet) => {
     window.open(
-      `https://twitter.com/intent/tweet?in_reply_to=${tweetId}`,
-      "_blank"
-    );
-  };
-
-  const retweetTweet = (tweetId: string) => {
-    window.open(
-      `https://twitter.com/intent/retweet?tweet_id=${tweetId}`,
+      `https://twitter.com/intent/retweet?tweet_id=${tweet.tweet_id}`,
       "_blank"
     );
   };
 
   return (
-    <div className="sticky top-8 bg-neutral-900 flex flex-col h-[500px] border border-neutral-600 rounded-lg">
-      <div className="flex items-center justify-between mb-4">
-        {/* <div className="flex items-center gap-2">
-          <AtSign className="w-5 h-5 text-[#00D992]" />
-          <h2 className="text-lg font-semibold text-gray-100">Mentions Feed</h2>
-          <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded-full">
-            {pagination.total_count}
-          </span>
-        </div> */}
-
-        <div className="flex items-start gap-2">
-          {/* Sort Dropdown */}
-          {/* <div className="relative">
+    <div className="w-full">
+      {/* Controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+        {/* Feed Type Toggle */}
+        <div className="flex gap-2 bg-neutral-800 rounded-lg p-1">
+          {[
+            { value: "both", label: "All" },
+            { value: "original", label: "Project Tweets" },
+            { value: "mentions", label: "Mentions" },
+          ].map((type) => (
             <button
-              onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-700 border border-gray-600 rounded-lg text-gray-300 hover:text-[#00D992] hover:border-[#00D992]/50 transition-colors"
+              key={type.value}
+              onClick={() =>
+                setTweetFeedType(type.value as "both" | "original" | "mentions")
+              }
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                tweetFeedType === type.value
+                  ? "bg-neutral-700 text-white"
+                  : "text-neutral-400 hover:text-white"
+              }`}
             >
-              {getSortLabel()}
-              <ChevronDown className="w-3 h-3" />
+              {type.label}
             </button>
+          ))}
+        </div>
 
-            {showSortDropdown && (
-              <div className="absolute right-0 top-full mt-1 z-10 bg-gray-800 border border-gray-700 rounded-lg shadow-lg min-w-[150px]">
-                {sortOptions.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => {
-                      setSortBy(value);
-                      setShowSortDropdown(false);
-                    }}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-700 transition-colors ${
-                      sortBy === value
-                        ? "text-[#00D992] bg-gray-700"
-                        : "text-gray-300"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div> */}
+        {/* Sort and Time Controls */}
+        <div className="flex gap-4 w-full sm:w-auto">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortBy)}
+            className="bg-neutral-800 text-white border border-neutral-700 rounded px-3 py-2 text-sm flex-1 sm:flex-none"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <div className="flex gap-1 bg-neutral-800 rounded-lg p-1">
+            {["1day", "7day", "30day"].map((int) => (
+              <button
+                key={int}
+                onClick={() => setInterval(int as Interval)}
+                className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                  interval === int
+                    ? "bg-neutral-700 text-white"
+                    : "text-neutral-400 hover:text-white"
+                }`}
+              >
+                {int === "1day" ? "24H" : int.replace("day", "D")}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Error handling */}
-      {error && retryCount === 0 && (
-        <div className="mb-4 p-3 bg-red-900/20 border border-red-600/30 rounded-lg">
-          <p className="text-red-400 text-xs">{error}</p>
-        </div>
-      )}
-
-      {/* Retry status */}
-      {retryCount > 0 && (
-        <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
-          <p className="text-yellow-400 text-xs">{error}</p>
-        </div>
-      )}
-
-      {/* Loading state for initial load */}
-      {loading && tweets.length === 0 && (
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <div
-              key={i}
-              className="rounded-lg p-4 animate-pulse bg-gray-800/50"
-            >
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-gray-700 rounded-full"></div>
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 bg-gray-700 rounded w-3/4"></div>
-                  <div className="h-3 bg-gray-700 rounded w-1/2"></div>
-                  <div className="h-3 bg-gray-700 rounded w-1/4"></div>
-                  <div className="flex gap-3 mt-3">
-                    <div className="h-2 bg-gray-700 rounded w-12"></div>
-                    <div className="h-2 bg-gray-700 rounded w-12"></div>
-                    <div className="h-2 bg-gray-700 rounded w-12"></div>
-                  </div>
-                </div>
-              </div>
+      {/* Tweet feed and response panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-4 h-[calc(100vh-12rem)]">
+        {/* Tweet feed */}
+        <div className="h-full overflow-y-auto pr-4 space-y-4 custom-scrollbar">
+          {loading &&
+          !tweetFeedData.original_tweets.length &&
+          !tweetFeedData.mentions.length ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-neutral-400"></div>
             </div>
-          ))}
-        </div>
-      )}
+          ) : error ? (
+            <div className="text-red-500 text-center py-4">{error}</div>
+          ) : (
+            <>
+              {/* Original tweets section - only show if feed type is "both" or "original" */}
+              {(tweetFeedType === "both" || tweetFeedType === "original") &&
+                tweetFeedData.original_tweets.map((tweet) => (
+                  <RaidsTweetCard
+                    key={tweet.tweet_id}
+                    tweet={tweet}
+                    isSelected={selectedTweet?.tweet_id === tweet.tweet_id}
+                    tweetFeedType={tweetFeedType}
+                    originalTweets={tweetFeedData.original_tweets}
+                    onGenerateResponse={handleGenerateResponse}
+                    onLikeIntent={handleLikeIntent}
+                    onRetweetIntent={handleRetweetIntent}
+                  />
+                ))}
 
-      {/* Tweet list */}
-      <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar relative">
-        {tweets.map((tweet, index) => {
-          const isExpanded = expandedTweets.has(tweet.tweet_id);
-          const shouldTruncate = tweet.body.length > 200;
-          const displayText =
-            isExpanded || !shouldTruncate
-              ? tweet.body
-              : truncateText(tweet.body);
+              {/* Mentions section - only show if feed type is "both" or "mentions" */}
+              {(tweetFeedType === "both" || tweetFeedType === "mentions") &&
+                tweetFeedData.mentions.map((tweet) => (
+                  <RaidsTweetCard
+                    key={tweet.tweet_id}
+                    tweet={tweet}
+                    isSelected={selectedTweet?.tweet_id === tweet.tweet_id}
+                    tweetFeedType={tweetFeedType}
+                    originalTweets={tweetFeedData.original_tweets}
+                    onGenerateResponse={handleGenerateResponse}
+                    onLikeIntent={handleLikeIntent}
+                    onRetweetIntent={handleRetweetIntent}
+                  />
+                ))}
 
-          return (
-            <div
-              key={`${tweet.tweet_id}-${index}`}
-              className="p-4 border-b border-neutral-600"
-            >
-              {/* Tweet header */}
-              <div className="flex items-start gap-3 mb-3">
-                <img
-                  src={tweet.profile_image_url}
-                  alt={`@${tweet.author_handle}`}
-                  className="w-10 h-10 rounded-full ring-2 ring-transparent group-hover:ring-[#00D992]/50 transition-all"
-                  onError={(e) => {
-                    e.currentTarget.src = "/placeholder.svg?height=40&width=40";
-                  }}
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-gray-100 text-sm truncate">
-                      {getDisplayHandle(tweet.author_handle)}
-                    </span>
-                    {tweet.sentiment !== null &&
-                      getSentimentIcon(tweet.sentiment || null)}
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {formatDate(tweet.tweet_create_time || "")}
-                  </div>
-                </div>
-              </div>
-
-              {/* Tweet content */}
-              <div className="mb-3">
-                <p className="text-gray-300 text-sm leading-relaxed break-words whitespace-pre-wrap">
-                  {highlightTokens(displayText)}
-                </p>
-                {shouldTruncate && (
+              {/* Load more button */}
+              {pagination.has_more && !loading && (
+                <div className="flex justify-center mt-4">
                   <button
-                    onClick={() => toggleTweetExpansion(tweet.tweet_id)}
-                    className="text-[#00D992] text-xs hover:text-[#00C484] transition-colors mt-1"
+                    onClick={() => fetchTweetFeed({ isLoadMore: true })}
+                    className="px-4 py-2 bg-neutral-700 text-white rounded hover:bg-neutral-600 transition-colors"
                   >
-                    {isExpanded ? "Show less" : "Show more"}
+                    Load More
                   </button>
-                )}
-              </div>
-
-              {/* Tweet category */}
-              {tweet.tweet_category && (
-                <div className="mb-3">
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[#00D992]/20 text-[#00D992] border border-[#00D992]/30">
-                    <Hash className="w-3 h-3 mr-1" />
-                    {tweet.tweet_category}
-                  </span>
                 </div>
               )}
 
-              {/* Tweet metrics */}
-              <div className="flex items-center gap-6 text-sm text-gray-400">
-                <div className="flex items-center gap-1.5">
-                  <Eye className="w-4 h-4" />
-                  <span>{formatNumber(tweet.view_count)}</span>
-                </div>
-                <button
-                  className="flex items-center gap-1.5 hover:text-red-500 transition-colors group"
-                  onClick={() => likeTweet(tweet.tweet_id)}
-                >
-                  <Heart className="w-4 h-4 group-hover:fill-red-500 transition-colors" />
-                  <span>{formatNumber(tweet.like_count)}</span>
-                </button>
-                <button
-                  className="flex items-center gap-1.5 hover:text-blue-500 transition-colors group"
-                  onClick={() => replyTweet(tweet.tweet_id)}
-                >
-                  <MessageCircle className="w-4 h-4 group-hover:fill-blue-500 transition-colors" />
-                  <span>{formatNumber(tweet.reply_count)}</span>
-                </button>
-                <button
-                  className="flex items-center gap-1.5 hover:text-green-500 transition-colors group"
-                  onClick={() => retweetTweet(tweet.tweet_id)}
-                >
-                  <Repeat2 className="w-4 h-4 transition-colors" />
-                  <span>{formatNumber(tweet.retweet_count)}</span>
-                </button>
-              </div>
-            </div>
-          );
-        })}
+              {/* Loading more indicator */}
+              {loading &&
+                (tweetFeedData.original_tweets.length > 0 ||
+                  tweetFeedData.mentions.length > 0) && (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-neutral-400"></div>
+                  </div>
+                )}
 
-        {/* Intersection Observer Target */}
-        <div ref={observerTarget} className="h-4" aria-hidden="true" />
+              {/* Empty state */}
+              {!loading &&
+                tweetFeedData.original_tweets.length === 0 &&
+                tweetFeedData.mentions.length === 0 && (
+                  <div className="text-center py-8 text-neutral-400">
+                    No tweets found
+                  </div>
+                )}
+            </>
+          )}
+        </div>
 
-        {/* Loading indicator at bottom */}
-        {loading && tweets.length > 0 && (
-          <div className="sticky bottom-0 left-0 right-0 py-4 bg-gradient-to-t from-gray-900 to-transparent">
-            <div className="flex items-center justify-center gap-2">
-              <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[#00D992] border-t-transparent"></div>
-              <span className="text-sm text-gray-400">
-                Loading more tweets...
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Response panel */}
+        <div className="h-full">
+          <RaidsResponsePanel
+            selectedTweet={selectedTweet}
+            llmResponse={llmResponse}
+            editedResponse={editedResponse}
+            llmLoading={llmLoading}
+            imageLoading={imageLoading}
+            generatedShareUrl={generatedShareUrl}
+            responseType={responseType}
+            tone={tone}
+            onResponseTypeChange={setResponseType}
+            onToneChange={setTone}
+            onEditedResponseChange={setEditedResponse}
+            onGenerateImage={handleGenerateImage}
+            onCopyImage={handleCopyImage}
+            onPostToTwitter={handlePostToTwitter}
+          />
+        </div>
       </div>
 
-      {/* Empty state */}
-      {!loading && tweets.length === 0 && (
-        <div className="text-center py-8">
-          <AtSign className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 text-sm">
-            No mentions found for @{authorHandle}
-          </p>
-        </div>
-      )}
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #262626;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #404040;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #525252;
+        }
+      `}</style>
     </div>
   );
 }

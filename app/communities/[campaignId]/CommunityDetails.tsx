@@ -1022,7 +1022,11 @@ export default function CommunityDetails({
         <h2 className="py-4 text-3xl font-semibold text-neutral-100 mb-4">
           Mentions feed:
         </h2>
-        <MentionsFeed authorHandle={smartFeedHandle} />
+        <MentionsFeed
+          authorHandle={smartFeedHandle}
+          paymentToken={campaign?.payment_token}
+          targetXHandle={campaign?.target_x_handle}
+        />
       </div>
     </div>
   );

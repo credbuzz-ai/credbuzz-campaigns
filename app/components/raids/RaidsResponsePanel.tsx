@@ -47,7 +47,7 @@ export function RaidsResponsePanel({
 }: RaidsResponsePanelProps) {
   return (
     <Card className="bg-neutral-800 border-[#00D992] rounded-none h-full flex flex-col">
-      <CardContent className="p-4 flex flex-col flex-grow">
+      <CardContent className="p-4 flex flex-col h-full overflow-y-auto custom-scrollbar">
         <div className="mb-2">
           <div className="text-xs text-gray-400 mb-1">AI Response:</div>
         </div>
@@ -176,7 +176,7 @@ export function RaidsResponsePanel({
             </div>
           ) : (
             <textarea
-              className="w-full h-full bg-neutral-900 border border-neutral-600 rounded-none p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
+              className="w-full h-full min-h-[200px] bg-neutral-900 border border-neutral-600 rounded-none p-2 text-white text-sm focus:border-[#00D992] focus:ring-[#00D992] resize-none"
               value={editedResponse}
               onChange={(e) => onEditedResponseChange(e.target.value)}
               placeholder="AI-generated response will appear here..."
@@ -269,7 +269,7 @@ export function RaidsResponsePanel({
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 mt-auto">
           <Button
             onClick={onPostToTwitter}
             className="bg-blue-500 hover:bg-blue-600 text-white flex-1 rounded-none"
