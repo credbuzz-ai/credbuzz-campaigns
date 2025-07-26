@@ -801,7 +801,11 @@ export default function SubCampaignDetails({
 
                   {/* Mentions Tab - Mentions Feed */}
                   <TabsContent value="mentions" className="space-y-4">
-                    <MentionsFeed authorHandle={smartFeedHandle} />
+                    <MentionsFeed
+                      authorHandle={smartFeedHandle}
+                      paymentToken={campaign?.payment_token}
+                      targetXHandle={campaign?.target_x_handle}
+                    />
                   </TabsContent>
                 </Tabs>
               </div>
@@ -811,7 +815,11 @@ export default function SubCampaignDetails({
 
         {/* Smart Feed Sidebar */}
         {/* <div className="w-[480px] lg:w-[480px] md:w-80 sm:w-72 py-8 pr-8 lg:pr-12 self-stretch sticky top-16 h-[calc(100vh-4rem)]">
-          <MentionsFeed authorHandle={smartFeedHandle} />
+          <MentionsFeed 
+            authorHandle={smartFeedHandle} 
+            paymentToken={campaign?.payment_token}
+            targetXHandle={campaign?.target_x_handle}
+          />
         </div> */}
       </div>
     </div>
