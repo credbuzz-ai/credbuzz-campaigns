@@ -88,6 +88,7 @@ export default function MentionsFeed({
         paymentToken,
         targetXHandle,
         isLoadMore,
+        interval,
       });
       const params = new URLSearchParams();
 
@@ -110,6 +111,7 @@ export default function MentionsFeed({
       params.append("feed_type", tweetFeedType);
       params.append("limit", "20");
       params.append("sort_by", sortBy);
+      params.append("interval", interval); // Add interval parameter
 
       if (isLoadMore && pagination.next_start) {
         params.append("start", String(pagination.next_start));
@@ -162,7 +164,7 @@ export default function MentionsFeed({
     if (paymentToken || targetXHandle) {
       setLoading(true);
       fetchTweetFeed({
-        symbol: paymentToken,
+        symbol: undefined, // Don't pass symbol when searching for a specific account
         twitter_handle: targetXHandle?.replace("@", ""),
         isLoadMore: false,
       }).finally(() => {
@@ -292,6 +294,11 @@ export default function MentionsFeed({
     // Update the targetXHandle state and show loading
     setIsSearching(true);
     setTargetXHandle(handle);
+    // Clear existing tweets
+    setTweetFeedData({
+      original_tweets: [],
+      mentions: [],
+    });
   };
 
   return (
