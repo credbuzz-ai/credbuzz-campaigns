@@ -26,7 +26,17 @@ interface KOL {
   profile_image_url: string;
 }
 
-export default function KOLSearch() {
+interface KOLSearchProps {
+  onSelect?: (handle: string) => void;
+  navigateOnSelect?: boolean;
+  placeholder?: string;
+}
+
+export default function KOLSearch({
+  onSelect,
+  navigateOnSelect = true,
+  placeholder = "Search KOL by name or Twitter handle (min. 4 characters)...",
+}: KOLSearchProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [searchLoading, setSearchLoading] = useState(false);
@@ -92,7 +102,12 @@ export default function KOLSearch() {
   };
 
   const handleResultClick = (handle: string) => {
-    router.push(`/kols/${handle}`);
+    if (onSelect) {
+      onSelect(handle);
+    }
+    if (navigateOnSelect) {
+      router.push(`/kols/${handle}`);
+    }
     setSearchTerm("");
     setShowResults(false);
   };
@@ -108,7 +123,7 @@ export default function KOLSearch() {
             type="text"
             value={searchTerm}
             onChange={handleSearchChange}
-            placeholder="Search KOL by name or Twitter handle (min. 4 characters)..."
+            placeholder={placeholder}
             className="block w-full pl-10 pr-10 py-2 border border-gray-600 rounded-lg bg-neutral-900 text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#00D992]/50 focus:border-transparent"
           />
           {searchTerm && !searchLoading && (
@@ -141,13 +156,6 @@ export default function KOLSearch() {
       {/* Search Results Dropdown */}
       {showResults && searchResults.length > 0 && (
         <div className="absolute z-50 w-full mt-2 bg-neutral-900 border border-gray-700 rounded-lg shadow-lg max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
-          {/* {searchResults.length > 0 && (
-            <div className="sticky top-0 bg-neutral-800 backdrop-blur-sm px-4 py-2 border-b border-gray-700">
-              <p className="text-xs text-gray-400">
-                Found {searchResults.length} results
-              </p>
-            </div>
-          )} */}
           {searchResults.map((kol) => (
             <button
               key={kol.author_handle}
