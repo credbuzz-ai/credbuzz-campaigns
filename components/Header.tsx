@@ -11,10 +11,10 @@ const navItems = [
     label: "Explore Campaigns",
     href: "/sage-campaigns",
   },
-  {
-    label: "Find KOLs",
-    href: "/kols",
-  },
+  // {
+  //   label: "Find KOLs",
+  //   href: "/kols",
+  // },
   {
     label: "Raids",
     href: "/raids",
