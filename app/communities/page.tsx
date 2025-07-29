@@ -7,7 +7,7 @@ import { Campaign } from "@/lib/types";
 import { useEffect, useState } from "react";
 
 const CampaignCardSkeleton = () => (
-  <div className="max-w-sm bg-cardBackground p-6 rounded-md border-2 border-gray-700/30 h-full">
+  <div className="max-w-sm min-w-[320px] min-h-[320px] bg-cardBackground p-6 rounded-md border-2 border-gray-700/30 h-full">
     <div className="flex flex-col justify-between items-start mb-4 border-b border-gray-700/30">
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center justify-center gap-2 text-sm">

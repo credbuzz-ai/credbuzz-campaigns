@@ -39,7 +39,7 @@ const CampaignCardSkeleton = () => (
 
 export default function BuzzBoard() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [selectedStatus, setSelectedStatus] = useState("Ongoing");
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const filteredCampaigns = campaigns.filter((campaign: Campaign) => {
@@ -58,7 +58,16 @@ export default function BuzzBoard() {
       campaign_type: "Public",
       is_visible: true,
     });
-    setCampaigns(campaigns.data.result);
+    // Sort campaigns by offer_end_date in descending order (latest first)
+    const sortedCampaigns = campaigns.data.result.sort(
+      (a: Campaign, b: Campaign) => {
+        return (
+          new Date(b.offer_end_date).getTime() -
+          new Date(a.offer_end_date).getTime()
+        );
+      }
+    );
+    setCampaigns(sortedCampaigns);
     setLoading(false);
   };
 

@@ -895,6 +895,7 @@ export default function CampaignDetailsClient({
                                 <ul className="list-disc list-inside space-y-2">
                                   {campaign?.campaign_rules
                                     ?.split("\n")
+                                    .filter((rule) => rule.trim() !== "")
                                     .map((rule, index) => (
                                       <li key={index}>{linkifyText(rule)}</li>
                                     ))}

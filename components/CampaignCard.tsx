@@ -70,7 +70,7 @@ function getTimeRemaining(endDateString: string): string {
 export default function CampaignCard({ campaign }: { campaign: Campaign }) {
   return (
     <Link href={`/sage-campaigns/${campaign.campaign_id}`}>
-      <div className="max-w-sm bg-cardBackground hover:bg-cardBackground2 p-6 rounded-md border-2 border-gray-700/30 h-full transition-all duration-200 hover:border-[#00D992]/30">
+      <div className="max-w-sm min-w-[320px] min-h-[280px] bg-cardBackground hover:bg-cardBackground2 p-6 rounded-md border-2 border-gray-700/30 h-full transition-all duration-200 hover:border-[#00D992]/30">
         <div className="flex flex-col justify-between items-start mb-4 border-b border-gray-700/30">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center justify-center gap-2 text-sm">
@@ -87,7 +87,8 @@ export default function CampaignCard({ campaign }: { campaign: Campaign }) {
                   {campaign.campaign_name}
                 </span>
                 <span className="text-gray-400 text-sm font-medium">
-                  ${campaign.target_token_symbol}
+                  {campaign.target_token_symbol &&
+                    `$${campaign.target_token_symbol}`}
                 </span>
               </div>
             </div>
