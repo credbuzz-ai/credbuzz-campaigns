@@ -804,7 +804,7 @@ export default function MyCampaigns() {
               >
                 Campaigns
               </button>
-              <button
+              {/* <button
                 onClick={() => setActiveTab("identity")}
                 className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
                   activeTab === "identity"
@@ -813,7 +813,7 @@ export default function MyCampaigns() {
                 }`}
               >
                 Identity
-              </button>
+              </button> */}
             </nav>
           </div>
         </div>

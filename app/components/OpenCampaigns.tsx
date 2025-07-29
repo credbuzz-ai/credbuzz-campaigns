@@ -15,6 +15,7 @@ export default function OpenCampaigns() {
       try {
         const res = await apiClient.post("/campaign/get-campaigns", {
           campaign_type: "Public",
+          status: "Ongoing",
           is_visible: true,
         });
         // Sort campaigns by offer_end_date in descending order

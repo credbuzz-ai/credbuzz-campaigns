@@ -15,7 +15,7 @@ export default function CommunityCard({ campaign }: { campaign: Campaign }) {
 
   return (
     <Link href={`/communities/${campaign.campaign_id}`}>
-      <div className="group relative max-w-sm bg-cardBackground hover:bg-cardBackground2 p-6 rounded-xl border-2 border-gray-700/30 h-full transition-all duration-300 hover:border-[#00D992]/50 hover:shadow-[0_8px_32px_rgba(0,217,146,0.15)]">
+      <div className="group relative max-w-sm min-w-[320px] min-h-[320px] bg-cardBackground hover:bg-cardBackground2 p-6 rounded-xl border-2 border-gray-700/30 h-full transition-all duration-300 hover:border-[#00D992]/50 hover:shadow-[0_8px_32px_rgba(0,217,146,0.15)]">
         {/* Community Badge */}
         <div className="absolute -top-3 left-4 bg-gradient-to-r from-[#00D992] to-[#00F5A8] text-gray-900 px-3 py-1 rounded-full text-xs font-semibold">
           Community
@@ -60,15 +60,17 @@ export default function CommunityCard({ campaign }: { campaign: Campaign }) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-[#00D992]" />
-            <div>
-              <p className="text-xs text-gray-400">Token</p>
-              <p className="text-sm font-semibold text-gray-100">
-                ${campaign.target_token_symbol}
-              </p>
+          {campaign.target_token_symbol && (
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-[#00D992]" />
+              <div>
+                <p className="text-xs text-gray-400">Token</p>
+                <p className="text-sm font-semibold text-gray-100">
+                  ${campaign.target_token_symbol}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Description */}
