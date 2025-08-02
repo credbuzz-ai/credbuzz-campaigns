@@ -62,7 +62,15 @@ export async function generateMetadata({
     return {
       title,
       description,
-      keywords: `Web3, KOL, Influencer Marketing, Crypto, ${campaign.campaign_name}`,
+      keywords: `Web3, KOL, Influencer Marketing, Crypto, ${
+        campaign.campaign_name
+      }, ${campaign.campaign_type}, ${
+        campaign.project_categories || ""
+      }, Community Mindshare, ${
+        campaign.target_token_symbol || ""
+      }, Web3 Marketing${
+        campaign.seo_keywords ? `, ${campaign.seo_keywords}` : ""
+      }`,
       openGraph: {
         title,
         description,
@@ -100,6 +108,30 @@ export async function generateMetadata({
         "twitter:label2": "Target",
         "twitter:data2": campaign.target_x_handle || "Community",
       },
+      alternates: {
+        canonical: pageUrl,
+      },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+        },
+      },
+      applicationName: "TrendSage",
+      referrer: "origin-when-cross-origin",
+      authors: [{ name: campaign.owner_x_handle }],
+      creator: campaign.owner_x_handle,
+      publisher: "TrendSage",
+      formatDetection: {
+        email: false,
+        telephone: false,
+      },
+      verification: {
+        google: "YOUR_GOOGLE_SITE_VERIFICATION", // Add your Google verification code
+      },
+      category: campaign.campaign_type,
     };
   } catch (error) {
     console.error("Error generating metadata:", error);
@@ -147,6 +179,30 @@ export async function generateMetadata({
         "twitter:image": fallbackImageUrl,
         "twitter:image:alt": "TrendSage - Web3 KOL Marketplace",
       },
+      alternates: {
+        canonical: `${domain}/sage-campaigns/${campaignId}`,
+      },
+      robots: {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+        },
+      },
+      applicationName: "TrendSage",
+      referrer: "origin-when-cross-origin",
+      authors: [{ name: "TrendSage" }],
+      creator: "TrendSage",
+      publisher: "TrendSage",
+      formatDetection: {
+        email: false,
+        telephone: false,
+      },
+      verification: {
+        google: "YOUR_GOOGLE_SITE_VERIFICATION", // Add your Google verification code
+      },
+      category: "Web3 Marketing",
     };
   }
 }
